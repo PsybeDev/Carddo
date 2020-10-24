@@ -1,5 +1,6 @@
 defmodule CarddoWeb.Router do
   use CarddoWeb, :router
+  use Pow.Phoenix.Router
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -13,8 +14,19 @@ defmodule CarddoWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", CarddoWeb do
+  pipeline :protected do
+    plug Pow.Plug.RequireAuthenticated,
+      error_handler: Pow.Phoenix.PlugErrorHandler
+  end
+
+  scope "/" do
     pipe_through :browser
+
+    pow_routes()
+  end
+
+  scope "/", CarddoWeb do
+    pipe_through [:browser, :protected]
 
     get "/", PageController, :index
   end
