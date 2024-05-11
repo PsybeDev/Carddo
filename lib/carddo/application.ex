@@ -5,18 +5,19 @@ defmodule Carddo.Application do
 
   use Application
 
+  @impl true
   def start(_type, _args) do
     children = [
-      # Start the Ecto repository
-      Carddo.Repo,
-      # Start the Telemetry supervisor
       CarddoWeb.Telemetry,
-      # Start the PubSub system
+      Carddo.Repo,
+      {DNSCluster, query: Application.get_env(:carddo, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Carddo.PubSub},
-      # Start the Endpoint (http/https)
-      CarddoWeb.Endpoint
+      # Start the Finch HTTP client for sending emails
+      {Finch, name: Carddo.Finch},
       # Start a worker by calling: Carddo.Worker.start_link(arg)
-      # {Carddo.Worker, arg}
+      # {Carddo.Worker, arg},
+      # Start to serve requests, typically the last entry
+      CarddoWeb.Endpoint
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
@@ -27,6 +28,7 @@ defmodule Carddo.Application do
 
   # Tell Phoenix to update the endpoint configuration
   # whenever the application is updated.
+  @impl true
   def config_change(changed, _new, removed) do
     CarddoWeb.Endpoint.config_change(changed, removed)
     :ok

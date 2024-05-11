@@ -7,14 +7,13 @@ defmodule CarddoWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_carddo_key",
-    signing_salt: "Trw5g88e"
+    signing_salt: "35cPxACL",
+    same_site: "Lax"
   ]
 
-  socket "/socket", CarddoWeb.UserSocket,
-    websocket: true,
-    longpoll: false
-
-  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+  socket "/live", Phoenix.LiveView.Socket,
+    websocket: [connect_info: [session: @session_options]],
+    longpoll: [connect_info: [session: @session_options]]
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -24,7 +23,7 @@ defmodule CarddoWeb.Endpoint do
     at: "/",
     from: :carddo,
     gzip: false,
-    only: ~w(css fonts images js favicon.ico robots.txt)
+    only: CarddoWeb.static_paths()
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
@@ -50,6 +49,5 @@ defmodule CarddoWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-  plug Pow.Plug.Session, otp_app: :carddo
   plug CarddoWeb.Router
 end
