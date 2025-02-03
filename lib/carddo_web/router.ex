@@ -68,6 +68,13 @@ defmodule CarddoWeb.Router do
       on_mount: [{CarddoWeb.UserAuth, :ensure_authenticated}] do
       live "/users/settings", UserSettingsLive, :edit
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
+
+      live "/games", GameLive.Index, :index
+      live "/games/new", GameLive.Index, :new
+      live "/games/:id/edit", GameLive.Index, :edit
+
+      live "/games/:id", GameLive.Show, :show
+      live "/games/:id/show/edit", GameLive.Show, :edit
     end
   end
 
