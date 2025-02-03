@@ -75,13 +75,6 @@ defmodule CarddoWeb.Router do
 
       live "/games/:id", GameLive.Show, :show
       live "/games/:id/show/edit", GameLive.Show, :edit
-
-      live "/formats", FormatLive.Index, :index
-      live "/formats/new", FormatLive.Index, :new
-      live "/formats/:id/edit", FormatLive.Index, :edit
-
-      live "/formats/:id", FormatLive.Show, :show
-      live "/formats/:id/show/edit", FormatLive.Show, :edit
     end
   end
 
