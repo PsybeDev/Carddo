@@ -19,4 +19,20 @@ defmodule Carddo.GamesFixtures do
 
     game
   end
+
+  @doc """
+  Generate a format.
+  """
+  def format_fixture(attrs \\ %{}) do
+    {:ok, format} =
+      attrs
+      |> Enum.into(%{
+        description: "some description",
+        name: "some name",
+        state_machine: %{}
+      })
+      |> Carddo.Games.create_format()
+
+    format
+  end
 end
