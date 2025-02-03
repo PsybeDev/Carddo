@@ -6,7 +6,7 @@ defmodule Carddo.Games.Format do
     field :name, :string
     field :description, :string
     field :state_machine, :map
-    field :game_id, :id
+    belongs_to :game, Carddo.Games.Game
 
     timestamps(type: :utc_datetime)
   end
