@@ -8,51 +8,69 @@
       <%= assigns[:page_title] || "Carddo" %>
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js">
+    </script>
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
   </head>
-  <body class="bg-jet antialiased">
-    <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
-      <%= if @current_user do %>
-        <li class="text-[0.8125rem] leading-6 text-bittersweet_shimmer">
-          <%= @current_user.username %>
-        </li>
-        <li>
-          <.link
-            href={~p"/users/settings"}
-            class="text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray"
-          >
-            Settings
-          </.link>
-        </li>
-        <li>
-          <.link
-            href={~p"/users/log_out"}
-            method="delete"
-            class="text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray"
-          >
-            Log out
-          </.link>
-        </li>
-      <% else %>
-        <li>
-          <.link
-            href={~p"/users/register"}
-            class="text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray"
-          >
-            Register
-          </.link>
-        </li>
-        <li>
-          <.link
-            href={~p"/users/log_in"}
-            class="text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray"
-          >
-            Log in
-          </.link>
-        </li>
-      <% end %>
-    </ul>
+  <body class="antialiased">
+    <header class="px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between border-b border-zinc-100 py-3 text-sm">
+        <div class="flex items-center gap-4">
+          <a href="/">
+            <img src={~p"/images/Carddo-logo.png"} width="80" />
+          </a>
+        </div>
+        <div class="flex items-center gap-4 font-semibold leading-6 text-pearl"></div>
+        <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
+          <%= if @current_user do %>
+            <li>
+              <.link
+                href={~p"/games"}
+                class={"text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray p-2 #{if @active_nav == :games, do: "border-b-2 border-pearl", else: "border-none"}"}
+              >
+                Games
+              </.link>
+              <.link
+                href={~p"/users/settings"}
+                class={"text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray p-2 #{if @active_nav == :settings, do: "border-b-2 border-pearl", else: "border-none"}"}
+              >
+                Settings
+              </.link>
+            </li>
+            <li>
+              <.link
+                href={~p"/users/log_out"}
+                method="delete"
+                class="text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray"
+              >
+                Log out
+              </.link>
+            </li>
+            <li class="text-[0.8125rem] leading-6 text-bittersweet_shimmer">
+              <%= @current_user.username %>
+            </li>
+          <% else %>
+            <li>
+              <.link
+                href={~p"/users/register"}
+                class="text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray"
+              >
+                Register
+              </.link>
+            </li>
+            <li>
+              <.link
+                href={~p"/users/log_in"}
+                class="text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray"
+              >
+                Log in
+              </.link>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+    </header>
     <%= @inner_content %>
   </body>
 </html>
