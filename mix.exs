@@ -58,7 +58,8 @@ defmodule Carddo.MixProject do
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
-      {:bandit, "~> 1.2"}
+      {:bandit, "~> 1.2"},
+      {:phaser, github: "phaserjs/phaser", tag: "v3.88.2", app: false, compile: false, depth: 1}
     ]
   end
 
