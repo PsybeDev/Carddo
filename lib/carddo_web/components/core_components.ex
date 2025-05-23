@@ -124,10 +124,10 @@ defmodule CarddoWeb.CoreComponents do
       <.icon :if={@kind == :info} name="hero-information-circle-mini" class="h-4 w-4" />
       <.icon :if={@kind == :error} name="hero-exclamation-circle-mini" class="h-4 w-4" />
       <div>
-      <h3 :if={@title} class="text-sm font-semibold">
-        <%= @title %>
-      </h3>
-      <div class="mt-2 text-sm"><%= msg %></div>
+        <h3 :if={@title} class="text-sm font-semibold">
+          <%= @title %>
+        </h3>
+        <div class="mt-2 text-sm"><%= msg %></div>
       </div>
       <button type="button" class="btn btn-sm btn-ghost group p-2" aria-label={gettext("close")}>
         <.icon name="hero-x-mark-solid" class="h-5 w-5 opacity-40 group-hover:opacity-70" />
@@ -334,13 +334,7 @@ defmodule CarddoWeb.CoreComponents do
     ~H"""
     <div phx-feedback-for={@name}>
       <.label for={@id}><%= @label %></.label>
-      <select
-        id={@id}
-        name={@name}
-        class="select"
-        multiple={@multiple}
-        {@rest}
-      >
+      <select id={@id} name={@name} class="select" multiple={@multiple} {@rest}>
         <option :if={@prompt} value=""><%= @prompt %></option>
         <%= Phoenix.HTML.Form.options_for_select(@options, @value) %>
       </select>
@@ -487,10 +481,7 @@ defmodule CarddoWeb.CoreComponents do
             </th>
           </tr>
         </thead>
-        <tbody
-          id={@id}
-          phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}
-        >
+        <tbody id={@id} phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}>
           <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="group hover:bg-base-200">
             <td
               :for={{col, i} <- Enum.with_index(@col)}
@@ -507,10 +498,7 @@ defmodule CarddoWeb.CoreComponents do
             <td :if={@action != []} class="relative w-14">
               <div class="relative whitespace-nowrap py-4 text-right text-sm font-medium">
                 <span class="absolute -inset-y-px -right-4 left-0  sm:rounded-r-xl" />
-                <span
-                  :for={action <- @action}
-                  class="relative ml-4 font-semibold leading-6"
-                >
+                <span :for={action <- @action} class="relative ml-4 font-semibold leading-6">
                   <%= render_slot(action, @row_item.(row)) %>
                 </span>
               </div>
@@ -538,13 +526,11 @@ defmodule CarddoWeb.CoreComponents do
 
   def list(assigns) do
     ~H"""
-    <div class="mt-14">
-      <dl class="-my-4 divide-y divide-zinc-100">
-        <div :for={item <- @item} class="flex gap-4 py-4 text-sm leading-6 sm:gap-8">
-          <dt class="w-1/4 flex-none text-zinc-500"><%= item.title %></dt>
-          <dd class="text-zinc-700"><%= render_slot(item) %></dd>
-        </div>
-      </dl>
+    <div class="mt-14 list">
+      <div :for={item <- @item} class="list-row flex gap-4 py-4 text-sm leading-6 sm:gap-8">
+        <dt class="w-1/4 flex-none text-primary-500"><%= item.title %></dt>
+        <dd><%= render_slot(item) %></dd>
+      </div>
     </div>
     """
   end
@@ -562,10 +548,7 @@ defmodule CarddoWeb.CoreComponents do
   def back(assigns) do
     ~H"""
     <div class="mt-16">
-      <.link
-        navigate={@navigate}
-        class="text-sm font-semibold leading-6 link link-hover"
-      >
+      <.link navigate={@navigate} class="text-sm font-semibold leading-6 link link-hover">
         <.icon name="hero-arrow-left-solid" class="h-3 w-3" />
         <%= render_slot(@inner_block) %>
       </.link>
