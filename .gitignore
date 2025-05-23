@@ -38,3 +38,6 @@ npm-debug.log
 # editor configs
 .vscode
 
+#sqlite
+*.db
+*.db-*

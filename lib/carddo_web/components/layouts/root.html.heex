@@ -1,76 +1,79 @@
 <!DOCTYPE html>
 <html lang="en" class="[scrollbar-gutter:stable]">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title suffix=" · Phoenix Framework">
-      <%= assigns[:page_title] || "Carddo" %>
-    </.live_title>
-    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js">
-    </script>
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
-    </script>
-  </head>
-  <body class="antialiased">
-    <header class="px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between border-b border-zinc-100 py-3 text-sm">
-        <div class="flex items-center gap-4">
-          <a href="/">
-            <img src={~p"/images/Carddo-logo.png"} width="80" />
-          </a>
-        </div>
-        <div class="flex items-center gap-4 font-semibold leading-6 text-pearl"></div>
-        <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
-          <%= if @current_user do %>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="csrf-token" content={get_csrf_token()} />
+  <.live_title suffix=" · Phoenix Framework">
+    <%= assigns[:page_title] || "Carddo" %>
+  </.live_title>
+  <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js">
+  </script>
+  <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+  </script>
+</head>
+
+<body class="antialiased">
+  <header>
+    <div class="navbar bg-base-100 shadow-sm justify-between">
+      <div class="navbars-start">
+        <a class="btn btn-ghost text-xl" href="/">
+          <img src={~p"/images/Carddo-logo.png"} width="80" />
+        </a>
+      </div>
+      <div class="navbar-center hidden lg:flex">
+        <%= if @current_user do %>
+          <ul class="menu menu-horizontal px-1">
             <li>
-              <.link
-                href={~p"/games"}
-                class={"text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray p-2 #{if @active_nav == :games, do: "border-b-2 border-pearl", else: "border-none"}"}
-              >
+              <.link href={~p"/games"} class={"#{if @active_nav==:games, do: "menu-active" , else: "" }"}>
                 Games
               </.link>
-              <.link
-                href={~p"/users/settings"}
-                class={"text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray p-2 #{if @active_nav == :settings, do: "border-b-2 border-pearl", else: "border-none"}"}
-              >
-                Settings
-              </.link>
             </li>
-            <li>
-              <.link
-                href={~p"/users/log_out"}
-                method="delete"
-                class="text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray"
-              >
-                Log out
-              </.link>
-            </li>
-            <li class="text-[0.8125rem] leading-6 text-bittersweet_shimmer">
-              <%= @current_user.username %>
-            </li>
+          </ul>
+          <% end %>
+      </div>
+      <div class="nabar-end">
+        <%= if @current_user do %>
+          <div class="dropdown dropdown-end">
+            <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+              <div class="w-10 rounded-full">
+                <img alt="Tailwind CSS Navbar component"
+                  src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp" />
+              </div>
+            </div>
+            <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
+              <li>
+                <.link href={~p"/users/settings"} class={"text-[0.8125rem] leading-6 text-pearl font-semibold
+                  hover:text-cool_gray p-2 #{if @active_nav==:settings, do: "menu-active" , else: "" }"}>
+                  Settings
+                </.link>
+              </li>
+              <li>
+                <.link href={~p"/users/log_out"} method="delete"
+                  class="text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray">
+                  Log out
+                </.link>
+              </li>
+            </ul>
+          </div>
           <% else %>
-            <li>
-              <.link
-                href={~p"/users/register"}
-                class="text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray"
-              >
+            <div class="flex items-center gap-4 font-semibold leading-6 text-pearl">
+              <.link href={~p"/users/register"}
+                class="text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray">
                 Register
               </.link>
-            </li>
-            <li>
-              <.link
-                href={~p"/users/log_in"}
-                class="text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray"
-              >
+              <.link href={~p"/users/log_in"}
+                class="text-[0.8125rem] leading-6 text-pearl font-semibold hover:text-cool_gray">
                 Log in
               </.link>
-            </li>
-          <% end %>
-        </ul>
+            </div>
+            <% end %>
       </div>
-    </header>
-    <%= @inner_content %>
-  </body>
+    </div>
+  </header>
+  <%= @inner_content %>
+</body>
+
 </html>
