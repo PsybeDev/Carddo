@@ -21,6 +21,7 @@ defmodule CarddoWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/game-engine", PageController, :game_engine
   end
 
   # Other scopes may use custom stacks.

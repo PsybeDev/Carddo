@@ -1,0 +1,1406 @@
+
+16:38:46.486 [info] Loading 146 CA(s) from :otp store
+
+16:38:47.094 [info] Loading 146 CA(s) from :otp store
+
+16:38:47.186 id=1 [debug] handled request client -> server initialize in 340ms
+
+16:38:47.215 [debug] sent notification server -> client window/logMessage
+
+16:38:47.223 [debug] NextLS v0.23.3 has initialized!
+
+16:38:47.223 [debug] sent notification server -> client window/logMessage
+
+16:38:47.224 [debug] Log file located at /home/psybe/projects/Carddo/priv/.elixir-tools/next-ls.log
+
+16:38:47.225 [debug] sent notification server -> client window/logMessage
+
+16:38:47.225 [info] [extension] Credo initializing with options %NextLS.InitOpts.Extensions.Credo{enable: true, cli_options: []}
+
+16:38:47.557 id=1 [debug] handled request client -> server initialize in 175ms
+
+16:38:47.564 [debug] sent notification server -> client window/logMessage
+
+16:38:47.569 [debug] NextLS v0.23.3 has initialized!
+
+16:38:47.569 [debug] sent notification server -> client window/logMessage
+
+16:38:47.569 [debug] Log file located at /home/psybe/projects/Carddo/priv/.elixir-tools/next-ls.log
+
+16:38:47.581 [debug] sent notification server -> client window/logMessage
+
+16:38:47.581 [info] [extension] Credo initializing with options %NextLS.InitOpts.Extensions.Credo{enable: true, cli_options: []}
+
+16:38:52.592 [debug] sent notification server -> client window/logMessage
+
+16:38:52.592 [debug] Booting runtimes...
+
+16:38:52.601 id=3153 [debug] sent request server -> client window/workDoneProgress/create
+
+16:38:52.617 [debug] sent notification server -> client $/progress
+
+16:38:52.669 [debug] sent notification server -> client window/logMessage
+
+16:38:52.669 [info] Beginning DB migration...
+
+16:38:52.684 [debug] sent notification server -> client window/logMessage
+
+16:38:52.684 [info] Database is on the latest version: 7
+
+16:38:52.684 [debug] sent notification server -> client window/logMessage
+
+16:38:52.684 [info] Finished DB migration...
+
+16:38:52.684 [debug] sent notification server -> client window/logMessage
+
+16:38:52.684 [info] Booting runtime for /home/psybe/projects/Carddo.
+
+- elixir: /home/psybe/.asdf/shims/elixir
+- zombie wrapper script: /home/psybe/.local/share/.burrito/next_ls_erts-15.2_0.23.3/lib/next_ls-0.23.3/priv/cmd
+- working_dir: /home/psybe/projects/Carddo
+- command: /home/psybe/.asdf/shims/elixir --no-halt --sname nextls-runtime-1748119132684359287 --cookie B5KWOZJIEP7TC5LDWAQBZUILE3M23QPWYKPSADNHECVNH73HK4LA==== -S mix loadpaths --no-compile
+
+Environment: 
+
+LSP=nextls
+NEXTLS_PARENT_PID=g1h3KW5leHQtbHMtMTc0ODExOTEyNjUxOTk0MjYwNkBKQi1ST0ctTEFQVE9QAAAA2wAAAABoMi5X
+MIX_ENV=dev
+MIX_TARGET=host
+MIX_BUILD_ROOT=.elixir-tools/_build
+ROOTDIR=false
+BINDIR=false
+RELEASE_ROOT=false
+RELEASE_SYS_CONFIG=false
+PATH=/home/psybe/.asdf/shims:/home/psybe/.local/share/.burrito/next_ls_erts-15.2_0.23.3/bin:/home/psybe/.local/share/nvim/mason/bin:/home/psybe/.local/share/nvim/mason/bin:/home/psybe/.local/share/mise/installs/ruby/3.4.1/bin:/home/psybe/.local/share/pnpm:/home/psybe/.bun/bin:/home/psybe/.opam/default/bin:/home/psybe/.asdf/shims:/home/psybe/.asdf/bin:/home/psybe/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/Microsoft/jdk-17.0.8.7-hotspot/bin:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/dotnet/:/mnt/c/program files (x86)/iracing/d3dgear:/mnt/c/Program Files/whkd/bin/:/mnt/c/Program Files/Neovim/bin:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/WezTerm:/mnt/c/Program Files (x86)/HP/HP OCR/DB_Lib/:/mnt/c/Program Files/HP/Common/HPDestPlgIn/:/mnt/c/Program Files (x86)/HP/Common/HPDestPlgIn/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Program Files/Go/bin:/mnt/c/Program Files/RedHat/Podman/:/mnt/c/Users/psybe/.cargo/bin:/mnt/c/Users/psybe/.local/bin:/mnt/c/Users/psybe/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/psybe/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/psybe/.dotnet/tools:/mnt/c/Users/psybe/AppData/Local/JetBrains/Toolbox/scripts:/mnt/c/Users/psybe/AppData/Local/Microsoft/WinGet/Packages/equalsraf.win32yank_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Program Files/JetBrains/IntelliJ IDEA Community Edition 2024.2.3/bin:/mnt/c/Users/psybe/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/psybe/.dotnet/tools:/mnt/c/Users/psybe/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0/LocalCache/local-packages/Python311/site-packages:/mnt/c/Users/psybe/.local/bin:/mnt/c/Users/psybe/AppData/Roaming/npm:/mnt/c/Users/psybe/AppData/Local/Microsoft/WinGet/Packages/pnpm.pnpm_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Program Files/HP/Common/HPDestPlgIn/:/mnt/c/Program Files (x86)/HP/Common/HPDestPlgIn/:/mnt/c/Users/psybe/go/bin:/mnt/c/Users/psybe/.dotnet/tools:/home/psybe/.cargo/bin:/home/psybe/.rustup:/snap/bin
+
+
+16:38:52.686 [debug] handled notification client -> server initialized in 5488ms
+
+16:38:52.694 [debug] handled notification client -> server textDocument/didOpen in 8ms
+
+16:38:52.919 [debug] sent notification server -> client window/logMessage
+
+16:38:52.919 [debug] Booting runtimes...
+
+16:38:52.923 id=194 [debug] sent request server -> client window/workDoneProgress/create
+
+16:38:52.928 [debug] sent notification server -> client $/progress
+
+16:38:52.941 [debug] sent notification server -> client window/logMessage
+
+16:38:52.941 [info] Beginning DB migration...
+
+16:38:52.948 [debug] sent notification server -> client window/logMessage
+
+16:38:52.948 [info] Database is on the latest version: 7
+
+16:38:52.948 [debug] sent notification server -> client window/logMessage
+
+16:38:52.948 [info] Finished DB migration...
+
+16:38:52.948 [debug] sent notification server -> client window/logMessage
+
+16:38:52.949 [info] Booting runtime for Carddo.
+
+- elixir: /home/psybe/.asdf/shims/elixir
+- zombie wrapper script: /home/psybe/.local/share/.burrito/next_ls_erts-15.2_0.23.3/lib/next_ls-0.23.3/priv/cmd
+- working_dir: /home/psybe/projects/Carddo
+- command: /home/psybe/.asdf/shims/elixir --no-halt --sname nextls-runtime-1748119132948434140 --cookie B5KWOZJIEP7TC5LDWAQBZUILE3M23QPWYKPSADNHECVNH73HK4LA==== -S mix loadpaths --no-compile
+
+Environment: 
+
+LSP=nextls
+NEXTLS_PARENT_PID=g1h3KW5leHQtbHMtMTc0ODExOTEyNzExMjM3MDcxMEBKQi1ST0ctTEFQVE9QAAAA4wAAAABoMi5Y
+MIX_ENV=dev
+MIX_TARGET=host
+MIX_BUILD_ROOT=.elixir-tools/_build
+ROOTDIR=false
+BINDIR=false
+RELEASE_ROOT=false
+RELEASE_SYS_CONFIG=false
+PATH=/home/psybe/.asdf/shims:/home/psybe/.local/share/.burrito/next_ls_erts-15.2_0.23.3/bin:/home/psybe/.local/share/nvim/mason/bin:/home/psybe/.local/share/nvim/mason/bin:/home/psybe/.local/share/mise/installs/ruby/3.4.1/bin:/home/psybe/.local/share/pnpm:/home/psybe/.bun/bin:/home/psybe/.opam/default/bin:/home/psybe/.asdf/shims:/home/psybe/.asdf/bin:/home/psybe/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/Microsoft/jdk-17.0.8.7-hotspot/bin:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/dotnet/:/mnt/c/program files (x86)/iracing/d3dgear:/mnt/c/Program Files/whkd/bin/:/mnt/c/Program Files/Neovim/bin:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/WezTerm:/mnt/c/Program Files (x86)/HP/HP OCR/DB_Lib/:/mnt/c/Program Files/HP/Common/HPDestPlgIn/:/mnt/c/Program Files (x86)/HP/Common/HPDestPlgIn/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Program Files/Go/bin:/mnt/c/Program Files/RedHat/Podman/:/mnt/c/Users/psybe/.cargo/bin:/mnt/c/Users/psybe/.local/bin:/mnt/c/Users/psybe/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/psybe/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/psybe/.dotnet/tools:/mnt/c/Users/psybe/AppData/Local/JetBrains/Toolbox/scripts:/mnt/c/Users/psybe/AppData/Local/Microsoft/WinGet/Packages/equalsraf.win32yank_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Program Files/JetBrains/IntelliJ IDEA Community Edition 2024.2.3/bin:/mnt/c/Users/psybe/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/psybe/.dotnet/tools:/mnt/c/Users/psybe/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0/LocalCache/local-packages/Python311/site-packages:/mnt/c/Users/psybe/.local/bin:/mnt/c/Users/psybe/AppData/Roaming/npm:/mnt/c/Users/psybe/AppData/Local/Microsoft/WinGet/Packages/pnpm.pnpm_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Program Files/HP/Common/HPDestPlgIn/:/mnt/c/Program Files (x86)/HP/Common/HPDestPlgIn/:/mnt/c/Users/psybe/go/bin:/mnt/c/Users/psybe/.dotnet/tools:/home/psybe/.cargo/bin:/home/psybe/.rustup:/snap/bin
+
+
+16:38:52.949 [debug] handled notification client -> server initialized in 5391ms
+
+16:38:52.956 [debug] handled notification client -> server textDocument/didOpen in 7ms
+
+16:38:53.719 [debug] sent notification server -> client window/logMessage
+
+16:38:53.719 [info] Connected to node nextls-runtime-1748119132684359287@JB-ROG-LAPTOP
+
+16:38:54.028 [debug] sent notification server -> client window/logMessage
+
+16:38:54.028 [info] Connected to node nextls-runtime-1748119132948434140@JB-ROG-LAPTOP
+
+16:38:55.239 [debug] sent notification server -> client $/progress
+
+16:38:55.242 [debug] sent notification server -> client window/logMessage
+
+16:38:55.242 [debug] Runtime for folder /home/psybe/projects/Carddo is ready...
+
+16:38:55.250 id=579 [debug] sent request server -> client window/workDoneProgress/create
+
+16:38:55.252 [debug] sent notification server -> client $/progress
+
+16:38:55.270 [debug] sent notification server -> client $/progress
+
+16:38:55.270 [debug] sent notification server -> client window/logMessage
+
+16:38:55.270 [debug] Unchecked dependencies for environment dev:
+* bcrypt_elixir (Hex package)
+  the dependency is not available, run "mix deps.get"
+
+
+16:38:55.270 [debug] sent notification server -> client window/logMessage
+
+16:38:55.270 [error] Runtime for folder /home/psybe/projects/Carddo failed to initialize
+
+16:38:55.270 [debug] sent notification server -> client window/logMessage
+
+16:38:55.270 [error] The runtime for /home/psybe/projects/Carddo has crashed with reason: {:shutdown, :unchecked_dependencies}
+
+16:38:55.271 [debug] sent notification server -> client window/logMessage
+
+16:38:55.271 [info] Booting runtime for /home/psybe/projects/Carddo.
+
+- elixir: /home/psybe/.asdf/shims/elixir
+- zombie wrapper script: /home/psybe/.local/share/.burrito/next_ls_erts-15.2_0.23.3/lib/next_ls-0.23.3/priv/cmd
+- working_dir: /home/psybe/projects/Carddo
+- command: /home/psybe/.asdf/shims/elixir --no-halt --sname nextls-runtime-1748119135270777160 --cookie B5KWOZJIEP7TC5LDWAQBZUILE3M23QPWYKPSADNHECVNH73HK4LA==== -S mix loadpaths --no-compile
+
+Environment: 
+
+LSP=nextls
+NEXTLS_PARENT_PID=g1h3KW5leHQtbHMtMTc0ODExOTEyNjUxOTk0MjYwNkBKQi1ST0ctTEFQVE9QAAAA2wAAAABoMi5X
+MIX_ENV=dev
+MIX_TARGET=host
+MIX_BUILD_ROOT=.elixir-tools/_build
+ROOTDIR=false
+BINDIR=false
+RELEASE_ROOT=false
+RELEASE_SYS_CONFIG=false
+PATH=/home/psybe/.asdf/shims:/home/psybe/.local/share/.burrito/next_ls_erts-15.2_0.23.3/bin:/home/psybe/.local/share/nvim/mason/bin:/home/psybe/.local/share/nvim/mason/bin:/home/psybe/.local/share/mise/installs/ruby/3.4.1/bin:/home/psybe/.local/share/pnpm:/home/psybe/.bun/bin:/home/psybe/.opam/default/bin:/home/psybe/.asdf/shims:/home/psybe/.asdf/bin:/home/psybe/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/Microsoft/jdk-17.0.8.7-hotspot/bin:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/dotnet/:/mnt/c/program files (x86)/iracing/d3dgear:/mnt/c/Program Files/whkd/bin/:/mnt/c/Program Files/Neovim/bin:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/WezTerm:/mnt/c/Program Files (x86)/HP/HP OCR/DB_Lib/:/mnt/c/Program Files/HP/Common/HPDestPlgIn/:/mnt/c/Program Files (x86)/HP/Common/HPDestPlgIn/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Program Files/Go/bin:/mnt/c/Program Files/RedHat/Podman/:/mnt/c/Users/psybe/.cargo/bin:/mnt/c/Users/psybe/.local/bin:/mnt/c/Users/psybe/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/psybe/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/psybe/.dotnet/tools:/mnt/c/Users/psybe/AppData/Local/JetBrains/Toolbox/scripts:/mnt/c/Users/psybe/AppData/Local/Microsoft/WinGet/Packages/equalsraf.win32yank_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Program Files/JetBrains/IntelliJ IDEA Community Edition 2024.2.3/bin:/mnt/c/Users/psybe/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/psybe/.dotnet/tools:/mnt/c/Users/psybe/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0/LocalCache/local-packages/Python311/site-packages:/mnt/c/Users/psybe/.local/bin:/mnt/c/Users/psybe/AppData/Roaming/npm:/mnt/c/Users/psybe/AppData/Local/Microsoft/WinGet/Packages/pnpm.pnpm_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Program Files/HP/Common/HPDestPlgIn/:/mnt/c/Program Files (x86)/HP/Common/HPDestPlgIn/:/mnt/c/Users/psybe/go/bin:/mnt/c/Users/psybe/.dotnet/tools:/home/psybe/.cargo/bin:/home/psybe/.rustup:/snap/bin
+
+
+16:38:55.272 [debug] sent notification server -> client window/logMessage
+
+16:38:55.272 [info] The runtime for /home/psybe/projects/Carddo has successfully shut down.
+
+16:38:55.272 id=130 [debug] sent request server -> client window/showMessageRequest
+
+16:38:55.618 [debug] sent notification server -> client $/progress
+
+16:38:55.620 [debug] sent notification server -> client window/logMessage
+
+16:38:55.620 [debug] Runtime for folder Carddo is ready...
+
+16:38:55.625 id=514 [debug] sent request server -> client window/workDoneProgress/create
+
+16:38:55.630 [debug] sent notification server -> client $/progress
+
+16:38:55.998 [debug] sent notification server -> client $/progress
+
+16:38:55.999 [debug] sent notification server -> client window/logMessage
+
+16:38:55.999 [info] Compiled Carddo!
+
+16:39:00.955 [debug] sent notification server -> client window/logMessage
+
+16:39:00.955 [info] Running `mix deps.get` in directory /home/psybe/projects/Carddo
+
+16:39:02.843 [debug] sent notification server -> client window/logMessage
+
+16:39:02.843 [info] Restarting runtime /home/psybe/projects/Carddo for directory /home/psybe/projects/Carddo
+
+16:39:02.844 [debug] sent notification server -> client window/logMessage
+
+16:39:02.844 [info] Resolving Hex dependencies...
+Resolution completed in 0.463s
+Unchanged:
+  bandit 1.5.2
+  bcrypt_elixir 3.1.0
+  castore 1.0.7
+  comeonin 5.4.0
+  db_connection 2.6.0
+  decimal 2.1.1
+  dns_cluster 0.1.3
+  ecto 3.11.2
+  ecto_sql 3.11.1
+  elixir_make 0.8.3
+  esbuild 0.8.1
+  expo 0.5.2
+  file_system 1.0.0
+  finch 0.18.0
+  floki 0.36.2
+  gettext 0.24.0
+  hpax 0.1.2
+  jason 1.4.1
+  mime 2.0.5
+  mint 1.6.0
+  nimble_options 1.1.0
+  nimble_pool 1.1.0
+  phoenix 1.7.12
+  phoenix_ecto 4.5.1
+  phoenix_html 4.1.1
+  phoenix_live_dashboard 0.8.3
+  phoenix_live_reload 1.5.3
+  phoenix_live_view 0.20.14
+  phoenix_pubsub 2.1.3
+  phoenix_template 1.0.4
+  plug 1.15.3
+  plug_crypto 2.1.0
+  postgrex 0.17.5
+  swoosh 1.16.5
+  tailwind 0.2.2
+  telemetry 1.2.1
+  telemetry_metrics 1.0.0
+  telemetry_poller 1.1.0
+  thousand_island 1.3.5
+  websock 0.5.3
+  websock_adapter 0.5.6
+All dependencies are up to date
+
+
+16:39:02.846 [debug] sent notification server -> client window/logMessage
+
+16:39:02.846 [info] Beginning DB migration...
+
+16:39:02.846 [debug] sent notification server -> client window/logMessage
+
+16:39:02.847 [info] Database is on the latest version: 7
+
+16:39:02.847 [debug] sent notification server -> client window/logMessage
+
+16:39:02.847 [info] Finished DB migration...
+
+16:39:02.848 [debug] sent notification server -> client window/logMessage
+
+16:39:02.848 [info] Booting runtime for /home/psybe/projects/Carddo.
+
+- elixir: /home/psybe/.asdf/shims/elixir
+- zombie wrapper script: /home/psybe/.local/share/.burrito/next_ls_erts-15.2_0.23.3/lib/next_ls-0.23.3/priv/cmd
+- working_dir: /home/psybe/projects/Carddo
+- command: /home/psybe/.asdf/shims/elixir --no-halt --sname nextls-runtime-1748119144107870636 --cookie B5KWOZJIEP7TC5LDWAQBZUILE3M23QPWYKPSADNHECVNH73HK4LA==== -S mix loadpaths --no-compile
+
+Environment: 
+
+LSP=nextls
+NEXTLS_PARENT_PID=g1h3KW5leHQtbHMtMTc0ODExOTEyNjUxOTk0MjYwNkBKQi1ST0ctTEFQVE9QAAAA8QAAAABoMi5X
+MIX_ENV=dev
+MIX_TARGET=host
+MIX_BUILD_ROOT=.elixir-tools/_build
+ROOTDIR=false
+BINDIR=false
+RELEASE_ROOT=false
+RELEASE_SYS_CONFIG=false
+PATH=/home/psybe/.asdf/shims:/home/psybe/.local/share/.burrito/next_ls_erts-15.2_0.23.3/bin:/home/psybe/.local/share/nvim/mason/bin:/home/psybe/.local/share/nvim/mason/bin:/home/psybe/.local/share/mise/installs/ruby/3.4.1/bin:/home/psybe/.local/share/pnpm:/home/psybe/.bun/bin:/home/psybe/.opam/default/bin:/home/psybe/.asdf/shims:/home/psybe/.asdf/bin:/home/psybe/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/Microsoft/jdk-17.0.8.7-hotspot/bin:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/dotnet/:/mnt/c/program files (x86)/iracing/d3dgear:/mnt/c/Program Files/whkd/bin/:/mnt/c/Program Files/Neovim/bin:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/WezTerm:/mnt/c/Program Files (x86)/HP/HP OCR/DB_Lib/:/mnt/c/Program Files/HP/Common/HPDestPlgIn/:/mnt/c/Program Files (x86)/HP/Common/HPDestPlgIn/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Program Files/Go/bin:/mnt/c/Program Files/RedHat/Podman/:/mnt/c/Users/psybe/.cargo/bin:/mnt/c/Users/psybe/.local/bin:/mnt/c/Users/psybe/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/psybe/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/psybe/.dotnet/tools:/mnt/c/Users/psybe/AppData/Local/JetBrains/Toolbox/scripts:/mnt/c/Users/psybe/AppData/Local/Microsoft/WinGet/Packages/equalsraf.win32yank_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Program Files/JetBrains/IntelliJ IDEA Community Edition 2024.2.3/bin:/mnt/c/Users/psybe/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/psybe/.dotnet/tools:/mnt/c/Users/psybe/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0/LocalCache/local-packages/Python311/site-packages:/mnt/c/Users/psybe/.local/bin:/mnt/c/Users/psybe/AppData/Roaming/npm:/mnt/c/Users/psybe/AppData/Local/Microsoft/WinGet/Packages/pnpm.pnpm_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Program Files/HP/Common/HPDestPlgIn/:/mnt/c/Program Files (x86)/HP/Common/HPDestPlgIn/:/mnt/c/Users/psybe/go/bin:/mnt/c/Users/psybe/.dotnet/tools:/home/psybe/.cargo/bin:/home/psybe/.rustup:/snap/bin
+
+
+16:39:03.865 [debug] sent notification server -> client window/logMessage
+
+16:39:03.865 [info] Connected to node nextls-runtime-1748119144107870636@JB-ROG-LAPTOP
+
+16:39:04.518 [debug] sent notification server -> client $/progress
+
+16:39:04.518 [debug] sent notification server -> client window/logMessage
+
+16:39:04.518 [debug] Runtime for folder /home/psybe/projects/Carddo is ready...
+
+16:39:04.518 id=771 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:04.519 [debug] sent notification server -> client $/progress
+
+16:39:04.669 [debug] sent notification server -> client window/logMessage
+
+16:39:04.669 [info] ==> file_system
+Compiling 7 files (.ex)
+
+
+16:39:04.914 id=15 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:04.915 [debug] sent notification server -> client window/logMessage
+
+16:39:04.915 [debug] sent notification server -> client $/progress
+
+16:39:04.915 [info] Generated file_system app
+
+
+16:39:04.943 [debug] sent notification server -> client window/logMessage
+
+16:39:04.944 [info] ==> decimal
+Compiling 4 files (.ex)
+
+
+16:39:05.129 [debug] sent notification server -> client $/progress
+
+16:39:05.773 [debug] sent notification server -> client window/logMessage
+
+16:39:05.773 [info] Generated decimal app
+
+
+16:39:05.809 [debug] sent notification server -> client window/logMessage
+
+16:39:05.809 [info] ==> mime
+Compiling 1 file (.ex)
+
+
+16:39:05.963 id=14 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:05.964 [debug] sent notification server -> client $/progress
+
+16:39:05.968 [debug] sent notification server -> client window/logMessage
+
+16:39:05.968 [info] Generated mime app
+
+
+16:39:06.003 [debug] sent notification server -> client window/logMessage
+
+16:39:06.003 [info] ==> nimble_options
+Compiling 3 files (.ex)
+
+
+16:39:06.210 [debug] sent notification server -> client $/progress
+
+16:39:06.490 [debug] sent notification server -> client window/logMessage
+
+16:39:06.490 [info] Generated nimble_options app
+
+
+16:39:07.418 [debug] sent notification server -> client window/logMessage
+
+16:39:07.418 [info] ===> Analyzing applications...
+
+
+16:39:07.460 [debug] sent notification server -> client window/logMessage
+
+16:39:07.461 [info] ===> Compiling telemetry
+
+
+16:39:07.940 [debug] sent notification server -> client window/logMessage
+
+16:39:07.940 [info] ==> telemetry_metrics
+Compiling 7 files (.ex)
+
+
+16:39:08.020 id=78 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:08.022 [debug] sent notification server -> client $/progress
+
+16:39:08.125 [debug] sent notification server -> client window/logMessage
+
+16:39:08.125 [info] Generated telemetry_metrics app
+
+
+16:39:08.216 [debug] sent notification server -> client $/progress
+
+16:39:08.994 [debug] sent notification server -> client window/logMessage
+
+16:39:08.994 [info] ===> Analyzing applications...
+
+
+16:39:09.031 [debug] sent notification server -> client window/logMessage
+
+16:39:09.032 [info] ===> Compiling telemetry_poller
+
+
+16:39:09.440 [debug] sent notification server -> client window/logMessage
+
+16:39:09.440 [info] ==> thousand_island
+Compiling 16 files (.ex)
+
+
+16:39:09.622 id=142 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:09.625 [debug] sent notification server -> client $/progress
+
+16:39:09.705 [debug] sent notification server -> client window/logMessage
+
+16:39:09.705 [info] Generated thousand_island app
+
+
+16:39:09.739 [debug] sent notification server -> client window/logMessage
+
+16:39:09.740 [info] ==> jason
+Compiling 10 files (.ex)
+
+
+16:39:10.476 [debug] sent notification server -> client $/progress
+
+16:39:11.825 [debug] sent notification server -> client window/logMessage
+
+16:39:11.825 [info] Generated jason app
+
+
+16:39:11.861 [debug] sent notification server -> client window/logMessage
+
+16:39:11.861 [info] ==> comeonin
+Compiling 3 files (.ex)
+
+
+16:39:11.916 [debug] sent notification server -> client window/logMessage
+
+16:39:11.917 [info] Generated comeonin app
+
+
+16:39:11.945 [debug] sent notification server -> client window/logMessage
+
+16:39:11.946 [info] ==> phoenix_html
+Compiling 6 files (.ex)
+
+
+16:39:12.236 id=450 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:12.238 [debug] sent notification server -> client $/progress
+
+16:39:12.343 [debug] sent notification server -> client window/logMessage
+
+16:39:12.343 [info] Generated phoenix_html app
+
+
+16:39:12.370 [debug] sent notification server -> client window/logMessage
+
+16:39:12.370 [info] ==> phoenix_template
+Compiling 4 files (.ex)
+
+
+16:39:12.516 [debug] sent notification server -> client window/logMessage
+
+16:39:12.516 [info] Generated phoenix_template app
+
+
+16:39:12.565 [debug] sent notification server -> client window/logMessage
+
+16:39:12.565 [info] ==> db_connection
+Compiling 15 files (.ex)
+
+
+16:39:13.317 [debug] sent notification server -> client $/progress
+
+16:39:13.548 [debug] handled notification client -> server textDocument/didChange in 18ms
+
+16:39:13.548 [debug] handled notification client -> server textDocument/didChange in 20ms
+
+16:39:13.594 [debug] sent notification server -> client window/logMessage
+
+16:39:13.595 [info] Generated db_connection app
+
+
+16:39:13.686 [debug] sent notification server -> client window/logMessage
+
+16:39:13.686 [info] ==> expo
+Compiling 2 files (.erl)
+
+
+16:39:14.183 [debug] sent notification server -> client window/logMessage
+
+16:39:14.183 [info] Compiling 22 files (.ex)
+
+
+16:39:14.400 id=514 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:14.401 [debug] sent notification server -> client $/progress
+
+16:39:14.725 [debug] sent notification server -> client window/logMessage
+
+16:39:14.725 [info] Generated expo app
+
+
+16:39:14.753 [debug] sent notification server -> client window/logMessage
+
+16:39:14.753 [info] ==> phoenix_pubsub
+
+
+16:39:14.753 [debug] sent notification server -> client window/logMessage
+
+16:39:14.754 [info] Compiling 11 files (.ex)
+
+
+16:39:15.173 [debug] sent notification server -> client $/progress
+
+16:39:15.275 [debug] sent notification server -> client window/logMessage
+
+16:39:15.275 [info] Generated phoenix_pubsub app
+
+
+16:39:15.314 [debug] sent notification server -> client window/logMessage
+
+16:39:15.314 [info] ==> plug_crypto
+Compiling 5 files (.ex)
+
+
+16:39:15.429 id=13 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:15.430 [debug] sent notification server -> client $/progress
+
+16:39:15.493 [debug] sent notification server -> client window/logMessage
+
+16:39:15.493 [info] Generated plug_crypto app
+
+
+16:39:15.522 [debug] sent notification server -> client window/logMessage
+
+16:39:15.522 [info] ==> hpax
+Compiling 4 files (.ex)
+
+
+16:39:15.831 [debug] sent notification server -> client $/progress
+
+16:39:16.457 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:16.603 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:16.354 [debug] sent notification server -> client window/logMessage
+
+16:39:16.354 [info] Generated hpax app
+
+
+16:39:16.388 [debug] sent notification server -> client window/logMessage
+
+16:39:16.389 [info] ==> dns_cluster
+
+
+16:39:16.389 [debug] sent notification server -> client window/logMessage
+
+16:39:16.389 [info] Compiling 1 file (.ex)
+
+
+16:39:16.455 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:16.548 [debug] sent notification server -> client window/logMessage
+
+16:39:16.548 [info] Generated dns_cluster app
+
+
+16:39:16.593 [debug] sent notification server -> client window/logMessage
+
+16:39:16.594 [info] ==> gettext
+
+
+16:39:16.594 [debug] sent notification server -> client window/logMessage
+
+16:39:16.594 [info] Compiling 17 files (.ex)
+
+
+16:39:16.604 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:16.676 id=77 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:16.677 [debug] sent notification server -> client $/progress
+
+16:39:17.098 [debug] sent notification server -> client window/logMessage
+
+16:39:17.098 [info] Generated gettext app
+
+
+16:39:17.140 [debug] sent notification server -> client window/logMessage
+
+16:39:17.140 [info] ==> ecto
+Compiling 56 files (.ex)
+
+
+16:39:17.230 [debug] sent notification server -> client $/progress
+
+16:39:17.321 id=578 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:17.324 [debug] sent notification server -> client $/progress
+
+16:39:18.705 [debug] sent notification server -> client $/progress
+
+16:39:18.744 id=10 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:18.745 [debug] sent notification server -> client $/progress
+
+16:39:19.840 [debug] sent notification server -> client $/progress
+
+16:39:21.237 [debug] sent notification server -> client window/logMessage
+
+16:39:21.237 [info] Generated ecto app
+
+
+16:39:21.275 [debug] sent notification server -> client window/logMessage
+
+16:39:21.275 [info] ==> plug
+Compiling 1 file (.erl)
+
+
+16:39:21.434 [debug] sent notification server -> client window/logMessage
+
+16:39:21.434 [info] Compiling 40 files (.ex)
+
+
+16:39:21.589 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:21.593 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:21.859 id=7 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:21.860 [debug] sent notification server -> client $/progress
+
+16:39:22.425 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:22.425 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:22.920 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:22.906 [debug] sent notification server -> client $/progress
+
+16:39:22.920 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:23.068 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:23.067 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:23.319 id=6 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:23.336 [debug] sent notification server -> client $/progress
+
+16:39:23.400 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:23.401 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:23.548 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:23.549 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:23.672 [debug] sent notification server -> client $/progress
+
+16:39:23.930 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:23.930 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:24.485 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:24.485 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:24.667 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:24.667 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:25.441 [debug] sent notification server -> client window/logMessage
+
+16:39:25.441 [info] Generated plug app
+
+
+16:39:25.480 [debug] sent notification server -> client window/logMessage
+
+16:39:25.480 [info] ==> postgrex
+Compiling 68 files (.ex)
+
+
+16:39:25.637 id=74 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:25.638 [debug] sent notification server -> client $/progress
+
+16:39:25.751 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:25.751 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:25.895 [debug] sent notification server -> client $/progress
+
+16:39:25.992 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:25.996 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:26.135 [debug] handled notification client -> server textDocument/didChange in 954µs
+
+16:39:26.136 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:26.138 id=71 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:26.140 [debug] sent notification server -> client $/progress
+
+16:39:26.314 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:26.318 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:27.104 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:27.104 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:27.991 [debug] sent notification server -> client $/progress
+
+16:39:28.649 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:28.650 [debug] handled notification client -> server textDocument/didChange in 2ms
+
+16:39:29.509 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:29.509 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:29.658 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:29.658 [debug] handled notification client -> server textDocument/didChange in 772µs
+
+16:39:29.808 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:29.808 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:29.958 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:29.958 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:30.874 [debug] handled notification client -> server textDocument/didChange in 826µs
+
+16:39:30.874 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:30.683 [debug] handled notification client -> server textDocument/didChange in 818µs
+
+16:39:30.684 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:29.973 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:29.974 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:30.127 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:30.127 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:30.275 [debug] handled notification client -> server textDocument/didChange in 857µs
+
+16:39:30.275 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:31.481 [debug] sent notification server -> client window/logMessage
+
+16:39:31.482 [info] Generated postgrex app
+
+
+16:39:31.536 [debug] sent notification server -> client window/logMessage
+
+16:39:31.537 [info] ==> ecto_sql
+Compiling 25 files (.ex)
+
+
+16:39:31.543 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:31.544 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:31.693 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:31.693 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:31.889 id=135 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:31.890 [debug] sent notification server -> client $/progress
+
+16:39:32.427 [debug] sent notification server -> client $/progress
+
+16:39:32.747 [debug] sent notification server -> client window/logMessage
+
+16:39:32.747 [info] Generated ecto_sql app
+
+
+16:39:32.787 [debug] sent notification server -> client window/logMessage
+
+16:39:32.788 [info] ==> nimble_pool
+
+
+16:39:32.788 [debug] sent notification server -> client window/logMessage
+
+16:39:32.788 [info] Compiling 2 files (.ex)
+
+
+16:39:32.895 id=199 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:32.896 [debug] sent notification server -> client $/progress
+
+16:39:33.006 [debug] sent notification server -> client $/progress
+
+16:39:33.111 [debug] sent notification server -> client window/logMessage
+
+16:39:33.111 [info] Generated nimble_pool app
+
+
+16:39:33.150 [debug] sent notification server -> client window/logMessage
+
+16:39:33.150 [info] ==> castore
+Compiling 1 file (.ex)
+
+
+16:39:33.170 [debug] sent notification server -> client window/logMessage
+
+16:39:33.170 [info] Generated castore app
+
+
+16:39:33.198 [debug] sent notification server -> client window/logMessage
+
+16:39:33.198 [info] ==> esbuild
+Compiling 4 files (.ex)
+
+
+16:39:33.338 [debug] sent notification server -> client window/logMessage
+
+16:39:33.338 [info] Generated esbuild app
+
+
+16:39:33.365 [debug] sent notification server -> client window/logMessage
+
+16:39:33.366 [info] ==> tailwind
+Compiling 3 files (.ex)
+
+
+16:39:33.393 [debug] sent notification server -> client window/logMessage
+
+16:39:33.394 [info]     warning: Logger.warn/1 is deprecated. Use Logger.warning/2 instead
+    │
+ 72 │       Logger.warn("""
+    │              ~
+    │
+    └─ lib/tailwind.ex:72:14: Tailwind.start/2
+
+
+
+16:39:33.394 [debug] sent notification server -> client window/logMessage
+
+16:39:33.394 [info]     warning: Logger.warn/1 is deprecated. Use Logger.warning/2 instead
+    │
+ 86 │         Logger.warn("""
+    │                ~
+    │
+    └─ lib/tailwind.ex:86:16: Tailwind.start/2
+
+
+
+16:39:33.520 [debug] sent notification server -> client window/logMessage
+
+16:39:33.520 [info] Generated tailwind app
+
+
+16:39:33.560 [debug] sent notification server -> client window/logMessage
+
+16:39:33.560 [info] ==> mint
+Compiling 1 file (.erl)
+
+
+16:39:33.659 [debug] sent notification server -> client window/logMessage
+
+16:39:33.660 [info] Compiling 20 files (.ex)
+
+
+16:39:33.865 id=263 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:33.866 [debug] sent notification server -> client $/progress
+
+16:39:34.275 [debug] sent notification server -> client $/progress
+
+16:39:34.926 [debug] sent notification server -> client window/logMessage
+
+16:39:34.926 [info] Generated mint app
+
+
+16:39:34.967 [debug] sent notification server -> client window/logMessage
+
+16:39:34.968 [info] ==> finch
+Compiling 14 files (.ex)
+
+
+16:39:35.115 id=327 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:35.120 [debug] sent notification server -> client $/progress
+
+16:39:35.387 [debug] sent notification server -> client $/progress
+
+16:39:35.667 [debug] sent notification server -> client window/logMessage
+
+16:39:35.667 [info] Generated finch app
+
+
+16:39:35.711 [debug] sent notification server -> client window/logMessage
+
+16:39:35.711 [info] ==> elixir_make
+Compiling 6 files (.ex)
+
+
+16:39:35.930 [debug] sent notification server -> client window/logMessage
+
+16:39:35.931 [info] Generated elixir_make app
+
+
+16:39:35.957 [debug] sent notification server -> client window/logMessage
+
+16:39:35.957 [info] ==> bcrypt_elixir
+
+
+16:39:35.970 [debug] sent notification server -> client window/logMessage
+
+16:39:35.971 [info] mkdir -p "/home/psybe/projects/Carddo/.elixir-tools/_build/dev/lib/bcrypt_elixir/priv"
+
+
+16:39:35.974 [debug] sent notification server -> client window/logMessage
+
+16:39:35.974 [info] cc -g -O3 -Wall -Wno-format-truncation -I"/home/psybe/.asdf/installs/erlang/26.2.5/erts-14.2.5/include" -Ic_src -fPIC -shared  c_src/bcrypt_nif.c c_src/blowfish.c -o "/home/psybe/projects/Carddo/.elixir-tools/_build/dev/lib/bcrypt_elixir/priv/bcrypt_nif.so"
+
+
+16:39:36.872 [debug] sent notification server -> client window/logMessage
+
+16:39:36.872 [info] Compiling 3 files (.ex)
+
+
+16:39:36.980 id=8 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:36.983 [debug] sent notification server -> client $/progress
+
+16:39:36.997 [debug] sent notification server -> client window/logMessage
+
+16:39:36.997 [info] Generated bcrypt_elixir app
+
+
+16:39:37.054 [debug] sent notification server -> client window/logMessage
+
+16:39:37.054 [info] ==> websock
+Compiling 1 file (.ex)
+
+
+16:39:37.098 [debug] sent notification server -> client window/logMessage
+
+16:39:37.098 [info] Generated websock app
+
+
+16:39:37.142 [debug] sent notification server -> client window/logMessage
+
+16:39:37.142 [info] ==> bandit
+Compiling 50 files (.ex)
+
+
+16:39:37.229 [debug] sent notification server -> client $/progress
+
+16:39:37.299 id=72 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:37.300 [debug] sent notification server -> client $/progress
+
+16:39:38.499 [debug] sent notification server -> client window/logMessage
+
+16:39:38.500 [info] Generated bandit app
+
+
+16:39:38.547 [debug] sent notification server -> client window/logMessage
+
+16:39:38.547 [info] ==> swoosh
+Compiling 49 files (.ex)
+
+
+16:39:39.407 [debug] sent notification server -> client window/logMessage
+
+16:39:39.408 [info] Generated swoosh app
+
+
+16:39:39.436 [debug] sent notification server -> client window/logMessage
+
+16:39:39.436 [info] ==> websock_adapter
+Compiling 4 files (.ex)
+
+
+16:39:39.494 [debug] sent notification server -> client window/logMessage
+
+16:39:39.494 [info] Generated websock_adapter app
+
+
+16:39:39.547 [debug] sent notification server -> client window/logMessage
+
+16:39:39.548 [info] ==> phoenix
+Compiling 71 files (.ex)
+
+
+16:39:39.698 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:39.708 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:39.886 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:39.888 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:40.040 [debug] handled notification client -> server textDocument/didChange in 3ms
+
+16:39:40.046 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:40.467 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:40.470 [debug] handled notification client -> server textDocument/didChange in 885µs
+
+16:39:41.119 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:41.119 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:41.305 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:41.305 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:41.454 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:41.455 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:41.601 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:41.599 [debug] sent notification server -> client window/logMessage
+
+16:39:41.599 [info] Generated phoenix app
+
+
+16:39:41.602 [debug] handled notification client -> server textDocument/didChange in 892µs
+
+16:39:41.626 [debug] sent notification server -> client window/logMessage
+
+16:39:41.627 [info] ==> phoenix_live_reload
+Compiling 5 files (.ex)
+
+
+16:39:41.751 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:41.751 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:41.753 [debug] sent notification server -> client window/logMessage
+
+16:39:41.754 [info] Generated phoenix_live_reload app
+
+
+16:39:41.796 [debug] sent notification server -> client window/logMessage
+
+16:39:41.796 [info] ==> phoenix_live_view
+Compiling 39 files (.ex)
+
+
+16:39:42.818 [debug] sent notification server -> client $/progress
+
+16:39:42.994 id=4 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:42.995 [debug] sent notification server -> client $/progress
+
+16:39:43.874 [debug] sent notification server -> client $/progress
+
+16:39:44.255 [debug] sent notification server -> client window/logMessage
+
+16:39:44.255 [info] Generated phoenix_live_view app
+
+
+16:39:44.296 [debug] sent notification server -> client window/logMessage
+
+16:39:44.296 [info] ==> phoenix_live_dashboard
+
+
+16:39:44.296 [debug] sent notification server -> client window/logMessage
+
+16:39:44.296 [info] Compiling 36 files (.ex)
+
+
+16:39:44.303 id=68 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:44.303 [debug] sent notification server -> client $/progress
+
+16:39:44.349 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:44.349 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:44.497 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:44.497 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:44.763 [debug] sent notification server -> client $/progress
+
+16:39:44.856 id=835 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:44.857 [debug] sent notification server -> client $/progress
+
+16:39:45.001 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:45.002 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:45.149 [debug] handled notification client -> server textDocument/didChange in 755µs
+
+16:39:45.150 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:45.605 [debug] sent notification server -> client $/progress
+
+16:39:45.706 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:45.709 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:45.884 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:45.872 [debug] sent notification server -> client window/logMessage
+
+16:39:45.872 [info] Generated phoenix_live_dashboard app
+
+
+16:39:45.884 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:45.911 [debug] sent notification server -> client window/logMessage
+
+16:39:45.912 [info] ==> phoenix_ecto
+Compiling 7 files (.ex)
+
+
+16:39:46.030 [debug] handled notification client -> server textDocument/didChange in 800µs
+
+16:39:46.030 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:46.041 id=70 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:46.042 [debug] sent notification server -> client $/progress
+
+16:39:46.294 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:46.250 [debug] sent notification server -> client window/logMessage
+
+16:39:46.250 [info] Generated phoenix_ecto app
+
+
+16:39:46.294 [debug] handled notification client -> server textDocument/didChange in 922µs
+
+16:39:46.304 [debug] sent notification server -> client window/logMessage
+
+16:39:46.304 [info] ==> carddo
+Compiling 35 files (.ex)
+
+
+16:39:46.740 [debug] handled notification client -> server textDocument/didChange in 913µs
+
+16:39:46.739 [debug] handled notification client -> server textDocument/didChange in 908µs
+
+16:39:46.890 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:46.890 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:47.070 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:47.070 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:47.219 [debug] handled notification client -> server textDocument/didChange in 724µs
+
+16:39:47.219 [debug] handled notification client -> server textDocument/didChange in 961µs
+
+16:39:47.371 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:47.372 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:47.519 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:47.520 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:47.669 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:47.628 [debug] sent notification server -> client $/progress
+
+16:39:47.669 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:47.747 id=899 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:47.748 [debug] sent notification server -> client $/progress
+
+16:39:48.061 [debug] sent notification server -> client window/logMessage
+
+16:39:48.061 [info] Generated carddo app
+
+
+16:39:48.067 [debug] sent notification server -> client $/progress
+
+16:39:48.067 [debug] sent notification server -> client window/logMessage
+
+16:39:48.067 [info] Compiled /home/psybe/projects/Carddo!
+
+16:39:48.288 [debug] sent notification server -> client $/progress
+
+16:39:49.212 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:49.215 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:49.914 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:49.911 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:50.060 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:50.061 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:50.210 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:50.210 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:50.362 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:50.362 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:50.510 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:50.510 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+16:39:52.445 id=2 [debug] handled request client -> server textDocument/formatting in 21ms
+
+16:39:52.522 id=642 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:52.523 [debug] handled notification client -> server textDocument/didSave in 10ms
+
+16:39:52.523 [debug] sent notification server -> client $/progress
+
+16:39:52.490 id=2 [debug] handled request client -> server textDocument/formatting in 25ms
+
+16:39:52.522 id=11 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:52.526 [debug] handled notification client -> server textDocument/didSave in 11ms
+
+16:39:52.526 [debug] sent notification server -> client $/progress
+
+16:39:52.643 [debug] sent notification server -> client window/logMessage
+
+16:39:52.643 [info] Compiling 1 file (.ex)
+
+
+16:39:52.645 id=706 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:52.646 [debug] sent notification server -> client $/progress
+
+16:39:52.639 [debug] sent notification server -> client window/logMessage
+
+16:39:52.640 [info] Compiling 1 file (.ex)
+
+
+16:39:52.680 id=578 [debug] sent request server -> client window/workDoneProgress/create
+
+16:39:52.684 [debug] sent notification server -> client $/progress
+
+16:39:52.927 [debug] sent notification server -> client $/progress
+
+16:39:53.072 [debug] sent notification server -> client $/progress
+
+16:39:53.101 [debug] sent notification server -> client window/logMessage
+
+16:39:53.101 [info]     warning: CarddoWeb.GameEngineController.init/1 is undefined (module CarddoWeb.GameEngineController is not available or is yet to be defined)
+    │
+ 85 │     get "/game-engine", GameEngineController, :index
+    │     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ (carddo 0.1.0) lib/carddo_web/router.ex:85: CarddoWeb.Router.__checks__/0
+
+
+
+16:39:53.111 [debug] sent notification server -> client $/progress
+
+16:39:53.111 [debug] sent notification server -> client window/logMessage
+
+16:39:53.111 [info] Compiled /home/psybe/projects/Carddo!
+
+16:39:53.116 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+16:39:53.335 [debug] sent notification server -> client window/logMessage
+
+16:39:53.335 [info]     warning: CarddoWeb.GameEngineController.init/1 is undefined (module CarddoWeb.GameEngineController is not available or is yet to be defined)
+    │
+ 85 │     get "/game-engine", GameEngineController, :index
+    │     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ (carddo 0.1.0) lib/carddo_web/router.ex:85: CarddoWeb.Router.__checks__/0
+
+
+
+16:39:53.343 [debug] sent notification server -> client $/progress
+
+16:39:53.344 [debug] sent notification server -> client window/logMessage
+
+16:39:53.344 [info] Compiled Carddo!
+
+16:39:53.348 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+16:39:59.204 id=3 [debug] handled request client -> server textDocument/hover in 20ms
+
+16:39:59.204 id=3 [debug] handled request client -> server textDocument/hover in 22ms
+
+16:39:59.260 id=4 [debug] handled request client -> server textDocument/hover in 2ms
+
+16:39:59.263 id=4 [debug] handled request client -> server textDocument/hover in 6ms
+
+16:40:44.673 [debug] handled notification client -> server textDocument/didOpen in 359µs
+
+16:40:45.540 [debug] handled notification client -> server textDocument/didOpen in 295µs
+
+16:40:59.680 [debug] handled notification client -> server textDocument/didOpen in 568µs
+
+16:41:00.437 [debug] handled notification client -> server textDocument/didOpen in 343µs
+
+16:41:53.502 [debug] handled notification client -> server textDocument/didOpen in 686µs
+
+16:41:54.317 [debug] handled notification client -> server textDocument/didOpen in 758µs
+
+16:42:21.717 id=5 [debug] handled request client -> server textDocument/formatting in 6ms
+
+16:42:21.826 id=1027 [debug] sent request server -> client window/workDoneProgress/create
+
+16:42:21.829 [debug] sent notification server -> client $/progress
+
+16:42:21.832 [debug] handled notification client -> server textDocument/didSave in 8ms
+
+16:42:21.740 id=5 [debug] handled request client -> server textDocument/formatting in 6ms
+
+16:42:21.827 id=75 [debug] sent request server -> client window/workDoneProgress/create
+
+16:42:21.828 [debug] handled notification client -> server textDocument/didSave in 2ms
+
+16:42:21.832 [debug] sent notification server -> client $/progress
+
+16:42:21.956 [debug] sent notification server -> client window/logMessage
+
+16:42:21.956 [info] Compiling 1 file (.ex)
+
+
+16:42:21.960 [debug] sent notification server -> client window/logMessage
+
+16:42:21.961 [info]     warning: CarddoWeb.GameEngineController.init/1 is undefined (module CarddoWeb.GameEngineController is not available or is yet to be defined)
+    │
+ 85 │     get "/game-engine", GameEngineController, :index
+    │     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ (carddo 0.1.0) lib/carddo_web/router.ex:85: CarddoWeb.Router.__checks__/0
+
+
+
+16:42:21.972 [debug] sent notification server -> client $/progress
+
+16:42:21.972 [debug] sent notification server -> client window/logMessage
+
+16:42:21.972 [info] Compiled Carddo!
+
+16:42:21.973 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+16:42:21.982 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+16:42:21.966 [debug] sent notification server -> client window/logMessage
+
+16:42:21.967 [info] Compiling 1 file (.ex)
+
+
+16:42:21.968 [debug] sent notification server -> client window/logMessage
+
+16:42:21.969 [info]     warning: CarddoWeb.GameEngineController.init/1 is undefined (module CarddoWeb.GameEngineController is not available or is yet to be defined)
+    │
+ 85 │     get "/game-engine", GameEngineController, :index
+    │     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ (carddo 0.1.0) lib/carddo_web/router.ex:85: CarddoWeb.Router.__checks__/0
+
+
+
+16:42:21.984 [debug] sent notification server -> client $/progress
+
+16:42:21.984 [debug] sent notification server -> client window/logMessage
+
+16:42:21.984 [info] Compiled /home/psybe/projects/Carddo!
+
+16:42:21.984 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+16:42:21.993 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+16:42:29.241 id=6 [debug] handled request client -> server shutdown in 10ms
+
+16:42:29.258 [debug] sent notification server -> client window/logMessage
+
+16:42:29.258 [info] The runtime for /home/psybe/projects/Carddo has successfully shut down.
+
+16:42:29.263 [error] Writer crashed (:epipe)
+
+16:42:29.240 id=6 [debug] handled request client -> server shutdown in 7ms
+
+16:42:29.267 [debug] sent notification server -> client window/logMessage
+
+16:42:29.272 [info] The runtime for Carddo has successfully shut down.
+
+16:42:29.277 [debug] sent notification server -> client window/logMessage
+
+16:42:29.277 [info] Beginning DB migration...

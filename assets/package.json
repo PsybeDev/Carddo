@@ -11,5 +11,8 @@
   "license": "ISC",
   "devDependencies": {
     "daisyui": "^5.0.35"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
   }
 }

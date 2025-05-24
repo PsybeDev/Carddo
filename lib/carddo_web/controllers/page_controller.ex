@@ -8,4 +8,9 @@ defmodule CarddoWeb.PageController do
     conn = assign(conn, :active_nav, conn.assigns[:active_nav] || nil)
     render(conn, :home, layout: false)
   end
+
+  def game_engine(conn, _params) do
+    conn = assign(conn, :active_nav, conn.assigns[:active_nav] || nil)
+    render(conn, :game_engine, layout: false)
+  end
 end
