@@ -22,6 +22,7 @@ import { Socket } from "phoenix"
 import { LiveSocket } from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import Phaser from 'phaser';
+import { Card } from './game-engine/main';
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
@@ -45,13 +46,10 @@ window.liveSocket = liveSocket
 
 new Phaser.Game({
   type: Phaser.AUTO,
-  width: 800,
-  height: 600,
+  autoCenter: Phaser.Scale.CENTER_BOTH,
+  width: window.innerWidth,
+  height: window.innerHeight - 100,
   parent: 'game_area',
-  scene: {
-    create: function() {
-      this.add.text(0, 0, 'Hello World!')
-    }
-  }
+  scene: Card
 })
 
