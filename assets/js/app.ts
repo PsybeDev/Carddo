@@ -21,8 +21,8 @@ import "phoenix_html"
 import { Socket } from "phoenix"
 import { LiveSocket } from "phoenix_live_view"
 import topbar from "../vendor/topbar"
-import Phaser from 'phaser';
-import { Card } from './game-engine/main';
+import * as P from 'phaser';
+import { GameConfig } from './game-engine/config';
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
@@ -43,13 +43,16 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
-
-new Phaser.Game({
-  type: Phaser.AUTO,
-  autoCenter: Phaser.Scale.CENTER_BOTH,
-  width: window.innerWidth,
-  height: window.innerHeight - 100,
-  parent: 'game_area',
-  scene: Card
+window.addEventListener('load', () => {
+  // Only mount the game if we're on the /game-engine route
+  if (window.location.pathname === '/game-engine') {
+    // Ensure the game container exists
+    let gameDiv = document.getElementById('game_area') || document.getElementById('game');
+    if (!gameDiv) {
+      gameDiv = document.createElement('div');
+      gameDiv.id = 'game_area';
+      document.body.appendChild(gameDiv);
+    }
+    const game = new P.Game(GameConfig);
+  }
 })
-
