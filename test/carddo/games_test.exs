@@ -118,4 +118,21 @@ defmodule Carddo.GamesTest do
       assert %Ecto.Changeset{} = Games.change_format(format)
     end
   end
+
+  describe "game Sessions" do
+    alias Carddo.Games.Session
+
+    import Carddo.GamesFixtures
+
+    test "create_game_session/1 with valid data creates a session" do
+      game = game_fixture()
+      valid_attrs = %{game_id: game.id, player_count: 4, state: "active"}
+
+      assert {:ok, %Session{} = session} = Games.create_game_session(valid_attrs)
+      assert session.game_id == game.id
+      assert session.player_count == 4
+      assert session.state == "active"
+    end
+
+  end
 end

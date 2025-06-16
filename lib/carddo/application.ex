@@ -17,7 +17,8 @@ defmodule Carddo.Application do
       # Start a worker by calling: Carddo.Worker.start_link(arg)
       # {Carddo.Worker, arg},
       # Start to serve requests, typically the last entry
-      CarddoWeb.Endpoint
+      CarddoWeb.Endpoint,
+      CarddoWeb.Presence
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

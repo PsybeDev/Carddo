@@ -76,6 +76,9 @@ defmodule CarddoWeb.Router do
 
       live "/games/:id", GameLive.Show, :show
       live "/games/:id/show/edit", GameLive.Show, :edit
+
+      live "/game-sessions/:id", GameSessionLive.GameSessionLive, :show
+      live "/game-sessions/:id/lobby", GameSessionLive.GameSessionLive, :show
     end
   end
 

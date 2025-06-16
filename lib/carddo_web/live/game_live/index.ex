@@ -44,4 +44,11 @@ defmodule CarddoWeb.GameLive.Index do
 
     {:noreply, stream_delete(socket, :games, game)}
   end
+
+  @impl true
+  def handle_event("play", %{"id" => id}, socket) do
+    {:ok, session} = Games.create_game_session(%{game_id: id})
+    {:ok, _} = Games.add_player_to_session(session, socket.assigns.current_user)
+    {:noreply, push_redirect(socket, to: ~p"/game-sessions/#{session.id}")}
+  end
 end

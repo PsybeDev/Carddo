@@ -21,6 +21,11 @@ defmodule Carddo.Accounts do
     Repo.all(User)
   end
 
+  def list_online_users do
+    from(u in User, where: u.online == true)
+    |> Repo.all()
+  end
+
   @doc """
   Gets a single user.
 
