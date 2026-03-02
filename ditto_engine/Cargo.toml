@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "ditto_core",
+    "ditto_wasm",
+    "ditto_nif"
+]
+resolver = "2"
