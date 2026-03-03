@@ -47,7 +47,7 @@ impl Default for GameState {
 /// A completely abstract object. It has no hardcoded rules.
 /// If it's a Magic card, it might have {"mana_cost": 3}.
 /// If it's a Pokémon, it might have {"hp": 120}.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Entity {
     pub id: String,
     pub owner_id: String,
@@ -86,7 +86,7 @@ pub enum Visibility {
 // ==========================================
 
 /// The Event-Condition-Action definition built by the designer in Svelte.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Ability {
     pub id: String,
     pub name: String,
@@ -95,7 +95,7 @@ pub struct Ability {
     pub actions: Vec<Action>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Condition {
     pub target: String,
     pub property: String,
@@ -108,7 +108,7 @@ pub struct Condition {
 // ==========================================
 
 /// The wrapper that gives context to an action waiting in the queue.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Event {
     pub source_id: String,
     pub action: Action,
@@ -116,7 +116,7 @@ pub struct Event {
 
 /// The ONLY ways the game state is allowed to change.
 /// By restricting mutations to these enums, the engine remains perfectly predictable.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Action {
     MutateProperty {
         target_id: String,
@@ -252,12 +252,7 @@ mod tests {
         let json = serde_json::to_string(&event).expect("serialization failed");
         let restored: Event = serde_json::from_str(&json).expect("deserialization failed");
 
-        if let Action::SpawnEntity { entity, zone_id } = restored.action {
-            assert_eq!(entity.id, "token_001");
-            assert_eq!(zone_id, "battlefield");
-        } else {
-            panic!("expected SpawnEntity action");
-        }
+        assert_eq!(event, restored);
     }
 
     #[test]
