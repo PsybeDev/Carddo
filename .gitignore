@@ -1,43 +1,87 @@
-# The directory Mix will write compiled artifacts to.
-/_build/
+# ============================================================
+# Rust
+# ============================================================
+target/
+**/*.rs.bk
+*.pdb
 
-# If you run "mix test --cover", coverage assets end up here.
-/cover/
+# ============================================================
+# Rust WASM
+# ============================================================
+pkg/
+*.wasm
+wasm-pack.log
 
-# The directory Mix downloads your dependencies sources to.
-/deps/
+# ============================================================
+# Node / npm / pnpm / bun
+# ============================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.pnp.*
 
-# Where 3rd-party dependencies like ExDoc output generated docs.
-/doc/
+# ============================================================
+# SvelteKit / Vite
+# ============================================================
+.svelte-kit/
+/frontend/build/
+.output
+.vercel
+.netlify
+.wrangler
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
 
-# Ignore .fetch files in case you like to edit your project deps locally.
-/.fetch
-
-# If the VM crashes, it generates a dump, let's ignore it too.
+# ============================================================
+# Elixir / Mix
+# ============================================================
+_build/
+cover/
+deps/
+doc/
+.fetch
 erl_crash.dump
-
-# Also ignore archive artifacts (built via "mix archive.build").
 *.ez
+tmp/
+*.tar
 
-# Temporary files, for example, from tests.
-/tmp/
+# ============================================================
+# Phoenix
+# ============================================================
+priv/static/assets/
+priv/static/cache_manifest.json
 
-# Ignore package tarball (built via "mix hex.build").
-carddo-*.tar
+# ============================================================
+# Rust NIF compiled binaries
+# ============================================================
+priv/native/*.so
+priv/native/*.dll
+priv/native/*.dylib
 
-# Ignore assets that are produced by build tools.
-/priv/static/assets/
+# ============================================================
+# Environment & Secrets
+# ============================================================
+.env
+.env.*
+!.env.example
+!.env.test
 
-# Ignore digested assets cache.
-/priv/static/cache_manifest.json
+# ============================================================
+# Editor & OS
+# ============================================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# In case you use Node.js/npm, you want to ignore these.
-npm-debug.log
-/assets/node_modules/
-
-# editor configs
-.vscode
-
-#sqlite
+# ============================================================
+# Database
+# ============================================================
 *.db
 *.db-*

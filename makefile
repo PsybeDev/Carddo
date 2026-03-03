@@ -1,11 +1,11 @@
 .PHONY: setup dev dev-backend dev-frontend build-wasm
 
 setup:
+	$(MAKE) build-wasm
 	cd backend && mix deps.get
 	cd frontend && pnpm i
-	$(MAKE) build-wasm
 
-build-wadm:
+build-wasm:
 	cd ditto_engine/ditto_wasm && wasm-pack build --target web
 
 dev-backend:
