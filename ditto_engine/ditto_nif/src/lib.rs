@@ -1,14 +1,8 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+use rustler::NifResult;
+
+#[rustler::nif]
+fn process_move(state_json: String, action_json: String, player_id: String) -> NifResult<String> {
+    todo!()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+rustler::init!("Elixir.Carddo.Native");

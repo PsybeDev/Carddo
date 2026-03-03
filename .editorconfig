@@ -1,0 +1,31 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Elixir
+[*.{ex,exs}]
+indent_style = space
+indent_size = 2
+
+# Rust
+[*.rs]
+indent_style = space
+indent_size = 4
+
+# Web (JS/TS/Svelte/HTML/CSS)
+[*.{js,ts,svelte,html,css}]
+indent_style = space
+indent_size = 2
+
+# Config files
+[*.{toml,yaml,yml,json}]
+indent_style = space
+indent_size = 2
+
+# Markdown — preserve trailing spaces (intentional line breaks)
+[*.md]
+trim_trailing_whitespace = false

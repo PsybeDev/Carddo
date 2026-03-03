@@ -1,0 +1,32 @@
+# Default: normalize line endings on commit
+* text=auto
+
+# Elixir
+*.ex   text eol=lf
+*.exs  text eol=lf
+
+# Rust
+*.rs   text eol=lf
+*.toml text eol=lf
+
+# Web
+*.js   text eol=lf
+*.ts   text eol=lf
+*.svelte text eol=lf
+*.html text eol=lf
+*.css  text eol=lf
+*.json text eol=lf
+
+# Config / docs
+*.md   text eol=lf
+*.yaml text eol=lf
+*.yml  text eol=lf
+*.lock text eol=lf -diff
+
+# Binary — never diff or mangle line endings
+*.so     binary
+*.dylib  binary
+*.dll    binary
+*.wasm   binary
+*.beam   binary
+*.ez     binary
