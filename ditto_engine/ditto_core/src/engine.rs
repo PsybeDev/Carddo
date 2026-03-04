@@ -15,6 +15,9 @@ pub fn validate_action(state: &GameState, action: &Action) -> Result<(), String>
             if !src.entities.contains(entity_id) {
                 return Err(format!("entity '{}' not in zone '{}'", entity_id, from_zone));
             }
+            if !state.entities.contains_key(entity_id) {
+                return Err(format!("entity '{}' not found in state", entity_id));
+            }
             Ok(())
         }
         Action::MutateProperty { target_id, .. } => {
@@ -22,10 +25,14 @@ pub fn validate_action(state: &GameState, action: &Action) -> Result<(), String>
                 .then_some(())
                 .ok_or_else(|| format!("entity '{}' not found", target_id))
         }
-        Action::SpawnEntity { zone_id, .. } => {
-            state.zones.contains_key(zone_id)
-                .then_some(())
-                .ok_or_else(|| format!("zone '{}' not found", zone_id))
+        Action::SpawnEntity { zone_id, entity } => {
+            if !state.zones.contains_key(zone_id) {
+                return Err(format!("zone '{}' not found", zone_id));
+            }
+            if state.entities.contains_key(&entity.id) {
+                return Err(format!("entity '{}' already exists", entity.id));
+            }
+            Ok(())
         }
         Action::EndTurn => Ok(()),
     }

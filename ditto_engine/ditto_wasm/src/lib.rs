@@ -100,4 +100,35 @@ mod tests {
         let state = make_state();
         assert!(validate_action(&state, &Action::EndTurn).is_ok());
     }
+
+    #[test]
+    fn move_entity_not_in_entities_map() {
+        let mut state = make_state();
+        // Inject a dangling zone reference: zone lists an ID that isn't in state.entities
+        state.zones.get_mut("hand").unwrap().entities.push("ghost".to_string());
+        let action = Action::MoveEntity {
+            entity_id: "ghost".to_string(),
+            from_zone: "hand".to_string(),
+            to_zone: "board".to_string(),
+            index: None,
+        };
+        assert!(validate_action(&state, &action).is_err());
+    }
+
+    #[test]
+    fn spawn_duplicate_entity() {
+        let state = make_state();
+        // card1 already exists in state.entities
+        let action = Action::SpawnEntity {
+            entity: ditto_core::Entity {
+                id: "card1".to_string(),
+                owner_id: "p1".to_string(),
+                template_id: "t1".to_string(),
+                properties: std::collections::HashMap::new(),
+                abilities: vec![],
+            },
+            zone_id: "board".to_string(),
+        };
+        assert!(validate_action(&state, &action).is_err());
+    }
 }
