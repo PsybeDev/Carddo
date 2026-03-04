@@ -8,7 +8,7 @@ mod atoms {
     }
 }
 
-#[rustler::nif]
+#[rustler::nif(schedule = "DirtyCpu")]
 fn process_move(
     state_json: String,
     action_json: String,
@@ -16,16 +16,18 @@ fn process_move(
 ) -> NifResult<(Atom, String, String)> {
     let mut state: GameState = match serde_json::from_str(&state_json) {
         Ok(s) => s,
-        Err(e) => return Ok((atoms::error(), format!("invalid state: {e}"), "{}".to_string())),
+        Err(e) => return Ok((atoms::error(), format!("invalid state: {e}"), "[]".to_string())),
     };
+
+    state.pending_animations = Default::default();
 
     let action: Action = match serde_json::from_str(&action_json) {
         Ok(a) => a,
-        Err(e) => return Ok((atoms::error(), format!("invalid action: {e}"), "{}".to_string())),
+        Err(e) => return Ok((atoms::error(), format!("invalid action: {e}"), "[]".to_string())),
     };
 
     if let Err(reason) = validate_action(&state, &action) {
-        return Ok((atoms::error(), reason, "{}".to_string()));
+        return Ok((atoms::error(), reason, "[]".to_string()));
     }
 
     state.event_queue.push_back(Event {
@@ -43,7 +45,7 @@ fn process_move(
             return Ok((
                 atoms::error(),
                 format!("state serialization failed: {e}"),
-                "{}".to_string(),
+                "[]".to_string(),
             ))
         }
     };
@@ -54,7 +56,7 @@ fn process_move(
             return Ok((
                 atoms::error(),
                 format!("animation serialization failed: {e}"),
-                "{}".to_string(),
+                "[]".to_string(),
             ))
         }
     };

@@ -60,7 +60,7 @@ defmodule Carddo.NativeTest do
     end
 
     test "invalid state JSON returns :error tuple" do
-      assert {:error, reason, "{}"} =
+      assert {:error, reason, "[]"} =
                Carddo.Native.process_move("not json", ~s("EndTurn"), "player_1")
 
       assert is_binary(reason)
@@ -68,7 +68,7 @@ defmodule Carddo.NativeTest do
     end
 
     test "invalid action JSON returns :error tuple" do
-      assert {:error, reason, "{}"} =
+      assert {:error, reason, "[]"} =
                Carddo.Native.process_move(@empty_state, "not json", "player_1")
 
       assert is_binary(reason)
@@ -79,7 +79,7 @@ defmodule Carddo.NativeTest do
       action =
         Jason.encode!(%{MutateProperty: %{target_id: "ghost", property: "health", delta: -1}})
 
-      assert {:error, reason, "{}"} =
+      assert {:error, reason, "[]"} =
                Carddo.Native.process_move(@empty_state, action, "player_1")
 
       assert is_binary(reason)
