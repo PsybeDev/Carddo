@@ -13,7 +13,7 @@ pub fn client_validate_move(state_json: JsValue, action_json: JsValue) -> Result
 #[cfg(test)]
 mod tests {
     use ditto_core::{validate_action, Action, Entity, GameState, Visibility, Zone};
-    use std::collections::{HashMap, VecDeque};
+    use std::collections::HashMap;
 
     fn make_state() -> GameState {
         let entity = Entity {
@@ -41,10 +41,7 @@ mod tests {
                 ("hand".to_string(), hand),
                 ("board".to_string(), board),
             ]),
-            event_queue: VecDeque::new(),
-            pending_animations: vec![],
-            stack_order: Default::default(),
-            state_checks: vec![],
+            ..GameState::new()
         }
     }
 
