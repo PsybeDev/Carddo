@@ -66,11 +66,34 @@ impl GameState {
     /// 3. Runs after-phase hooks (may push new events onto the queue).
     /// 4. Runs state checks (e.g., death detection).
     pub fn resolve_queue(&mut self) {
+        let _ = self.resolve_queue_impl(None);
+    }
+
+    /// Like [`resolve_queue`] but stops after processing `max_steps` events and returns `Err`
+    /// if the queue still contains work at that point, guarding against runaway hook chains.
+    pub fn resolve_queue_bounded(&mut self, max_steps: usize) -> Result<(), String> {
+        self.resolve_queue_impl(Some(max_steps))
+    }
+
+    fn resolve_queue_impl(&mut self, max_steps: Option<usize>) -> Result<(), String> {
         let order = self.stack_order;
-        while let Some(event) = match order {
-            StackOrder::Fifo => self.event_queue.pop_front(),
-            StackOrder::Lifo => self.event_queue.pop_back(),
-        } {
+        let mut steps = 0;
+        loop {
+            if let Some(limit) = max_steps {
+                if steps >= limit && !self.event_queue.is_empty() {
+                    return Err(format!("resolution limit exceeded ({limit} steps)"));
+                }
+            }
+
+            let Some(event) = (match order {
+                StackOrder::Fifo => self.event_queue.pop_front(),
+                StackOrder::Lifo => self.event_queue.pop_back(),
+            }) else {
+                break;
+            };
+
+            steps += 1;
+
             if self.run_hooks(HookPhase::Before, &event) {
                 continue; // event was canceled
             }
@@ -79,6 +102,7 @@ impl GameState {
             self.run_hooks(HookPhase::After, &event);
             self.run_state_checks();
         }
+        Ok(())
     }
 
     // ==========================================
@@ -1056,5 +1080,40 @@ mod tests {
             1,
             "on_after_any should fire for a MoveEntity action"
         );
+    }
+
+    #[test]
+    fn resolve_queue_bounded_returns_err_when_limit_exceeded() {
+        let mut state = GameState::default();
+
+        // Push more events than the limit allows.
+        for _ in 0..5 {
+            state.event_queue.push_back(Event {
+                source_id: "player_1".to_string(),
+                action: Action::EndTurn,
+            });
+        }
+
+        let result = state.resolve_queue_bounded(3);
+        assert!(result.is_err(), "expected Err when step limit is exceeded");
+        let msg = result.unwrap_err();
+        assert!(msg.contains("resolution limit exceeded"), "unexpected message: {msg}");
+        // Remaining events must still be in the queue — none were silently dropped.
+        assert!(!state.event_queue.is_empty(), "unprocessed events must remain in the queue");
+    }
+
+    #[test]
+    fn resolve_queue_bounded_ok_when_within_limit() {
+        let mut state = GameState::default();
+
+        for _ in 0..3 {
+            state.event_queue.push_back(Event {
+                source_id: "player_1".to_string(),
+                action: Action::EndTurn,
+            });
+        }
+
+        assert!(state.resolve_queue_bounded(10).is_ok());
+        assert!(state.event_queue.is_empty());
     }
 }

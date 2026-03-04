@@ -28,6 +28,7 @@ version = "0.1.0"
 dependencies = [
  "ditto_core",
  "rustler",
+ "serde_json",
 ]
 
 [[package]]
