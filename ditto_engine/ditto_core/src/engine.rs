@@ -282,19 +282,47 @@ impl GameState {
             let mut matching_ids = matching_ids;
             matching_ids.sort();
 
+            // Sort zone IDs for deterministic from_zone selection if an entity is
+            // (incorrectly) present in multiple zones simultaneously.
+            let mut zone_ids: Vec<String> = self.zones.keys().cloned().collect();
+            zone_ids.sort();
+
             // Collect death events before pushing so we can respect stack_order.
             // FIFO: push to front (resolves immediately, before previously-queued events).
             // LIFO: push to back (top of stack, same priority as hook-triggered events).
             let death_events: Vec<Event> = matching_ids
                 .into_iter()
                 .filter_map(|entity_id| {
-                    let from_zone = self.zones.iter().find_map(|(zone_id, zone)| {
-                        if zone_id != &check.move_to_zone && zone.entities.contains(&entity_id) {
+                    let from_zone = zone_ids.iter().find_map(|zone_id| {
+                        if zone_id != &check.move_to_zone
+                            && self
+                                .zones
+                                .get(zone_id)
+                                .is_some_and(|z| z.entities.contains(&entity_id))
+                        {
                             Some(zone_id.clone())
                         } else {
                             None
                         }
                     })?;
+
+                    // An entity must exist in exactly one zone. Multiple zone membership
+                    // indicates a bug in the engine's move/spawn logic.
+                    debug_assert!(
+                        zone_ids
+                            .iter()
+                            .filter(|zone_id| {
+                                *zone_id != &check.move_to_zone
+                                    && self
+                                        .zones
+                                        .get(*zone_id)
+                                        .is_some_and(|z| z.entities.contains(&entity_id))
+                            })
+                            .count()
+                            == 1,
+                        "entity '{entity_id}' found in multiple zones — invariant violated"
+                    );
+
                     Some(Event {
                         source_id: "engine".to_string(),
                         action: Action::MoveEntity {
