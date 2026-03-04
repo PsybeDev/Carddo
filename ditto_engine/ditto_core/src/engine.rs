@@ -69,8 +69,8 @@ impl GameState {
         let _ = self.resolve_queue_impl(None);
     }
 
-    /// Like [`resolve_queue`] but returns `Err` if more than `max_steps` events are processed,
-    /// guarding against runaway hook chains.
+    /// Like [`resolve_queue`] but stops after processing `max_steps` events and returns `Err`
+    /// if the queue still contains work at that point, guarding against runaway hook chains.
     pub fn resolve_queue_bounded(&mut self, max_steps: usize) -> Result<(), String> {
         self.resolve_queue_impl(Some(max_steps))
     }
