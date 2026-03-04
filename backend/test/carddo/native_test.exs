@@ -84,5 +84,26 @@ defmodule Carddo.NativeTest do
 
       assert is_binary(reason)
     end
+
+    test "pre-filled event_queue exceeding resolution limit returns :error" do
+      end_turn_event = %{source_id: "player_1", action: "EndTurn"}
+
+      state =
+        Jason.encode!(%{
+          entities: %{},
+          zones: %{},
+          event_queue: List.duplicate(end_turn_event, 1001),
+          pending_animations: [],
+          stack_order: "Fifo",
+          state_checks: []
+        })
+
+      action = ~s("EndTurn")
+
+      assert {:error, reason, "[]"} =
+               Carddo.Native.process_move(state, action, "player_1")
+
+      assert String.contains?(reason, "resolution limit exceeded")
+    end
   end
 end
