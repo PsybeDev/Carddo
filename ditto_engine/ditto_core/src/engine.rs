@@ -944,7 +944,7 @@ mod tests {
                 value: cap,
             }],
             actions: vec![Action::MutateProperty {
-                target_id: "$source".to_string(), // source_id will be the watcher itself
+                target_id: "$source".to_string(), // resolves to the triggering event's source_id; tests set this to "watcher"
                 property: "counter".to_string(),
                 delta: 1,
             }],
