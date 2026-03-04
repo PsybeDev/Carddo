@@ -9,3 +9,4 @@ crate-type = ["cdylib"]
 [dependencies]
 ditto_core = {path = "../ditto_core/"}
 rustler = "0.37.2"
+serde_json = "1.0"
