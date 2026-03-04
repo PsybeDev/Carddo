@@ -35,7 +35,10 @@ fn process_move(
         action,
     });
 
-    state.resolve_queue();
+    const MAX_RESOLUTION_STEPS: usize = 1_000;
+    if let Err(reason) = state.resolve_queue_bounded(MAX_RESOLUTION_STEPS) {
+        return Ok((atoms::error(), reason, "[]".to_string()));
+    }
 
     let animations = std::mem::take(&mut state.pending_animations);
 
