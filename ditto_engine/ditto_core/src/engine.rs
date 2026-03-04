@@ -260,6 +260,12 @@ impl GameState {
         let order = self.stack_order;
 
         for check in &checks {
+            // Skip if the destination zone doesn't exist — execute_action would no-op,
+            // leaving entities in place and re-enqueueing the same move every tick.
+            if !self.zones.contains_key(&check.move_to_zone) {
+                continue;
+            }
+
             let matching_ids: Vec<String> = self
                 .entities
                 .iter()
