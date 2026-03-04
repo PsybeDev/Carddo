@@ -14,9 +14,9 @@ name: Sobelow
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 permissions:
   contents: read
@@ -31,6 +31,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: change directory
+        run: |
+          cd backend
       - id: run-action
         uses: sobelow/action@1afd6d2cae70ae8bd900b58506f54487ed863912
       - name: Upload report

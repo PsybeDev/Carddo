@@ -5,6 +5,19 @@ use std::collections::{HashMap, VecDeque};
 // 1. THE GAME STATE
 // ==========================================
 
+/// Controls the resolution order of the event queue.
+///
+/// - `Fifo` (default): first-in, first-out — suited for games like Hearthstone
+///   where actions resolve in the order they were queued.
+/// - `Lifo`: last-in, first-out (a stack) — suited for games like MTG where the
+///   most recently added spell or ability resolves first.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
+pub enum StackOrder {
+    #[default]
+    Fifo,
+    Lifo,
+}
+
 /// The master struct. This is the exact payload that Elixir stores in memory
 /// and Svelte receives over WebSockets.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,6 +34,25 @@ pub struct GameState {
     /// A log of visual updates for Svelte to animate (e.g., "-3 Health").
     /// This is wiped clean at the end of every network tick.
     pub pending_animations: Vec<Animation>,
+
+    /// Determines whether events resolve in FIFO or LIFO (stack) order.
+    /// Defaults to `Fifo`. Set to `Lifo` for MTG-style stack semantics.
+    #[serde(default)]
+    pub stack_order: StackOrder,
+
+    /// Rules evaluated after every action to detect and respond to game-over conditions.
+    /// Replaces hardcoded "health <= 0 → graveyard" logic. Configure per game:
+    ///
+    /// ```ignore
+    /// state.state_checks.push(StateCheck {
+    ///     watch_property: "health".into(),
+    ///     operator: "<=".into(),
+    ///     threshold: 0,
+    ///     move_to_zone: "graveyard".into(),
+    /// });
+    /// ```
+    #[serde(default)]
+    pub state_checks: Vec<StateCheck>,
 }
 
 impl GameState {
@@ -30,6 +62,8 @@ impl GameState {
             zones: HashMap::new(),
             event_queue: VecDeque::new(),
             pending_animations: Vec::new(),
+            stack_order: StackOrder::Fifo,
+            state_checks: Vec::new(),
         }
     }
 }
@@ -82,7 +116,31 @@ pub enum Visibility {
 }
 
 // ==========================================
-// 3. THE RULES ENGINE (ECA)
+// 3. STATE CHECKS
+// ==========================================
+
+/// A designer-configured rule evaluated after every action.
+///
+/// Instead of hardcoding "health <= 0 → move to graveyard", the engine
+/// holds a list of these and applies them generically. This lets any game
+/// define its own death conditions and destination zones.
+///
+/// Example — MTG:  `{ watch_property: "toughness", operator: "<=", threshold: 0, move_to_zone: "graveyard" }`
+/// Example — Pokémon: `{ watch_property: "hp", operator: "<=", threshold: 0, move_to_zone: "discard_pile" }`
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StateCheck {
+    /// The entity property to inspect (e.g. `"health"`, `"toughness"`).
+    pub watch_property: String,
+    /// Comparison operator: `"<="`, `"<"`, `"=="`, `">"`, `">="`, `"!="`.
+    pub operator: String,
+    /// The value to compare against (e.g. `0`).
+    pub threshold: i32,
+    /// The zone entities satisfying the condition are moved to.
+    pub move_to_zone: String,
+}
+
+// ==========================================
+// 4. THE RULES ENGINE (ECA)
 // ==========================================
 
 /// The Event-Condition-Action definition built by the designer in Svelte.
@@ -90,9 +148,15 @@ pub enum Visibility {
 pub struct Ability {
     pub id: String,
     pub name: String,
+    /// Trigger format: `"on_before_<action_type>"` or `"on_after_<action_type>"`.
+    /// Append `:self` to restrict to events that target the ability's owner entity.
+    /// Use `"on_before_any"` / `"on_after_any"` to match every action of that phase.
     pub trigger: String,
     pub conditions: Vec<Condition>,
     pub actions: Vec<Action>,
+    /// If `true` and this is a before-phase hook, the triggering event is dropped.
+    #[serde(default)]
+    pub cancels: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -104,7 +168,7 @@ pub struct Condition {
 }
 
 // ==========================================
-// 4. THE EVENT QUEUE ACTIONS
+// 5. THE EVENT QUEUE ACTIONS
 // ==========================================
 
 /// The wrapper that gives context to an action waiting in the queue.
@@ -137,7 +201,7 @@ pub enum Action {
 }
 
 // ==========================================
-// 5. THE FRONTEND FEEDBACK
+// 6. THE FRONTEND FEEDBACK
 // ==========================================
 
 /// Instructions sent back to Svelte to make the game look good.
@@ -155,7 +219,7 @@ pub enum Animation {
 }
 
 // ==========================================
-// 6. TESTS
+// 7. TESTS
 // ==========================================
 
 #[cfg(test)]
