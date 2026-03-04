@@ -131,4 +131,22 @@ mod tests {
         };
         assert!(validate_action(&state, &action).is_err());
     }
+
+    #[test]
+    fn spawn_entity_already_in_zone_entities_list() {
+        let mut state = make_state();
+        // Dangling zone reference: zone lists an ID not in state.entities
+        state.zones.get_mut("board").unwrap().entities.push("ghost".to_string());
+        let action = Action::SpawnEntity {
+            entity: ditto_core::Entity {
+                id: "ghost".to_string(),
+                owner_id: "p1".to_string(),
+                template_id: "t1".to_string(),
+                properties: std::collections::HashMap::new(),
+                abilities: vec![],
+            },
+            zone_id: "board".to_string(),
+        };
+        assert!(validate_action(&state, &action).is_err());
+    }
 }

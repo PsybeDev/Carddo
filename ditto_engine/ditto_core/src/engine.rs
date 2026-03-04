@@ -26,11 +26,13 @@ pub fn validate_action(state: &GameState, action: &Action) -> Result<(), String>
                 .ok_or_else(|| format!("entity '{}' not found", target_id))
         }
         Action::SpawnEntity { zone_id, entity } => {
-            if !state.zones.contains_key(zone_id) {
-                return Err(format!("zone '{}' not found", zone_id));
-            }
+            let zone = state.zones.get(zone_id)
+                .ok_or_else(|| format!("zone '{}' not found", zone_id))?;
             if state.entities.contains_key(&entity.id) {
                 return Err(format!("entity '{}' already exists", entity.id));
+            }
+            if zone.entities.contains(&entity.id) {
+                return Err(format!("entity '{}' already present in zone '{}'", entity.id, zone_id));
             }
             Ok(())
         }
