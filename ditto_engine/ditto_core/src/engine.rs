@@ -48,9 +48,16 @@ impl GameState {
     /// Scans all entity abilities for triggers that match the current event phase,
     /// evaluates their conditions, and pushes their actions onto the queue.
     ///
-    /// Hook-triggered events are always pushed to the "top" of the queue so they
-    /// resolve before any previously queued events — `push_front` for FIFO,
-    /// `push_back` for LIFO (where the back is the top of the stack).
+    /// Hook-triggered events are pushed to the "top" of the queue so they resolve
+    /// before previously queued events — `push_front` for FIFO, `push_back` for LIFO.
+    ///
+    /// **Known limitation — before-hooks are not truly pre-execution:**
+    /// The generated events of a non-canceling `on_before_*` hook are queued but only
+    /// resolve *after* `execute_action` runs for the triggering event in the same
+    /// iteration. Only `cancels: true` reliably prevents execution. Proper
+    /// pre-execution interruption (e.g. MTG replacement effects) requires re-queueing
+    /// the original event behind the hook events, which is a larger architectural
+    /// change deferred to a follow-up.
     ///
     /// Returns `true` if any before-phase hook has `cancels: true` and its conditions pass.
     fn run_hooks(&mut self, phase: HookPhase, event: &Event) -> bool {
@@ -79,7 +86,9 @@ impl GameState {
                     continue;
                 }
 
-                // Collect in scan order so scan order == resolution order after the batch push.
+                // Collect in scan order. Resolution order after the batch push is:
+                // FIFO — matches scan order (first scanned resolves first).
+                // LIFO — reverse of scan order (last scanned resolves first, sits on top).
                 for action in &ability.actions {
                     hook_events.push(Event {
                         source_id: entity_id.clone(),
@@ -187,24 +196,43 @@ impl GameState {
                 // Guard: both zones must exist before mutating anything.
                 // If to_zone is missing and we removed the entity from from_zone first,
                 // the entity would be lost from all zones with no way to recover.
+                // Guard: both zones must exist before mutating anything.
+                // If to_zone is missing and we removed the entity from from_zone first,
+                // the entity would be lost from all zones with no way to recover.
                 if !self.zones.contains_key(from_zone) || !self.zones.contains_key(to_zone) {
                     return;
                 }
-                if let Some(zone) = self.zones.get_mut(from_zone) {
+                // Only insert into to_zone if the entity was actually present in from_zone.
+                // This prevents phantoms (entity not in from_zone) and duplicates
+                // (entity already in to_zone) from corrupting zone membership.
+                let removed = if let Some(zone) = self.zones.get_mut(from_zone) {
+                    let before = zone.entities.len();
                     zone.entities.retain(|id| id != entity_id);
-                }
-                if let Some(zone) = self.zones.get_mut(to_zone) {
-                    match index {
-                        Some(i) => {
-                            let at = (*i).min(zone.entities.len());
-                            zone.entities.insert(at, entity_id.clone());
+                    zone.entities.len() < before
+                } else {
+                    false
+                };
+                if removed {
+                    if let Some(zone) = self.zones.get_mut(to_zone) {
+                        if !zone.entities.contains(entity_id) {
+                            match index {
+                                Some(i) => {
+                                    let at = (*i).min(zone.entities.len());
+                                    zone.entities.insert(at, entity_id.clone());
+                                }
+                                None => zone.entities.push(entity_id.clone()),
+                            }
                         }
-                        None => zone.entities.push(entity_id.clone()),
                     }
                 }
             }
 
             Action::SpawnEntity { entity, zone_id } => {
+                // Guard: zone must exist so the entity isn't orphaned in self.entities
+                // without belonging to any zone.
+                if !self.zones.contains_key(zone_id) {
+                    return;
+                }
                 let id = entity.id.clone();
                 self.entities.insert(id.clone(), entity.clone());
                 if let Some(zone) = self.zones.get_mut(zone_id) {
