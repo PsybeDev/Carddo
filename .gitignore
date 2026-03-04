@@ -57,9 +57,9 @@ priv/static/cache_manifest.json
 # ============================================================
 # Rust NIF compiled binaries
 # ============================================================
-priv/native/*.so
-priv/native/*.dll
-priv/native/*.dylib
+**/priv/native/*.so
+**/priv/native/*.dll
+**/priv/native/*.dylib
 
 # ============================================================
 # Environment & Secrets
