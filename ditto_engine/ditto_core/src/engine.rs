@@ -61,8 +61,10 @@ impl GameState {
         let action_str = action_type_str(&event.action);
         let order = self.stack_order;
 
-        // Clone entity list to avoid borrow conflicts while mutating the queue.
-        let entity_ids: Vec<String> = self.entities.keys().cloned().collect();
+        // Clone and sort entity IDs so hook firing order is deterministic across runs.
+        // HashMap iteration is non-deterministic; sorting by ID gives a stable order.
+        let mut entity_ids: Vec<String> = self.entities.keys().cloned().collect();
+        entity_ids.sort();
 
         let mut canceled = false;
 
@@ -210,6 +212,7 @@ impl GameState {
     fn run_state_checks(&mut self) {
         // Clone to avoid holding a borrow on self while mutating the queue.
         let checks: Vec<StateCheck> = self.state_checks.clone();
+        let order = self.stack_order;
 
         for check in &checks {
             let matching_ids: Vec<String> = self
@@ -230,18 +233,20 @@ impl GameState {
                 })
                 .collect();
 
-            for entity_id in matching_ids {
-                // Find a zone that contains this entity that isn't the destination.
-                let from_zone = self.zones.iter().find_map(|(zone_id, zone)| {
-                    if zone_id != &check.move_to_zone && zone.entities.contains(&entity_id) {
-                        Some(zone_id.clone())
-                    } else {
-                        None
-                    }
-                });
-
-                if let Some(from_zone) = from_zone {
-                    self.event_queue.push_back(Event {
+            // Collect death events before pushing so we can respect stack_order.
+            // FIFO: push to front (resolves immediately, before previously-queued events).
+            // LIFO: push to back (top of stack, same priority as hook-triggered events).
+            let death_events: Vec<Event> = matching_ids
+                .into_iter()
+                .filter_map(|entity_id| {
+                    let from_zone = self.zones.iter().find_map(|(zone_id, zone)| {
+                        if zone_id != &check.move_to_zone && zone.entities.contains(&entity_id) {
+                            Some(zone_id.clone())
+                        } else {
+                            None
+                        }
+                    })?;
+                    Some(Event {
                         source_id: "engine".to_string(),
                         action: Action::MoveEntity {
                             entity_id,
@@ -249,7 +254,21 @@ impl GameState {
                             to_zone: check.move_to_zone.clone(),
                             index: None,
                         },
-                    });
+                    })
+                })
+                .collect();
+
+            match order {
+                StackOrder::Fifo => {
+                    // Reverse so the first dead entity ends up at the front after all pushes.
+                    for event in death_events.into_iter().rev() {
+                        self.event_queue.push_front(event);
+                    }
+                }
+                StackOrder::Lifo => {
+                    for event in death_events {
+                        self.event_queue.push_back(event);
+                    }
                 }
             }
         }
