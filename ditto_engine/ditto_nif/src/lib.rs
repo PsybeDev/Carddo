@@ -1,6 +1,10 @@
 use ditto_core::{validate_action, Action, Event, GameState};
 use rustler::{Atom, NifResult};
 
+/// Maximum number of events `resolve_queue_bounded` will process per NIF call.
+/// Prevents runaway hook chains from monopolising dirty schedulers.
+const MAX_RESOLUTION_STEPS: usize = 1_000;
+
 mod atoms {
     rustler::atoms! {
         ok,
@@ -35,7 +39,7 @@ fn process_move(
         action,
     });
 
-    if let Err(reason) = state.resolve_queue_bounded(1_000) {
+    if let Err(reason) = state.resolve_queue_bounded(MAX_RESOLUTION_STEPS) {
         return Ok((atoms::error(), reason, "[]".to_string()));
     }
 

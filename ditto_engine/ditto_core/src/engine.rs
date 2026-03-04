@@ -86,13 +86,18 @@ impl GameState {
     pub fn resolve_queue_bounded(&mut self, max_steps: usize) -> Result<(), String> {
         let order = self.stack_order;
         let mut steps = 0;
-        while let Some(event) = match order {
-            StackOrder::Fifo => self.event_queue.pop_front(),
-            StackOrder::Lifo => self.event_queue.pop_back(),
-        } {
-            if steps >= max_steps {
+        loop {
+            if steps >= max_steps && !self.event_queue.is_empty() {
                 return Err(format!("resolution limit exceeded ({max_steps} steps)"));
             }
+
+            let Some(event) = (match order {
+                StackOrder::Fifo => self.event_queue.pop_front(),
+                StackOrder::Lifo => self.event_queue.pop_back(),
+            }) else {
+                break;
+            };
+
             steps += 1;
 
             if self.run_hooks(HookPhase::Before, &event) {
@@ -1081,5 +1086,40 @@ mod tests {
             1,
             "on_after_any should fire for a MoveEntity action"
         );
+    }
+
+    #[test]
+    fn resolve_queue_bounded_returns_err_when_limit_exceeded() {
+        let mut state = GameState::default();
+
+        // Push more events than the limit allows.
+        for _ in 0..5 {
+            state.event_queue.push_back(Event {
+                source_id: "player_1".to_string(),
+                action: Action::EndTurn,
+            });
+        }
+
+        let result = state.resolve_queue_bounded(3);
+        assert!(result.is_err(), "expected Err when step limit is exceeded");
+        let msg = result.unwrap_err();
+        assert!(msg.contains("resolution limit exceeded"), "unexpected message: {msg}");
+        // Remaining events must still be in the queue — none were silently dropped.
+        assert!(!state.event_queue.is_empty(), "unprocessed events must remain in the queue");
+    }
+
+    #[test]
+    fn resolve_queue_bounded_ok_when_within_limit() {
+        let mut state = GameState::default();
+
+        for _ in 0..3 {
+            state.event_queue.push_back(Event {
+                source_id: "player_1".to_string(),
+                action: Action::EndTurn,
+            });
+        }
+
+        assert!(state.resolve_queue_bounded(10).is_ok());
+        assert!(state.event_queue.is_empty());
     }
 }
