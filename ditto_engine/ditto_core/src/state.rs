@@ -168,7 +168,7 @@ pub struct Condition {
 }
 
 // ==========================================
-// 4. THE EVENT QUEUE ACTIONS
+// 5. THE EVENT QUEUE ACTIONS
 // ==========================================
 
 /// The wrapper that gives context to an action waiting in the queue.
@@ -201,7 +201,7 @@ pub enum Action {
 }
 
 // ==========================================
-// 5. THE FRONTEND FEEDBACK
+// 6. THE FRONTEND FEEDBACK
 // ==========================================
 
 /// Instructions sent back to Svelte to make the game look good.
@@ -219,7 +219,7 @@ pub enum Animation {
 }
 
 // ==========================================
-// 6. TESTS
+// 7. TESTS
 // ==========================================
 
 #[cfg(test)]

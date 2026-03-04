@@ -66,6 +66,7 @@ impl GameState {
         let mut entity_ids: Vec<String> = self.entities.keys().cloned().collect();
         entity_ids.sort();
 
+        let mut hook_events: Vec<Event> = Vec::new();
         let mut canceled = false;
 
         for entity_id in entity_ids {
@@ -78,22 +79,32 @@ impl GameState {
                     continue;
                 }
 
-                // Push ability actions so they resolve in order, ahead of the existing queue.
-                // Reversing + pushing to the "top" end preserves [A, B, C] resolution order.
-                for action in ability.actions.iter().rev() {
-                    let resolved = resolve_placeholders(action, event);
-                    let new_event = Event {
+                // Collect in scan order so scan order == resolution order after the batch push.
+                for action in &ability.actions {
+                    hook_events.push(Event {
                         source_id: entity_id.clone(),
-                        action: resolved,
-                    };
-                    match order {
-                        StackOrder::Fifo => self.event_queue.push_front(new_event),
-                        StackOrder::Lifo => self.event_queue.push_back(new_event),
-                    }
+                        action: resolve_placeholders(action, event),
+                    });
                 }
 
                 if phase == HookPhase::Before && ability.cancels {
                     canceled = true;
+                }
+            }
+        }
+
+        // Push all collected hook events at once.
+        // FIFO: reverse-push to front → first collected sits at the front, resolves first.
+        // LIFO: forward-push to back → first collected is deepest, last collected resolves first.
+        match order {
+            StackOrder::Fifo => {
+                for event in hook_events.into_iter().rev() {
+                    self.event_queue.push_front(event);
+                }
+            }
+            StackOrder::Lifo => {
+                for event in hook_events {
+                    self.event_queue.push_back(event);
                 }
             }
         }
@@ -173,6 +184,12 @@ impl GameState {
                 to_zone,
                 index,
             } => {
+                // Guard: both zones must exist before mutating anything.
+                // If to_zone is missing and we removed the entity from from_zone first,
+                // the entity would be lost from all zones with no way to recover.
+                if !self.zones.contains_key(from_zone) || !self.zones.contains_key(to_zone) {
+                    return;
+                }
                 if let Some(zone) = self.zones.get_mut(from_zone) {
                     zone.entities.retain(|id| id != entity_id);
                 }
@@ -384,7 +401,7 @@ fn resolve_entity_ref(id: &str, event: &Event) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::{Ability, Condition, Entity, StackOrder, StateCheck, Visibility, Zone};
+    use crate::state::{Ability, Entity, Visibility, Zone};
 
     fn make_entity(id: &str, props: Vec<(&str, i32)>, abilities: Vec<Ability>) -> Entity {
         Entity {
