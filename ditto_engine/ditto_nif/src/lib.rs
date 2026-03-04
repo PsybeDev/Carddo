@@ -19,7 +19,7 @@ fn process_move(
         Err(e) => return Ok((atoms::error(), format!("invalid state: {e}"), "[]".to_string())),
     };
 
-    state.pending_animations = Default::default();
+    state.pending_animations.clear();
 
     let action: Action = match serde_json::from_str(&action_json) {
         Ok(a) => a,
