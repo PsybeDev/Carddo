@@ -77,8 +77,8 @@ impl GameState {
         let mut canceled = false;
 
         for entity_id in entity_ids {
-            let entity = self.entities[&entity_id].clone();
-            for ability in &entity.abilities {
+            let abilities = self.entities[&entity_id].abilities.clone();
+            for ability in &abilities {
                 if !trigger_matches(&ability.trigger, phase_prefix, action_str, &entity_id, event) {
                     continue;
                 }
@@ -196,9 +196,6 @@ impl GameState {
                 // Guard: both zones must exist before mutating anything.
                 // If to_zone is missing and we removed the entity from from_zone first,
                 // the entity would be lost from all zones with no way to recover.
-                // Guard: both zones must exist before mutating anything.
-                // If to_zone is missing and we removed the entity from from_zone first,
-                // the entity would be lost from all zones with no way to recover.
                 if !self.zones.contains_key(from_zone) || !self.zones.contains_key(to_zone) {
                     return;
                 }
@@ -234,9 +231,16 @@ impl GameState {
                     return;
                 }
                 let id = entity.id.clone();
+                // Guard: do not overwrite an existing entity with the same id.
+                if self.entities.contains_key(&id) {
+                    return;
+                }
                 self.entities.insert(id.clone(), entity.clone());
                 if let Some(zone) = self.zones.get_mut(zone_id) {
-                    zone.entities.push(id);
+                    // Guard: avoid duplicate entries in the zone.
+                    if !zone.entities.contains(&id) {
+                        zone.entities.push(id);
+                    }
                 }
             }
 
