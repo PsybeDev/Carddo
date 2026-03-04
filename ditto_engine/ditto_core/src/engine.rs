@@ -81,6 +81,31 @@ impl GameState {
         }
     }
 
+    /// Like [`resolve_queue`] but returns `Err` if more than `max_steps` events are processed,
+    /// guarding against runaway hook chains.
+    pub fn resolve_queue_bounded(&mut self, max_steps: usize) -> Result<(), String> {
+        let order = self.stack_order;
+        let mut steps = 0;
+        while let Some(event) = match order {
+            StackOrder::Fifo => self.event_queue.pop_front(),
+            StackOrder::Lifo => self.event_queue.pop_back(),
+        } {
+            if steps >= max_steps {
+                return Err(format!("resolution limit exceeded ({max_steps} steps)"));
+            }
+            steps += 1;
+
+            if self.run_hooks(HookPhase::Before, &event) {
+                continue; // event was canceled
+            }
+
+            self.execute_action(&event);
+            self.run_hooks(HookPhase::After, &event);
+            self.run_state_checks();
+        }
+        Ok(())
+    }
+
     // ==========================================
     // HOOK EVALUATION
     // ==========================================

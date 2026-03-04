@@ -35,7 +35,9 @@ fn process_move(
         action,
     });
 
-    state.resolve_queue();
+    if let Err(reason) = state.resolve_queue_bounded(1_000) {
+        return Ok((atoms::error(), reason, "[]".to_string()));
+    }
 
     let animations = std::mem::take(&mut state.pending_animations);
 
