@@ -233,6 +233,10 @@ impl GameState {
                 })
                 .collect();
 
+            // Sort for deterministic death-event ordering across runs.
+            let mut matching_ids = matching_ids;
+            matching_ids.sort();
+
             // Collect death events before pushing so we can respect stack_order.
             // FIFO: push to front (resolves immediately, before previously-queued events).
             // LIFO: push to back (top of stack, same priority as hook-triggered events).
@@ -323,6 +327,7 @@ fn event_targets_entity(event: &Event, entity_id: &str) -> bool {
             entity_id: moved_id,
             ..
         } => moved_id == entity_id,
+        Action::SpawnEntity { entity, .. } => entity.id == entity_id,
         _ => false,
     }
 }
@@ -365,6 +370,7 @@ fn resolve_entity_ref(id: &str, event: &Event) -> String {
         "$target" => match &event.action {
             Action::MutateProperty { target_id, .. } => target_id.clone(),
             Action::MoveEntity { entity_id, .. } => entity_id.clone(),
+            Action::SpawnEntity { entity, .. } => entity.id.clone(),
             _ => id.to_string(),
         },
         _ => id.to_string(),
