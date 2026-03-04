@@ -1,6 +1,46 @@
 use crate::state::{Action, Animation, Condition, Event, GameState, StackOrder, StateCheck};
 
 // ==========================================
+// VALIDATION
+// ==========================================
+
+pub fn validate_action(state: &GameState, action: &Action) -> Result<(), String> {
+    match action {
+        Action::MoveEntity { entity_id, from_zone, to_zone, .. } => {
+            let src = state.zones.get(from_zone)
+                .ok_or_else(|| format!("source zone '{}' not found", from_zone))?;
+            if !state.zones.contains_key(to_zone) {
+                return Err(format!("destination zone '{}' not found", to_zone));
+            }
+            if !src.entities.contains(entity_id) {
+                return Err(format!("entity '{}' not in zone '{}'", entity_id, from_zone));
+            }
+            if !state.entities.contains_key(entity_id) {
+                return Err(format!("entity '{}' not found in state", entity_id));
+            }
+            Ok(())
+        }
+        Action::MutateProperty { target_id, .. } => {
+            state.entities.contains_key(target_id)
+                .then_some(())
+                .ok_or_else(|| format!("entity '{}' not found", target_id))
+        }
+        Action::SpawnEntity { zone_id, entity } => {
+            let zone = state.zones.get(zone_id)
+                .ok_or_else(|| format!("zone '{}' not found", zone_id))?;
+            if state.entities.contains_key(&entity.id) {
+                return Err(format!("entity '{}' already exists", entity.id));
+            }
+            if zone.entities.contains(&entity.id) {
+                return Err(format!("entity '{}' already present in zone '{}'", entity.id, zone_id));
+            }
+            Ok(())
+        }
+        Action::EndTurn => Ok(()),
+    }
+}
+
+// ==========================================
 // HOOK PHASE
 // ==========================================
 
