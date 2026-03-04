@@ -5,11 +5,18 @@ use rustler::{Atom, NifResult};
 /// Prevents runaway hook chains from monopolising dirty schedulers.
 const MAX_RESOLUTION_STEPS: usize = 1_000;
 
+const EMPTY_ANIMATIONS_JSON: &str = "[]";
+
 mod atoms {
     rustler::atoms! {
         ok,
         error
     }
+}
+
+#[inline]
+fn err(reason: String) -> NifResult<(Atom, String, String)> {
+    Ok((atoms::error(), reason, EMPTY_ANIMATIONS_JSON.to_string()))
 }
 
 #[rustler::nif(schedule = "DirtyCpu")]
@@ -20,18 +27,18 @@ fn process_move(
 ) -> NifResult<(Atom, String, String)> {
     let mut state: GameState = match serde_json::from_str(&state_json) {
         Ok(s) => s,
-        Err(e) => return Ok((atoms::error(), format!("invalid state: {e}"), "[]".to_string())),
+        Err(e) => return err(format!("invalid state: {e}")),
     };
 
     state.pending_animations.clear();
 
     let action: Action = match serde_json::from_str(&action_json) {
         Ok(a) => a,
-        Err(e) => return Ok((atoms::error(), format!("invalid action: {e}"), "[]".to_string())),
+        Err(e) => return err(format!("invalid action: {e}")),
     };
 
     if let Err(reason) = validate_action(&state, &action) {
-        return Ok((atoms::error(), reason, "[]".to_string()));
+        return err(reason);
     }
 
     state.event_queue.push_back(Event {
@@ -40,31 +47,19 @@ fn process_move(
     });
 
     if let Err(reason) = state.resolve_queue_bounded(MAX_RESOLUTION_STEPS) {
-        return Ok((atoms::error(), reason, "[]".to_string()));
+        return err(reason);
     }
 
     let animations = std::mem::take(&mut state.pending_animations);
 
     let new_state_json = match serde_json::to_string(&state) {
         Ok(s) => s,
-        Err(e) => {
-            return Ok((
-                atoms::error(),
-                format!("state serialization failed: {e}"),
-                "[]".to_string(),
-            ))
-        }
+        Err(e) => return err(format!("state serialization failed: {e}")),
     };
 
     let animations_json = match serde_json::to_string(&animations) {
         Ok(s) => s,
-        Err(e) => {
-            return Ok((
-                atoms::error(),
-                format!("animation serialization failed: {e}"),
-                "[]".to_string(),
-            ))
-        }
+        Err(e) => return err(format!("animation serialization failed: {e}")),
     };
 
     Ok((atoms::ok(), new_state_json, animations_json))

@@ -66,29 +66,23 @@ impl GameState {
     /// 3. Runs after-phase hooks (may push new events onto the queue).
     /// 4. Runs state checks (e.g., death detection).
     pub fn resolve_queue(&mut self) {
-        let order = self.stack_order;
-        while let Some(event) = match order {
-            StackOrder::Fifo => self.event_queue.pop_front(),
-            StackOrder::Lifo => self.event_queue.pop_back(),
-        } {
-            if self.run_hooks(HookPhase::Before, &event) {
-                continue; // event was canceled
-            }
-
-            self.execute_action(&event);
-            self.run_hooks(HookPhase::After, &event);
-            self.run_state_checks();
-        }
+        let _ = self.resolve_queue_impl(None);
     }
 
     /// Like [`resolve_queue`] but returns `Err` if more than `max_steps` events are processed,
     /// guarding against runaway hook chains.
     pub fn resolve_queue_bounded(&mut self, max_steps: usize) -> Result<(), String> {
+        self.resolve_queue_impl(Some(max_steps))
+    }
+
+    fn resolve_queue_impl(&mut self, max_steps: Option<usize>) -> Result<(), String> {
         let order = self.stack_order;
         let mut steps = 0;
         loop {
-            if steps >= max_steps && !self.event_queue.is_empty() {
-                return Err(format!("resolution limit exceeded ({max_steps} steps)"));
+            if let Some(limit) = max_steps {
+                if steps >= limit && !self.event_queue.is_empty() {
+                    return Err(format!("resolution limit exceeded ({limit} steps)"));
+                }
             }
 
             let Some(event) = (match order {
