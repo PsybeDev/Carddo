@@ -4,8 +4,8 @@ defmodule Carddo.DeckCard do
 
   @primary_key false
   schema "deck_cards" do
-    belongs_to :deck, Carddo.Deck
-    belongs_to :card, Carddo.Card
+    belongs_to :deck, Carddo.Deck, primary_key: true
+    belongs_to :card, Carddo.Card, primary_key: true
     field :quantity, :integer, default: 1
   end
 

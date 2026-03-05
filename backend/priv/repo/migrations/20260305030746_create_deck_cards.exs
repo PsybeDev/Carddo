@@ -17,5 +17,7 @@ defmodule Carddo.Repo.Migrations.CreateDeckCards do
       "ALTER TABLE deck_cards ADD CONSTRAINT quantity_positive CHECK (quantity >= 1)",
       "ALTER TABLE deck_cards DROP CONSTRAINT quantity_positive"
     )
+
+    create index(:deck_cards, [:card_id])
   end
 end
