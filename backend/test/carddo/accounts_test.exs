@@ -7,7 +7,9 @@ defmodule Carddo.AccountsTest do
 
   describe "register_user/1" do
     test "succeeds with valid attrs" do
-      assert {:ok, user} = Accounts.register_user(%{email: unique_email(), password: "password123"})
+      assert {:ok, user} =
+               Accounts.register_user(%{email: unique_email(), password: "password123"})
+
       assert user.id
       assert user.password_hash
       refute user.password_hash == "password123"
@@ -16,12 +18,17 @@ defmodule Carddo.AccountsTest do
     test "returns error on duplicate email" do
       email = unique_email()
       assert {:ok, _} = Accounts.register_user(%{email: email, password: "password123"})
-      assert {:error, changeset} = Accounts.register_user(%{email: email, password: "password123"})
+
+      assert {:error, changeset} =
+               Accounts.register_user(%{email: email, password: "password123"})
+
       assert "has already been taken" in errors_on(changeset).email
     end
 
     test "returns error when password is too short" do
-      assert {:error, changeset} = Accounts.register_user(%{email: unique_email(), password: "short"})
+      assert {:error, changeset} =
+               Accounts.register_user(%{email: unique_email(), password: "short"})
+
       assert "should be at least 8 character(s)" in errors_on(changeset).password
     end
 
@@ -53,7 +60,17 @@ defmodule Carddo.AccountsTest do
     end
 
     test "returns :unauthorized for unknown email" do
-      assert {:error, :unauthorized} = Accounts.authenticate_user("nobody@example.com", "password123")
+      assert {:error, :unauthorized} =
+               Accounts.authenticate_user("nobody@example.com", "password123")
+    end
+
+    test "returns :unauthorized when user has no password_hash", %{email: _email} do
+      {:ok, user} =
+        %Carddo.User{}
+        |> Carddo.User.changeset(%{email: unique_email()})
+        |> Carddo.Repo.insert()
+
+      assert {:error, :unauthorized} = Accounts.authenticate_user(user.email, "password123")
     end
   end
 end

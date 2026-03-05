@@ -4,8 +4,12 @@ defmodule CarddoWeb.UserSocket do
   def connect(%{"token" => token}, socket, _connect_info) do
     case Carddo.Accounts.Guardian.decode_and_verify(token) do
       {:ok, claims} ->
-        user = Carddo.Accounts.get_user!(claims["sub"])
-        {:ok, assign(socket, :current_user, user)}
+        try do
+          user = Carddo.Accounts.get_user!(claims["sub"])
+          {:ok, assign(socket, :current_user, user)}
+        rescue
+          Ecto.NoResultsError -> :error
+        end
 
       _ ->
         :error

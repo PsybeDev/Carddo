@@ -17,6 +17,12 @@ defmodule CarddoWeb.Api.UserController do
     end
   end
 
+  def register(conn, _params) do
+    conn
+    |> put_status(422)
+    |> json(%{errors: [%{message: "email and password are required"}]})
+  end
+
   def login(conn, %{"email" => email, "password" => password}) do
     case Accounts.authenticate_user(email, password) do
       {:ok, user} ->
@@ -28,6 +34,12 @@ defmodule CarddoWeb.Api.UserController do
         |> put_status(401)
         |> json(%{errors: [%{message: "Invalid email or password"}]})
     end
+  end
+
+  def login(conn, _params) do
+    conn
+    |> put_status(422)
+    |> json(%{errors: [%{message: "email and password are required"}]})
   end
 
   def me(conn, _params) do

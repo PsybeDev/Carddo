@@ -38,6 +38,11 @@ defmodule CarddoWeb.Api.UserControllerTest do
       assert %{"errors" => [%{"message" => msg}]} = json_response(conn, 422)
       assert msg =~ "password"
     end
+
+    test "returns 422 when params are missing", %{conn: conn} do
+      conn = post(conn, "/api/users/register", %{})
+      assert %{"errors" => [%{"message" => _}]} = json_response(conn, 422)
+    end
   end
 
   describe "POST /api/users/login" do
@@ -60,8 +65,15 @@ defmodule CarddoWeb.Api.UserControllerTest do
     end
 
     test "returns 401 on unknown email", %{conn: conn} do
-      conn = post(conn, "/api/users/login", %{email: "nobody@example.com", password: "password123"})
+      conn =
+        post(conn, "/api/users/login", %{email: "nobody@example.com", password: "password123"})
+
       assert %{"errors" => [%{"message" => _}]} = json_response(conn, 401)
+    end
+
+    test "returns 422 when params are missing", %{conn: conn} do
+      conn = post(conn, "/api/users/login", %{})
+      assert %{"errors" => [%{"message" => _}]} = json_response(conn, 422)
     end
   end
 

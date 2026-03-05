@@ -8,7 +8,7 @@ defmodule Carddo.Accounts do
   def authenticate_user(email, password) do
     user = Repo.get_by(User, email: email)
 
-    if user && Bcrypt.verify_pass(password, user.password_hash) do
+    if user && user.password_hash && Bcrypt.verify_pass(password, user.password_hash) do
       {:ok, user}
     else
       Bcrypt.no_user_verify()
