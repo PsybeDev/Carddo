@@ -11,8 +11,8 @@ defmodule Carddo.CardTest do
       |> Repo.insert()
 
     {:ok, game} =
-      %Game{}
-      |> Game.changeset(%{title: "Test Game", owner_id: user.id})
+      Ecto.build_assoc(user, :games)
+      |> Game.changeset(%{title: "Test Game"})
       |> Repo.insert()
 
     %{game: game}
@@ -23,11 +23,10 @@ defmodule Carddo.CardTest do
       name: "Dragon",
       card_type: "creature",
       properties: %{"stats" => %{"health" => 30, "attack" => 5}},
-      abilities: [%{"trigger" => "on_attack", "effect" => "deal_damage"}],
-      game_id: game.id
+      abilities: [%{"trigger" => "on_attack", "effect" => "deal_damage"}]
     }
 
-    {:ok, card} = %Card{} |> Card.changeset(attrs) |> Repo.insert()
+    {:ok, card} = Ecto.build_assoc(game, :cards) |> Card.changeset(attrs) |> Repo.insert()
     loaded = Repo.get!(Card, card.id)
 
     assert loaded.properties == %{"stats" => %{"health" => 30, "attack" => 5}}
@@ -35,12 +34,11 @@ defmodule Carddo.CardTest do
   end
 
   test "queries cards via JSONB fragment on properties", %{game: game} do
-    %Card{}
+    Ecto.build_assoc(game, :cards)
     |> Card.changeset(%{
       name: "Goblin",
       card_type: "creature",
-      properties: %{"card_type" => "creature"},
-      game_id: game.id
+      properties: %{"card_type" => "creature"}
     })
     |> Repo.insert!()
 
@@ -53,8 +51,8 @@ defmodule Carddo.CardTest do
     assert result.name == "Goblin"
   end
 
-  test "changeset rejects nil required fields", %{game: game} do
-    changeset = Card.changeset(%Card{}, %{game_id: game.id})
+  test "changeset rejects nil required fields" do
+    changeset = Card.changeset(%Card{}, %{})
     refute changeset.valid?
     assert {:name, {"can't be blank", _}} = List.keyfind(changeset.errors, :name, 0)
     assert {:card_type, {"can't be blank", _}} = List.keyfind(changeset.errors, :card_type, 0)

@@ -13,7 +13,8 @@ defmodule Carddo.Game do
 
   def changeset(game, attrs) do
     game
-    |> cast(attrs, [:title, :owner_id])
-    |> validate_required([:title, :owner_id])
+    |> cast(attrs, [:title])
+    |> validate_required([:title])
+    |> assoc_constraint(:owner)
   end
 end

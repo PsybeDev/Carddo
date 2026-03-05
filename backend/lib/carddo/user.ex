@@ -13,10 +13,9 @@ defmodule Carddo.User do
 
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :stripe_customer_id, :subscription_tier])
+    |> cast(attrs, [:email, :stripe_customer_id])
     |> validate_required([:email])
     |> validate_format(:email, ~r/@/)
-    |> validate_inclusion(:subscription_tier, ["free", "pro", "enterprise"])
     |> unique_constraint(:email)
   end
 end

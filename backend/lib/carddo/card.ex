@@ -14,7 +14,8 @@ defmodule Carddo.Card do
 
   def changeset(card, attrs) do
     card
-    |> cast(attrs, [:name, :card_type, :properties, :abilities, :game_id])
-    |> validate_required([:name, :card_type, :game_id])
+    |> cast(attrs, [:name, :card_type, :properties, :abilities])
+    |> validate_required([:name, :card_type])
+    |> assoc_constraint(:game)
   end
 end

@@ -11,7 +11,8 @@ defmodule Carddo.Deck do
 
   def changeset(deck, attrs) do
     deck
-    |> cast(attrs, [:name, :game_id])
-    |> validate_required([:name, :game_id])
+    |> cast(attrs, [:name])
+    |> validate_required([:name])
+    |> foreign_key_constraint(:game_id)
   end
 end
