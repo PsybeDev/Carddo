@@ -9,6 +9,7 @@ defmodule Carddo.Card do
     field :abilities, {:array, :map}, default: []
 
     belongs_to :game, Carddo.Game
+    has_many :deck_cards, Carddo.DeckCard
     timestamps()
   end
 

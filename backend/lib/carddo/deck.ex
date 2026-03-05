@@ -6,6 +6,8 @@ defmodule Carddo.Deck do
     field :name, :string
 
     belongs_to :game, Carddo.Game
+    has_many :deck_cards, Carddo.DeckCard
+    many_to_many :cards, Carddo.Card, join_through: Carddo.DeckCard
     timestamps()
   end
 
