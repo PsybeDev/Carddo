@@ -1,4 +1,33 @@
-# CLAUDE.md
+# Carddo — Claude Code Context
+
+## Monorepo layout
+```
+frontend/     # SvelteKit (Svelte 5, Vercel)
+backend/      # Phoenix/Elixir/OTP (Fly.io)
+ditto_engine/ # Cargo workspace (ditto_core / ditto_wasm / ditto_nif)
+```
+
+## Key conventions
+- All game logic lives in ditto_core — never in ditto_nif or ditto_wasm (ADR-001)
+- Zero hardcoded game concepts in engine code — ask "does this know what Health is?" (ADR-004)
+- Backend controllers are thin — all DB logic in context modules (ADR-002)
+- Frontend renders from optimisticState only, never serverState directly (ADR-006)
+- All frontend types come from frontend/src/lib/types/ditto.generated.ts — never redefine (CAR-58)
+- Error envelope: {data: ...} / {errors: [{message, code}]} (CAR-60)
+
+## ADR index (read before implementing anything)
+- ADR-001: Rust/Wasm/NIF strategy
+- ADR-002: Elixir module layout and conventions
+- ADR-003: Svelte 5 route structure and Runes usage
+- ADR-004: Abstract Isomorphic Architecture — the core constraint
+- ADR-005: Game state persistence (checkpoint every turn)
+- ADR-006: Optimistic UI state model
+
+## Linear project
+All issues are in the "Card Engine Platform MVP" project.
+Critical path: CAR-34 → CAR-36 → CAR-51 → CAR-52 → CAR-35 → CAR-37 → CAR-63 → CAR-53 → CAR-56 → CAR-42/43/44/45 → CAR-62
+
+---
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
