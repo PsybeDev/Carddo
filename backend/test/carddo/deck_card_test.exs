@@ -52,6 +52,14 @@ defmodule Carddo.DeckCardTest do
       assert {:card_id, {"can't be blank", _}} = List.keyfind(changeset.errors, :card_id, 0)
     end
 
+    test "invalid with quantity nil", %{deck: deck, card: card} do
+      changeset =
+        DeckCard.changeset(%DeckCard{}, %{deck_id: deck.id, card_id: card.id, quantity: nil})
+
+      refute changeset.valid?
+      assert {:quantity, {"can't be blank", _}} = List.keyfind(changeset.errors, :quantity, 0)
+    end
+
     test "invalid with quantity zero", %{deck: deck, card: card} do
       changeset =
         DeckCard.changeset(%DeckCard{}, %{deck_id: deck.id, card_id: card.id, quantity: 0})
