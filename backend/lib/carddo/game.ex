@@ -14,7 +14,7 @@ defmodule Carddo.Game do
   def changeset(game, attrs) do
     game
     |> cast(attrs, [:title])
-    |> validate_required([:title])
+    |> validate_required([:title, :owner_id])
     |> assoc_constraint(:owner)
   end
 end

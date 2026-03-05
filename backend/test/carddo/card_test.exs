@@ -7,7 +7,7 @@ defmodule Carddo.CardTest do
   setup do
     {:ok, user} =
       %User{}
-      |> User.changeset(%{email: "test@example.com"})
+      |> User.changeset(%{email: "test-#{System.unique_integer([:positive])}@example.com"})
       |> Repo.insert()
 
     {:ok, game} =
@@ -45,7 +45,8 @@ defmodule Carddo.CardTest do
     result =
       Repo.one(
         from c in Card,
-          where: fragment("?->>'card_type' = ?", c.properties, "creature")
+          where: c.game_id == ^game.id,
+          where: fragment("? @> ?", c.properties, ^%{"card_type" => "creature"})
       )
 
     assert result.name == "Goblin"
