@@ -32,7 +32,9 @@ defmodule Carddo.User do
   end
 
   defp hash_password(%Ecto.Changeset{valid?: true, changes: %{password: pw}} = changeset) do
-    put_change(changeset, :password_hash, Bcrypt.hash_pwd_salt(pw))
+    changeset
+    |> put_change(:password_hash, Bcrypt.hash_pwd_salt(pw))
+    |> delete_change(:password)
   end
 
   defp hash_password(changeset), do: changeset

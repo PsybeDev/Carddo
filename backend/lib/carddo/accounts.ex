@@ -6,13 +6,13 @@ defmodule Carddo.Accounts do
   end
 
   def authenticate_user(email, password) do
-    user = Repo.get_by(User, email: email)
+    case Repo.get_by(User, email: email) do
+      %User{password_hash: hash} = user when not is_nil(hash) ->
+        if Bcrypt.verify_pass(password, hash), do: {:ok, user}, else: {:error, :unauthorized}
 
-    if user && user.password_hash && Bcrypt.verify_pass(password, user.password_hash) do
-      {:ok, user}
-    else
-      Bcrypt.no_user_verify()
-      {:error, :unauthorized}
+      _ ->
+        Bcrypt.no_user_verify()
+        {:error, :unauthorized}
     end
   end
 
