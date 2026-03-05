@@ -5,8 +5,22 @@ defmodule CarddoWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/api", CarddoWeb do
+  pipeline :authenticated do
+    plug :accepts, ["json"]
+    plug CarddoWeb.Plugs.RequireAuth
+  end
+
+  scope "/api", CarddoWeb.Api, as: :api do
     pipe_through :api
+
+    post "/users/register", UserController, :register
+    post "/users/login", UserController, :login
+  end
+
+  scope "/api", CarddoWeb.Api, as: :api do
+    pipe_through :authenticated
+
+    get "/users/me", UserController, :me
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

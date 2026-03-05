@@ -55,6 +55,15 @@ if config_env() == :prod do
 
   config :carddo, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
+  guardian_secret =
+    System.get_env("GUARDIAN_SECRET") ||
+      raise """
+      environment variable GUARDIAN_SECRET is missing.
+      You can generate one by calling: mix guardian.gen.secret
+      """
+
+  config :carddo, Carddo.Accounts.Guardian, secret_key: guardian_secret
+
   config :carddo, CarddoWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
