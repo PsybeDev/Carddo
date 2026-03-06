@@ -177,6 +177,12 @@ defmodule CarddoWeb.Api.DeckControllerTest do
       assert Repo.get(Carddo.Deck, deck.id) == nil
     end
 
+    test "returns 404 for non-existent deck", %{conn: conn} do
+      %{conn: conn, game: game} = setup_game(conn)
+      conn = delete(conn, "/api/games/#{game.id}/decks/0")
+      assert json_response(conn, 404)
+    end
+
     test "returns 403 for another user's game", %{conn: conn} do
       %{conn: conn} = register_and_login(conn)
       %{game: other_game} = setup_game(build_conn())

@@ -77,9 +77,7 @@ defmodule CarddoWeb.Api.CardController do
           card ->
             Games.delete_card(card)
 
-            conn
-            |> put_status(204)
-            |> json(%{})
+            send_resp(conn, 204, "")
         end
 
       {:error, :not_found} ->
@@ -130,7 +128,7 @@ defmodule CarddoWeb.Api.CardController do
       end)
     end)
     |> Enum.flat_map(fn {field, messages} ->
-      Enum.map(messages, fn msg -> %{message: "#{field} #{msg}"} end)
+      Enum.map(messages, fn msg -> %{message: "#{field} #{msg}", code: "validation_error"} end)
     end)
   end
 end

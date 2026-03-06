@@ -87,6 +87,36 @@ defmodule Carddo.Games do
     |> Repo.update()
   end
 
+  def update_deck_full(deck, params) do
+    Repo.transaction(fn ->
+      deck =
+        case params do
+          %{"name" => name} ->
+            case update_deck(deck, %{name: name}) do
+              {:ok, d} -> d
+              {:error, cs} -> Repo.rollback(cs)
+            end
+
+          _ ->
+            deck
+        end
+
+      case params do
+        %{"entries" => entries} ->
+          parsed =
+            Enum.map(entries, &%{card_id: &1["card_id"], quantity: &1["quantity"] || 1})
+
+          Repo.delete_all(from dc in DeckCard, where: dc.deck_id == ^deck.id)
+          Repo.insert_all(DeckCard, Enum.map(parsed, &Map.put(&1, :deck_id, deck.id)))
+
+        _ ->
+          nil
+      end
+
+      deck
+    end)
+  end
+
   def delete_deck(deck) do
     Repo.delete(deck)
   end

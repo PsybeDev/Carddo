@@ -68,11 +68,11 @@ defmodule CarddoWeb.Api.DeckController do
             not_found(conn)
 
           deck ->
-            with {:ok, updated_deck} <- maybe_update_name(deck, params),
-                 {:ok, _} <- maybe_set_entries(updated_deck.id, params) do
-              deck_with_cards = Games.get_deck_with_cards(updated_deck.id)
-              json(conn, %{data: render_deck_with_cards(deck_with_cards)})
-            else
+            case Games.update_deck_full(deck, params) do
+              {:ok, updated_deck} ->
+                deck_with_cards = Games.get_deck_with_cards(updated_deck.id)
+                json(conn, %{data: render_deck_with_cards(deck_with_cards)})
+
               {:error, %Ecto.Changeset{} = changeset} ->
                 conn
                 |> put_status(422)
@@ -98,9 +98,7 @@ defmodule CarddoWeb.Api.DeckController do
           deck ->
             Games.delete_deck(deck)
 
-            conn
-            |> put_status(204)
-            |> json(%{})
+            send_resp(conn, 204, "")
         end
 
       {:error, :not_found} ->
@@ -110,23 +108,6 @@ defmodule CarddoWeb.Api.DeckController do
         forbidden(conn)
     end
   end
-
-  defp maybe_update_name(deck, %{"name" => name}) do
-    Games.update_deck(deck, %{name: name})
-  end
-
-  defp maybe_update_name(deck, _params), do: {:ok, deck}
-
-  defp maybe_set_entries(deck_id, %{"entries" => entries}) do
-    parsed =
-      Enum.map(entries, fn entry ->
-        %{card_id: entry["card_id"], quantity: entry["quantity"] || 1}
-      end)
-
-    Games.set_deck_cards(deck_id, parsed)
-  end
-
-  defp maybe_set_entries(_deck_id, _params), do: {:ok, nil}
 
   defp authorize_game(game_id, current_user) do
     case Games.get_game(game_id) do
@@ -184,7 +165,7 @@ defmodule CarddoWeb.Api.DeckController do
       end)
     end)
     |> Enum.flat_map(fn {field, messages} ->
-      Enum.map(messages, fn msg -> %{message: "#{field} #{msg}"} end)
+      Enum.map(messages, fn msg -> %{message: "#{field} #{msg}", code: "validation_error"} end)
     end)
   end
 end
