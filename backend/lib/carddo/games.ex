@@ -5,7 +5,7 @@ defmodule Carddo.Games do
   # ── Games ──────────────────────────────────────────────────────────────────
 
   def list_games(user_id) do
-    Repo.all(from g in Game, where: g.owner_id == ^user_id, order_by: [desc: g.inserted_at])
+    Repo.all(from(g in Game, where: g.owner_id == ^user_id, order_by: [desc: g.inserted_at]))
   end
 
   def create_game(user, attrs) do
@@ -31,15 +31,16 @@ defmodule Carddo.Games do
   # ── Cards ──────────────────────────────────────────────────────────────────
 
   def list_cards(game_id, nil) do
-    Repo.all(from c in Card, where: c.game_id == ^game_id, order_by: [asc: c.inserted_at])
+    Repo.all(from(c in Card, where: c.game_id == ^game_id, order_by: [asc: c.inserted_at]))
   end
 
   def list_cards(game_id, search) when search != "" do
     Repo.all(
-      from c in Card,
+      from(c in Card,
         where: c.game_id == ^game_id,
         where: fragment("?::text ILIKE ?", c.properties, ^"%#{search}%"),
         order_by: [asc: c.inserted_at]
+      )
     )
   end
 
@@ -68,7 +69,7 @@ defmodule Carddo.Games do
   # ── Decks ──────────────────────────────────────────────────────────────────
 
   def list_decks(game_id) do
-    Repo.all(from d in Deck, where: d.game_id == ^game_id, order_by: [asc: d.inserted_at])
+    Repo.all(from(d in Deck, where: d.game_id == ^game_id, order_by: [asc: d.inserted_at]))
   end
 
   def create_deck(game, attrs) do
@@ -104,7 +105,15 @@ defmodule Carddo.Games do
       case params do
         %{"entries" => entries} ->
           parsed =
-            Enum.map(entries, &%{card_id: &1["card_id"], quantity: &1["quantity"] || 1})
+            entries
+            |> Enum.map(&%{card_id: &1["card_id"], quantity: max(&1["quantity"] || 1, 1)})
+            |> Enum.group_by(& &1.card_id)
+            |> Enum.map(fn {card_id, grouped} ->
+              %{
+                card_id: card_id,
+                quantity: Enum.reduce(grouped, 0, fn e, acc -> e.quantity + acc end)
+              }
+            end)
 
           unique_card_ids = parsed |> Enum.map(& &1.card_id) |> Enum.uniq()
 
@@ -122,7 +131,7 @@ defmodule Carddo.Games do
             end
           end
 
-          Repo.delete_all(from dc in DeckCard, where: dc.deck_id == ^deck.id)
+          Repo.delete_all(from(dc in DeckCard, where: dc.deck_id == ^deck.id))
           Repo.insert_all(DeckCard, Enum.map(parsed, &Map.put(&1, :deck_id, deck.id)))
 
         _ ->
@@ -143,8 +152,37 @@ defmodule Carddo.Games do
 
   def set_deck_cards(deck_id, entries) do
     Repo.transaction(fn ->
-      Repo.delete_all(from dc in DeckCard, where: dc.deck_id == ^deck_id)
-      Repo.insert_all(DeckCard, Enum.map(entries, &Map.put(&1, :deck_id, deck_id)))
+      deck = Repo.get!(Deck, deck_id)
+
+      unique_card_ids = entries |> Enum.map(& &1.card_id) |> Enum.uniq()
+
+      if unique_card_ids != [] do
+        valid_count =
+          Repo.aggregate(
+            from(c in Card,
+              where: c.game_id == ^deck.game_id and c.id in ^unique_card_ids
+            ),
+            :count
+          )
+
+        if valid_count != length(unique_card_ids) do
+          Repo.rollback(:invalid_card_ids)
+        end
+      end
+
+      parsed =
+        entries
+        |> Enum.map(&%{card_id: &1.card_id, quantity: max(&1.quantity || 1, 1)})
+        |> Enum.group_by(& &1.card_id)
+        |> Enum.map(fn {card_id, grouped} ->
+          %{
+            card_id: card_id,
+            quantity: Enum.reduce(grouped, 0, fn e, acc -> e.quantity + acc end)
+          }
+        end)
+
+      Repo.delete_all(from(dc in DeckCard, where: dc.deck_id == ^deck_id))
+      Repo.insert_all(DeckCard, Enum.map(parsed, &Map.put(&1, :deck_id, deck_id)))
     end)
   end
 end
