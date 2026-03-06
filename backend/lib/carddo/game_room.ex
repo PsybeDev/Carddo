@@ -67,26 +67,29 @@ defmodule Carddo.GameRoom do
         case Jason.decode(new_state_json) do
           {:ok, decoded} ->
             new_state =
-              if Map.get(decoded, "game_over") == true do
-                broadcast(state.room_id, "game_over", %{state: new_state_json})
-                %{state | rust_state_json: new_state_json, ended: true}
-              else
-                if get_in(decoded, ["turn", "phase"]) == "end" do
+            game_over? = Map.get(decoded, "game_over") == true
+            turn_phase = get_in(decoded, ["turn", "phase"])
+
+            {event, new_state} =
+              cond do
+                game_over? ->
+                  {"game_over", %{state | rust_state_json: new_state_json, ended: true}}
+
+                turn_phase == "end" ->
                   new_turn = state.turn_number + 1
 
-                  # TODO(CAR-63): Implement checkpointing for this game/turn.
                   Logger.debug(
-                    "Turn ended for game_id=#{state.game_id}, turn=#{new_turn}"
+                    "CAR-63 TODO: checkpoint game_id=#{state.game_id}, turn=#{new_turn}"
                   )
 
-                  broadcast(state.room_id, "state_resolved", %{state: new_state_json})
-                  %{state | rust_state_json: new_state_json, turn_number: new_turn}
-                else
-                  broadcast(state.room_id, "state_resolved", %{state: new_state_json})
-                  %{state | rust_state_json: new_state_json}
-                end
+                  {"state_resolved",
+                   %{state | rust_state_json: new_state_json, turn_number: new_turn}}
+
+                true ->
+                  {"state_resolved", %{state | rust_state_json: new_state_json}}
               end
 
+            broadcast(state.room_id, event, %{state: new_state_json})
             {:reply, :ok, new_state}
 
           {:error, decode_error} ->
