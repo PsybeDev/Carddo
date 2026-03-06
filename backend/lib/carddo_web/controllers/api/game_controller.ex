@@ -54,9 +54,15 @@ defmodule CarddoWeb.Api.GameController do
   def delete(conn, %{"id" => id}) do
     case authorize_game(id, conn.assigns.current_user) do
       {:ok, game} ->
-        Games.delete_game(game)
+        case Games.delete_game(game) do
+          {:ok, _} ->
+            send_resp(conn, 204, "")
 
-        send_resp(conn, 204, "")
+          {:error, changeset} ->
+            conn
+            |> put_status(422)
+            |> json(%{errors: format_errors(changeset)})
+        end
 
       {:error, :not_found} ->
         not_found(conn)

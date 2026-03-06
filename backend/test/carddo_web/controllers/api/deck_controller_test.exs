@@ -151,6 +151,20 @@ defmodule CarddoWeb.Api.DeckControllerTest do
       assert data["entries"] == []
     end
 
+    test "returns 422 when entries contain card_ids from another game", %{conn: conn} do
+      %{conn: conn, game: game} = setup_game(conn)
+      deck = create_deck(game)
+      %{game: other_game} = setup_game(build_conn())
+      foreign_card = create_card(other_game)
+
+      conn =
+        patch(conn, "/api/games/#{game.id}/decks/#{deck.id}", %{
+          entries: [%{card_id: foreign_card.id, quantity: 1}]
+        })
+
+      assert %{"errors" => [%{"code" => "invalid_card_ids"}]} = json_response(conn, 422)
+    end
+
     test "returns 404 for non-existent deck", %{conn: conn} do
       %{conn: conn, game: game} = setup_game(conn)
       conn = patch(conn, "/api/games/#{game.id}/decks/0", %{name: "X"})

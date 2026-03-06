@@ -75,9 +75,15 @@ defmodule CarddoWeb.Api.CardController do
             not_found(conn)
 
           card ->
-            Games.delete_card(card)
+            case Games.delete_card(card) do
+              {:ok, _} ->
+                send_resp(conn, 204, "")
 
-            send_resp(conn, 204, "")
+              {:error, changeset} ->
+                conn
+                |> put_status(422)
+                |> json(%{errors: format_errors(changeset)})
+            end
         end
 
       {:error, :not_found} ->

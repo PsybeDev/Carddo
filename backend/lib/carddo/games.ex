@@ -106,6 +106,22 @@ defmodule Carddo.Games do
           parsed =
             Enum.map(entries, &%{card_id: &1["card_id"], quantity: &1["quantity"] || 1})
 
+          unique_card_ids = parsed |> Enum.map(& &1.card_id) |> Enum.uniq()
+
+          if unique_card_ids != [] do
+            valid_count =
+              Repo.aggregate(
+                from(c in Card,
+                  where: c.game_id == ^deck.game_id and c.id in ^unique_card_ids
+                ),
+                :count
+              )
+
+            if valid_count != length(unique_card_ids) do
+              Repo.rollback(:invalid_card_ids)
+            end
+          end
+
           Repo.delete_all(from dc in DeckCard, where: dc.deck_id == ^deck.id)
           Repo.insert_all(DeckCard, Enum.map(parsed, &Map.put(&1, :deck_id, deck.id)))
 

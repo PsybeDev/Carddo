@@ -73,6 +73,18 @@ defmodule CarddoWeb.Api.DeckController do
                 deck_with_cards = Games.get_deck_with_cards(updated_deck.id)
                 json(conn, %{data: render_deck_with_cards(deck_with_cards)})
 
+              {:error, :invalid_card_ids} ->
+                conn
+                |> put_status(422)
+                |> json(%{
+                  errors: [
+                    %{
+                      message: "one or more card_ids are invalid or belong to a different game",
+                      code: "invalid_card_ids"
+                    }
+                  ]
+                })
+
               {:error, %Ecto.Changeset{} = changeset} ->
                 conn
                 |> put_status(422)
@@ -96,9 +108,15 @@ defmodule CarddoWeb.Api.DeckController do
             not_found(conn)
 
           deck ->
-            Games.delete_deck(deck)
+            case Games.delete_deck(deck) do
+              {:ok, _} ->
+                send_resp(conn, 204, "")
 
-            send_resp(conn, 204, "")
+              {:error, changeset} ->
+                conn
+                |> put_status(422)
+                |> json(%{errors: format_errors(changeset)})
+            end
         end
 
       {:error, :not_found} ->

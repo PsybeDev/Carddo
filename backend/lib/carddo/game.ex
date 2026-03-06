@@ -22,6 +22,7 @@ defmodule Carddo.Game do
   def update_changeset(game, attrs) do
     game
     |> cast(attrs, [:title, :config])
+    |> validate_required([:title])
     |> assoc_constraint(:owner)
   end
 end
