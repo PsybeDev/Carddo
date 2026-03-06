@@ -8,8 +8,19 @@ defmodule Carddo.GameRoom do
 
   def via_tuple(room_id), do: {:via, Registry, {Carddo.GameRegistry, room_id}}
 
-  def start_link(%{room_id: _room_id} = opts) do
+  def start_link(
+        %{
+          room_id: _room_id,
+          game_id: _game_id,
+          initial_state_json: _initial_state_json,
+          solo_mode: _solo_mode
+        } = opts
+      ) do
     GenServer.start_link(__MODULE__, opts, name: via_tuple(opts.room_id))
+  end
+
+  def start_link(bad_opts) do
+    {:error, {:invalid_options, Map.keys(bad_opts)}}
   end
 
   def make_move(room_id, player_id, action_json, timeout \\ @default_timeout) do
@@ -58,11 +69,10 @@ defmodule Carddo.GameRoom do
               else
                 if get_in(decoded, ["turn", "phase"]) == "end" do
                   new_turn = state.turn_number + 1
-                  game_id = state.game_id
 
-                  Task.start(fn ->
-                    Logger.info("CAR-63 TODO: checkpoint game_id=#{game_id}, turn=#{new_turn}")
-                  end)
+                  Logger.info(
+                    "CAR-63 TODO: checkpoint game_id=#{state.game_id}, turn=#{new_turn}"
+                  )
 
                   broadcast(state.room_id, "state_resolved", %{state: new_state_json})
                   %{state | rust_state_json: new_state_json, turn_number: new_turn}
@@ -84,7 +94,11 @@ defmodule Carddo.GameRoom do
         end
 
       {:error, reason, _animations} ->
-        {:reply, {:error, %{type: "native_error", message: reason}}, state}
+        Logger.error("Native error in Carddo.Native.process_move: #{inspect(reason)}")
+
+        {:reply,
+         {:error, %{type: "native_error", message: "Failed to process move. Please try again."}},
+         state}
     end
   end
 
