@@ -43,7 +43,7 @@ defmodule Carddo.GameRoomTest do
       assert decoded["entities"]["e1"]["id"] == "e1"
     end
 
-    test "defaults turn_number to 0 and ended to false" do
+    test "initial state is returned as a JSON string" do
       {room_id, _pid} = start_room()
       assert is_binary(GameRoom.get_state(room_id))
     end
@@ -125,6 +125,18 @@ defmodule Carddo.GameRoomTest do
 
       # State should not have changed
       assert GameRoom.get_state(room_id) == initial_state
+    end
+  end
+
+  describe "ended game" do
+    test "rejects moves when ended: true and returns game_over error" do
+      {room_id, pid} = start_room()
+
+      # Force the room into the ended state directly
+      :sys.replace_state(pid, fn state -> %{state | ended: true} end)
+
+      result = GameRoom.make_move(room_id, "player_1", ~s("EndTurn"))
+      assert {:error, %{type: "game_over", message: "Game has ended"}} = result
     end
   end
 
