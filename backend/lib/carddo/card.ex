@@ -5,6 +5,7 @@ defmodule Carddo.Card do
   schema "cards" do
     field :name, :string
     field :card_type, :string
+    field :background_color, :string
     field :properties, :map, default: %{}
     field :abilities, {:array, :map}, default: []
 
@@ -15,7 +16,7 @@ defmodule Carddo.Card do
 
   def changeset(card, attrs) do
     card
-    |> cast(attrs, [:name, :card_type, :properties, :abilities])
+    |> cast(attrs, [:name, :card_type, :background_color, :properties, :abilities])
     |> validate_required([:name, :card_type])
     |> assoc_constraint(:game)
   end

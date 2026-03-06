@@ -21,6 +21,11 @@ defmodule CarddoWeb.Router do
     pipe_through :authenticated
 
     get "/users/me", UserController, :me
+
+    resources "/games", GameController, except: [:new, :edit] do
+      resources "/cards", CardController, except: [:new, :edit, :show]
+      resources "/decks", DeckController, except: [:new, :edit]
+    end
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
