@@ -19,8 +19,12 @@ defmodule Carddo.GameRoom do
     GenServer.start_link(__MODULE__, opts, name: via_tuple(opts.room_id))
   end
 
-  def start_link(bad_opts) do
+  def start_link(bad_opts) when is_map(bad_opts) do
     {:error, {:invalid_options, Map.keys(bad_opts)}}
+  end
+
+  def start_link(_bad_opts) do
+    {:error, {:invalid_options, :not_a_map}}
   end
 
   def make_move(room_id, player_id, action_json, timeout \\ @default_timeout) do
@@ -70,7 +74,7 @@ defmodule Carddo.GameRoom do
                 if get_in(decoded, ["turn", "phase"]) == "end" do
                   new_turn = state.turn_number + 1
 
-                  Logger.info(
+                  Logger.debug(
                     "CAR-63 TODO: checkpoint game_id=#{state.game_id}, turn=#{new_turn}"
                   )
 

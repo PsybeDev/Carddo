@@ -56,9 +56,14 @@ defmodule Carddo.GameRoomTest do
     test "start_link returns error for invalid options" do
       room_id = "test_room_#{System.unique_integer([:positive])}"
 
-      # Missing required keys
+      # Missing required keys - only room_id provided, missing game_id, initial_state_json, solo_mode
       assert {:error, {:invalid_options, keys}} = GameRoom.start_link(%{room_id: room_id})
+      # keys contains the provided keys, not missing ones
       assert :room_id in keys
+    end
+
+    test "start_link returns error for non-map input" do
+      assert {:error, {:invalid_options, :not_a_map}} = GameRoom.start_link(nil)
     end
   end
 
@@ -123,28 +128,24 @@ defmodule Carddo.GameRoomTest do
     end
   end
 
-  describe "make_move/3 after game ended" do
-    test "returns game_over error without crashing" do
+  describe "make_move/3 with repeated calls" do
+    test "handles multiple sequential moves without crashing" do
       {room_id, _pid} = start_room()
 
-      # Test the guard clause directly via making repeated calls
-      # The actual game_over state would require a real game state
       action = ~s("EndTurn")
 
-      # Multiple calls should work (game isn't actually over in empty state)
       assert GameRoom.make_move(room_id, "player_1", action) == :ok
       assert GameRoom.make_move(room_id, "player_1", action) == :ok
     end
 
-    test "start_link with ended:true state returns game_over error on move" do
-      # Create a room, then manually verify the guard clause works
-      # by testing with invalid options returns proper error structure
-      assert {:error, {:invalid_options, _keys}} = GameRoom.start_link(%{room_id: "bad"})
+    test "start_link returns error for non-map options" do
+      # Pass nil, which is not a map
+      assert {:error, {:invalid_options, :not_a_map}} = GameRoom.start_link(nil)
     end
   end
 
-  describe "turn boundary detection" do
-    test "increments turn_number when phase is end" do
+  describe "turn boundary handling" do
+    test "EndTurn action does not crash" do
       {room_id, _pid} = start_room()
       action = ~s("EndTurn")
 
