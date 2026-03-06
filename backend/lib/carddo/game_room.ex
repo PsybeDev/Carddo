@@ -2,6 +2,8 @@ defmodule Carddo.GameRoom do
   use GenServer
   require Logger
 
+  @default_timeout 30_000
+
   # Public API
 
   def via_tuple(room_id), do: {:via, Registry, {Carddo.GameRegistry, room_id}}
@@ -10,12 +12,12 @@ defmodule Carddo.GameRoom do
     GenServer.start_link(__MODULE__, opts, name: via_tuple(opts.room_id))
   end
 
-  def make_move(room_id, player_id, action_json) do
-    GenServer.call(via_tuple(room_id), {:make_move, player_id, action_json})
+  def make_move(room_id, player_id, action_json, timeout \\ @default_timeout) do
+    GenServer.call(via_tuple(room_id), {:make_move, player_id, action_json}, timeout)
   end
 
-  def get_state(room_id) do
-    GenServer.call(via_tuple(room_id), :get_state)
+  def get_state(room_id, timeout \\ @default_timeout) do
+    GenServer.call(via_tuple(room_id), :get_state, timeout)
   end
 
   # GenServer callbacks
@@ -46,43 +48,43 @@ defmodule Carddo.GameRoom do
 
   def handle_call({:make_move, player_id, action_json}, _from, state) do
     case Carddo.Native.process_move(state.rust_state_json, action_json, player_id) do
-      {:ok, new_state_json} ->
-        decoded = Jason.decode!(new_state_json)
+      {:ok, new_state_json, _animations} ->
+        case Jason.decode(new_state_json) do
+          {:ok, decoded} ->
+            new_state =
+              if Map.has_key?(decoded, "game_over") do
+                broadcast(state.room_id, "game_over", %{state: new_state_json})
+                %{state | rust_state_json: new_state_json, ended: true}
+              else
+                if get_in(decoded, ["turn", "phase"]) == "end" do
+                  new_turn = state.turn_number + 1
+                  game_id = state.game_id
 
-        new_state =
-          if Map.has_key?(decoded, "game_over") do
-            CarddoWeb.Endpoint.broadcast!("room:#{state.room_id}", "game_over", %{
-              state: new_state_json
-            })
+                  Task.start(fn ->
+                    Logger.info("CAR-63 TODO: checkpoint game_id=#{game_id}, turn=#{new_turn}")
+                  end)
 
-            %{state | rust_state_json: new_state_json, ended: true}
-          else
-            if get_in(decoded, ["turn", "phase"]) == "end" do
-              new_turn = state.turn_number + 1
-              game_id = state.game_id
+                  broadcast(state.room_id, "state_resolved", %{state: new_state_json})
+                  %{state | rust_state_json: new_state_json, turn_number: new_turn}
+                else
+                  broadcast(state.room_id, "state_resolved", %{state: new_state_json})
+                  %{state | rust_state_json: new_state_json}
+                end
+              end
 
-              Task.async(fn ->
-                Logger.info("CAR-63 TODO: checkpoint game_id=#{game_id}, turn=#{new_turn}")
-              end)
+            {:reply, :ok, new_state}
 
-              CarddoWeb.Endpoint.broadcast!("room:#{state.room_id}", "state_resolved", %{
-                state: new_state_json
-              })
+          {:error, decode_error} ->
+            Logger.error(
+              "Failed to decode game state JSON in Carddo.GameRoom: #{inspect(decode_error)}"
+            )
 
-              %{state | rust_state_json: new_state_json, turn_number: new_turn}
-            else
-              CarddoWeb.Endpoint.broadcast!("room:#{state.room_id}", "state_resolved", %{
-                state: new_state_json
-              })
+            {:reply, {:error, %{type: "invalid_state", message: "Failed to decode game state"}},
+             state}
+        end
 
-              %{state | rust_state_json: new_state_json}
-            end
-          end
-
-        {:reply, :ok, new_state}
-
-      {:error, type, message} ->
-        {:reply, {:error, %{type: type, message: message}}, state}
+      {:error, reason, _animations} ->
+        {:reply, {:error, %{type: "native_error", message: reason}}, state}
     end
   end
 
@@ -91,13 +93,7 @@ defmodule Carddo.GameRoom do
     {:reply, state.rust_state_json, state}
   end
 
-  # Ignore Task results from async checkpoints
-  @impl true
-  def handle_info({ref, _result}, state) when is_reference(ref) do
-    {:noreply, state}
-  end
-
-  def handle_info({:DOWN, _ref, :process, _pid, _reason}, state) do
-    {:noreply, state}
+  defp broadcast(room_id, event, payload) do
+    CarddoWeb.Endpoint.broadcast("room:#{room_id}", event, payload)
   end
 end
