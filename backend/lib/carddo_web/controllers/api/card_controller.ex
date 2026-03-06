@@ -42,21 +42,20 @@ defmodule CarddoWeb.Api.CardController do
 
   def update(conn, %{"game_id" => game_id, "id" => id} = params) do
     case authorize_game(game_id, conn.assigns.current_user) do
-      {:ok, _game} ->
-        case Games.get_card(game_id, id) do
-          nil ->
-            not_found(conn)
+      {:ok, game} ->
+        with {:ok, card_id} <- parse_id(id),
+             card when not is_nil(card) <- Games.get_card(game.id, card_id) do
+          case Games.update_card(card, params) do
+            {:ok, updated} ->
+              json(conn, %{data: render_card(updated)})
 
-          card ->
-            case Games.update_card(card, params) do
-              {:ok, updated} ->
-                json(conn, %{data: render_card(updated)})
-
-              {:error, changeset} ->
-                conn
-                |> put_status(422)
-                |> json(%{errors: format_errors(changeset)})
-            end
+            {:error, changeset} ->
+              conn
+              |> put_status(422)
+              |> json(%{errors: format_errors(changeset)})
+          end
+        else
+          _ -> not_found(conn)
         end
 
       {:error, :not_found} ->
@@ -69,21 +68,20 @@ defmodule CarddoWeb.Api.CardController do
 
   def delete(conn, %{"game_id" => game_id, "id" => id}) do
     case authorize_game(game_id, conn.assigns.current_user) do
-      {:ok, _game} ->
-        case Games.get_card(game_id, id) do
-          nil ->
-            not_found(conn)
+      {:ok, game} ->
+        with {:ok, card_id} <- parse_id(id),
+             card when not is_nil(card) <- Games.get_card(game.id, card_id) do
+          case Games.delete_card(card) do
+            {:ok, _} ->
+              send_resp(conn, 204, "")
 
-          card ->
-            case Games.delete_card(card) do
-              {:ok, _} ->
-                send_resp(conn, 204, "")
-
-              {:error, changeset} ->
-                conn
-                |> put_status(422)
-                |> json(%{errors: format_errors(changeset)})
-            end
+            {:error, changeset} ->
+              conn
+              |> put_status(422)
+              |> json(%{errors: format_errors(changeset)})
+          end
+        else
+          _ -> not_found(conn)
         end
 
       {:error, :not_found} ->
@@ -95,9 +93,18 @@ defmodule CarddoWeb.Api.CardController do
   end
 
   defp authorize_game(game_id, current_user) do
-    case Games.get_game(game_id) do
-      nil -> {:error, :not_found}
-      game -> if game.owner_id == current_user.id, do: {:ok, game}, else: {:error, :forbidden}
+    with {:ok, id} <- parse_id(game_id),
+         game when not is_nil(game) <- Games.get_game(id) do
+      if game.owner_id == current_user.id, do: {:ok, game}, else: {:error, :forbidden}
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  defp parse_id(id) do
+    case Integer.parse(to_string(id)) do
+      {int, ""} -> {:ok, int}
+      _ -> :error
     end
   end
 

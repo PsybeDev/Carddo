@@ -103,7 +103,7 @@ defmodule Carddo.Games do
         end
 
       case params do
-        %{"entries" => entries} ->
+        %{"entries" => entries} when is_list(entries) ->
           parsed =
             entries
             |> Enum.map(&%{card_id: &1["card_id"], quantity: max(&1["quantity"] || 1, 1)})

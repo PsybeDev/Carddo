@@ -42,14 +42,13 @@ defmodule CarddoWeb.Api.DeckController do
 
   def show(conn, %{"game_id" => game_id, "id" => id}) do
     case authorize_game(game_id, conn.assigns.current_user) do
-      {:ok, _game} ->
-        case Games.get_deck(game_id, id) do
-          nil ->
-            not_found(conn)
-
-          deck ->
-            deck_with_cards = Games.get_deck_with_cards(deck.id)
-            json(conn, %{data: render_deck_with_cards(deck_with_cards)})
+      {:ok, game} ->
+        with {:ok, deck_id} <- parse_id(id),
+             deck when not is_nil(deck) <- Games.get_deck(game.id, deck_id) do
+          deck_with_cards = Games.get_deck_with_cards(deck.id)
+          json(conn, %{data: render_deck_with_cards(deck_with_cards)})
+        else
+          _ -> not_found(conn)
         end
 
       {:error, :not_found} ->
@@ -62,34 +61,33 @@ defmodule CarddoWeb.Api.DeckController do
 
   def update(conn, %{"game_id" => game_id, "id" => id} = params) do
     case authorize_game(game_id, conn.assigns.current_user) do
-      {:ok, _game} ->
-        case Games.get_deck(game_id, id) do
-          nil ->
-            not_found(conn)
+      {:ok, game} ->
+        with {:ok, deck_id} <- parse_id(id),
+             deck when not is_nil(deck) <- Games.get_deck(game.id, deck_id) do
+          case Games.update_deck_full(deck, params) do
+            {:ok, updated_deck} ->
+              deck_with_cards = Games.get_deck_with_cards(updated_deck.id)
+              json(conn, %{data: render_deck_with_cards(deck_with_cards)})
 
-          deck ->
-            case Games.update_deck_full(deck, params) do
-              {:ok, updated_deck} ->
-                deck_with_cards = Games.get_deck_with_cards(updated_deck.id)
-                json(conn, %{data: render_deck_with_cards(deck_with_cards)})
+            {:error, :invalid_card_ids} ->
+              conn
+              |> put_status(422)
+              |> json(%{
+                errors: [
+                  %{
+                    message: "one or more card_ids are invalid or belong to a different game",
+                    code: "invalid_card_ids"
+                  }
+                ]
+              })
 
-              {:error, :invalid_card_ids} ->
-                conn
-                |> put_status(422)
-                |> json(%{
-                  errors: [
-                    %{
-                      message: "one or more card_ids are invalid or belong to a different game",
-                      code: "invalid_card_ids"
-                    }
-                  ]
-                })
-
-              {:error, %Ecto.Changeset{} = changeset} ->
-                conn
-                |> put_status(422)
-                |> json(%{errors: format_errors(changeset)})
-            end
+            {:error, %Ecto.Changeset{} = changeset} ->
+              conn
+              |> put_status(422)
+              |> json(%{errors: format_errors(changeset)})
+          end
+        else
+          _ -> not_found(conn)
         end
 
       {:error, :not_found} ->
@@ -102,21 +100,20 @@ defmodule CarddoWeb.Api.DeckController do
 
   def delete(conn, %{"game_id" => game_id, "id" => id}) do
     case authorize_game(game_id, conn.assigns.current_user) do
-      {:ok, _game} ->
-        case Games.get_deck(game_id, id) do
-          nil ->
-            not_found(conn)
+      {:ok, game} ->
+        with {:ok, deck_id} <- parse_id(id),
+             deck when not is_nil(deck) <- Games.get_deck(game.id, deck_id) do
+          case Games.delete_deck(deck) do
+            {:ok, _} ->
+              send_resp(conn, 204, "")
 
-          deck ->
-            case Games.delete_deck(deck) do
-              {:ok, _} ->
-                send_resp(conn, 204, "")
-
-              {:error, changeset} ->
-                conn
-                |> put_status(422)
-                |> json(%{errors: format_errors(changeset)})
-            end
+            {:error, changeset} ->
+              conn
+              |> put_status(422)
+              |> json(%{errors: format_errors(changeset)})
+          end
+        else
+          _ -> not_found(conn)
         end
 
       {:error, :not_found} ->
@@ -128,9 +125,18 @@ defmodule CarddoWeb.Api.DeckController do
   end
 
   defp authorize_game(game_id, current_user) do
-    case Games.get_game(game_id) do
-      nil -> {:error, :not_found}
-      game -> if game.owner_id == current_user.id, do: {:ok, game}, else: {:error, :forbidden}
+    with {:ok, id} <- parse_id(game_id),
+         game when not is_nil(game) <- Games.get_game(id) do
+      if game.owner_id == current_user.id, do: {:ok, game}, else: {:error, :forbidden}
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  defp parse_id(id) do
+    case Integer.parse(to_string(id)) do
+      {int, ""} -> {:ok, int}
+      _ -> :error
     end
   end
 

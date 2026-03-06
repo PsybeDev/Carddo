@@ -73,9 +73,18 @@ defmodule CarddoWeb.Api.GameController do
   end
 
   defp authorize_game(game_id, current_user) do
-    case Games.get_game(game_id) do
-      nil -> {:error, :not_found}
-      game -> if game.owner_id == current_user.id, do: {:ok, game}, else: {:error, :forbidden}
+    with {:ok, id} <- parse_id(game_id),
+         game when not is_nil(game) <- Games.get_game(id) do
+      if game.owner_id == current_user.id, do: {:ok, game}, else: {:error, :forbidden}
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  defp parse_id(id) do
+    case Integer.parse(to_string(id)) do
+      {int, ""} -> {:ok, int}
+      _ -> :error
     end
   end
 
