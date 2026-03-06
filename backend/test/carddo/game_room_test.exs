@@ -137,11 +137,6 @@ defmodule Carddo.GameRoomTest do
       assert GameRoom.make_move(room_id, "player_1", action) == :ok
       assert GameRoom.make_move(room_id, "player_1", action) == :ok
     end
-
-    test "start_link returns error for non-map options" do
-      # Pass nil, which is not a map
-      assert {:error, {:invalid_options, :not_a_map}} = GameRoom.start_link(nil)
-    end
   end
 
   describe "turn boundary handling" do

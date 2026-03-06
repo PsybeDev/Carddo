@@ -67,7 +67,7 @@ defmodule Carddo.GameRoom do
         case Jason.decode(new_state_json) do
           {:ok, decoded} ->
             new_state =
-              if Map.has_key?(decoded, "game_over") do
+              if Map.get(decoded, "game_over") == true do
                 broadcast(state.room_id, "game_over", %{state: new_state_json})
                 %{state | rust_state_json: new_state_json, ended: true}
               else
