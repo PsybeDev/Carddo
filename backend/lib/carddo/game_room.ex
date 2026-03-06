@@ -74,8 +74,9 @@ defmodule Carddo.GameRoom do
                 if get_in(decoded, ["turn", "phase"]) == "end" do
                   new_turn = state.turn_number + 1
 
+                  # TODO(CAR-63): Implement checkpointing for this game/turn.
                   Logger.debug(
-                    "CAR-63 TODO: checkpoint game_id=#{state.game_id}, turn=#{new_turn}"
+                    "Turn ended for game_id=#{state.game_id}, turn=#{new_turn}"
                   )
 
                   broadcast(state.room_id, "state_resolved", %{state: new_state_json})
