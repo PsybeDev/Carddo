@@ -4,6 +4,7 @@ defmodule Carddo.Game do
 
   schema "games" do
     field :title, :string
+    field :config, :map, default: %{}
 
     belongs_to :owner, Carddo.User
     has_many :decks, Carddo.Deck
@@ -15,6 +16,13 @@ defmodule Carddo.Game do
     game
     |> cast(attrs, [:title])
     |> validate_required([:title, :owner_id])
+    |> assoc_constraint(:owner)
+  end
+
+  def update_changeset(game, attrs) do
+    game
+    |> cast(attrs, [:title, :config])
+    |> validate_required([:title])
     |> assoc_constraint(:owner)
   end
 end
