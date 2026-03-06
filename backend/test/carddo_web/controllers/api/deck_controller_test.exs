@@ -179,6 +179,50 @@ defmodule CarddoWeb.Api.DeckControllerTest do
       conn = patch(conn, "/api/games/#{other_game.id}/decks/#{other_deck.id}", %{name: "X"})
       assert json_response(conn, 403)
     end
+
+    test "returns 422 when entries contain non-existent card_id", %{conn: conn} do
+      %{conn: conn, game: game} = setup_game(conn)
+      deck = create_deck(game)
+
+      conn =
+        patch(conn, "/api/games/#{game.id}/decks/#{deck.id}", %{
+          entries: [%{card_id: 999_999, quantity: 1}]
+        })
+
+      assert %{"errors" => [%{"code" => "invalid_card_ids"}]} = json_response(conn, 422)
+    end
+
+    test "normalizes quantity less than 1 to 1", %{conn: conn} do
+      %{conn: conn, game: game} = setup_game(conn)
+      deck = create_deck(game)
+      card = create_card(game)
+
+      conn =
+        patch(conn, "/api/games/#{game.id}/decks/#{deck.id}", %{
+          entries: [%{card_id: card.id, quantity: 0}]
+        })
+
+      assert %{"data" => data} = json_response(conn, 200)
+      assert hd(data["entries"])["quantity"] == 1
+    end
+
+    test "coalesces duplicate card_ids by summing quantities", %{conn: conn} do
+      %{conn: conn, game: game} = setup_game(conn)
+      deck = create_deck(game)
+      card = create_card(game)
+
+      conn =
+        patch(conn, "/api/games/#{game.id}/decks/#{deck.id}", %{
+          entries: [
+            %{card_id: card.id, quantity: 2},
+            %{card_id: card.id, quantity: 3}
+          ]
+        })
+
+      assert %{"data" => data} = json_response(conn, 200)
+      assert length(data["entries"]) == 1
+      assert hd(data["entries"])["quantity"] == 5
+    end
   end
 
   describe "DELETE /api/games/:game_id/decks/:id" do
