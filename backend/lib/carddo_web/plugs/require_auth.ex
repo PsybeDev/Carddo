@@ -13,7 +13,7 @@ defmodule CarddoWeb.Plugs.RequireAuth do
       _ ->
         conn
         |> put_status(401)
-        |> Phoenix.Controller.json(%{errors: [%{message: "Unauthorized"}]})
+        |> Phoenix.Controller.json(%{errors: [%{message: "Unauthorized", code: "unauthorized"}]})
         |> halt()
     end
   end

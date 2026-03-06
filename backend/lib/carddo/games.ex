@@ -34,7 +34,7 @@ defmodule Carddo.Games do
     Repo.all(from(c in Card, where: c.game_id == ^game_id, order_by: [asc: c.inserted_at]))
   end
 
-  def list_cards(game_id, search) when search != "" do
+  def list_cards(game_id, search) when is_binary(search) and search != "" do
     Repo.all(
       from(c in Card,
         where: c.game_id == ^game_id,
