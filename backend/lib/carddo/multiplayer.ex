@@ -19,6 +19,9 @@ defmodule Carddo.Multiplayer do
   end
 
   def room_exists?(room_id) do
-    GameRegistry.lookup(room_id) != []
+    case GameRegistry.lookup(room_id) do
+      [{pid, _value} | _rest] -> Process.alive?(pid)
+      _ -> false
+    end
   end
 end

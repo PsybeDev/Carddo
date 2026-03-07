@@ -11,21 +11,10 @@ defmodule Carddo.MultiplayerTest do
     DynamicSupervisor.terminate_child(Carddo.Multiplayer.RoomSupervisor, pid)
   end
 
-  # Registry deregisters a dead process asynchronously via its own monitor, so we
-  # poll briefly rather than asserting immediately after receiving :DOWN.
-  defp wait_until_gone(room_id, deadline \\ nil) do
-    deadline = deadline || System.monotonic_time(:millisecond) + 500
-
-    if Multiplayer.room_exists?(room_id) do
-      if System.monotonic_time(:millisecond) < deadline do
-        Process.sleep(5)
-        wait_until_gone(room_id, deadline)
-      else
-        false
-      end
-    else
-      true
-    end
+  # With the improved room_exists?/1 checking Process.alive?, this should now
+  # return false immediately after the process dies, even before Registry cleanup.
+  defp wait_until_gone(room_id) do
+    !Multiplayer.room_exists?(room_id)
   end
 
   describe "start_room/4" do
