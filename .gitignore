@@ -87,3 +87,8 @@ Thumbs.db
 *.db-*
 .env
 .mcp.json
+
+# ============================================================
+# Generated TypeScript types (re-generate with: make generate-types)
+# ============================================================
+frontend/src/lib/types/ditto.generated.ts
