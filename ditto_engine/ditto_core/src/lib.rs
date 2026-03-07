@@ -1,5 +1,7 @@
 pub mod engine;
 pub mod state;
+#[cfg(feature = "ts")]
+pub mod schema;
 
 pub use engine::validate_action;
 pub use state::{

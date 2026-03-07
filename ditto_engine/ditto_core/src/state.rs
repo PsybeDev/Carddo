@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
+#[cfg(feature = "ts")]
+use ts_rs::TS;
+
 // ==========================================
 // 1. THE GAME STATE
 // ==========================================
@@ -11,6 +14,7 @@ use std::collections::{HashMap, VecDeque};
 ///   where actions resolve in the order they were queued.
 /// - `Lifo`: last-in, first-out (a stack) — suited for games like MTG where the
 ///   most recently added spell or ability resolves first.
+#[cfg_attr(feature = "ts", derive(TS))]
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub enum StackOrder {
     #[default]
@@ -20,6 +24,7 @@ pub enum StackOrder {
 
 /// The master struct. This is the exact payload that Elixir stores in memory
 /// and Svelte receives over WebSockets.
+#[cfg_attr(feature = "ts", derive(TS))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameState {
     /// Every card, player, and token in the game, indexed by a unique UUID.
@@ -29,6 +34,7 @@ pub struct GameState {
     pub zones: HashMap<String, Zone>,
 
     /// The chronological list of events waiting to be executed.
+    #[cfg_attr(feature = "ts", ts(as = "Vec<Event>"))]
     pub event_queue: VecDeque<Event>,
 
     /// A log of visual updates for Svelte to animate (e.g., "-3 Health").
@@ -81,6 +87,7 @@ impl Default for GameState {
 /// A completely abstract object. It has no hardcoded rules.
 /// If it's a Magic card, it might have {"mana_cost": 3}.
 /// If it's a Pokémon, it might have {"hp": 120}.
+#[cfg_attr(feature = "ts", derive(TS))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Entity {
     pub id: String,
@@ -96,6 +103,7 @@ pub struct Entity {
 }
 
 /// A container for entities.
+#[cfg_attr(feature = "ts", derive(TS))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Zone {
     pub id: String,
@@ -108,6 +116,7 @@ pub struct Zone {
     pub entities: Vec<String>,
 }
 
+#[cfg_attr(feature = "ts", derive(TS))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Visibility {
     Public,          // Everyone sees the cards (e.g., The Board)
@@ -127,6 +136,7 @@ pub enum Visibility {
 ///
 /// Example — MTG:  `{ watch_property: "toughness", operator: "<=", threshold: 0, move_to_zone: "graveyard" }`
 /// Example — Pokémon: `{ watch_property: "hp", operator: "<=", threshold: 0, move_to_zone: "discard_pile" }`
+#[cfg_attr(feature = "ts", derive(TS))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StateCheck {
     /// The entity property to inspect (e.g. `"health"`, `"toughness"`).
@@ -144,6 +154,7 @@ pub struct StateCheck {
 // ==========================================
 
 /// The Event-Condition-Action definition built by the designer in Svelte.
+#[cfg_attr(feature = "ts", derive(TS))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Ability {
     pub id: String,
@@ -159,6 +170,7 @@ pub struct Ability {
     pub cancels: bool,
 }
 
+#[cfg_attr(feature = "ts", derive(TS))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Condition {
     pub target: String,
@@ -172,6 +184,7 @@ pub struct Condition {
 // ==========================================
 
 /// The wrapper that gives context to an action waiting in the queue.
+#[cfg_attr(feature = "ts", derive(TS))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Event {
     pub source_id: String,
@@ -180,6 +193,7 @@ pub struct Event {
 
 /// The ONLY ways the game state is allowed to change.
 /// By restricting mutations to these enums, the engine remains perfectly predictable.
+#[cfg_attr(feature = "ts", derive(TS))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Action {
     MutateProperty {
@@ -205,6 +219,7 @@ pub enum Action {
 // ==========================================
 
 /// Instructions sent back to Svelte to make the game look good.
+#[cfg_attr(feature = "ts", derive(TS))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Animation {
     FloatText {
@@ -225,6 +240,23 @@ pub enum Animation {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn assert_serde<T: serde::Serialize + serde::de::DeserializeOwned>() {}
+
+    #[test]
+    fn all_types_implement_serde_roundtrip_bounds() {
+        assert_serde::<GameState>();
+        assert_serde::<Entity>();
+        assert_serde::<Zone>();
+        assert_serde::<Action>();
+        assert_serde::<Animation>();
+        assert_serde::<Ability>();
+        assert_serde::<Event>();
+        assert_serde::<Condition>();
+        assert_serde::<StateCheck>();
+        assert_serde::<Visibility>();
+        assert_serde::<StackOrder>();
+    }
 
     fn make_entity(id: &str, props: Vec<(&str, i32)>) -> Entity {
         Entity {
