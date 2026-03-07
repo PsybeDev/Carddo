@@ -12,8 +12,8 @@ defmodule Carddo.Application do
       Carddo.Repo,
       {DNSCluster, query: Application.get_env(:carddo, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Carddo.PubSub},
-      {Registry, keys: :unique, name: Carddo.GameRegistry},
-      Carddo.RoomSupervisor,
+      {Registry, keys: :unique, name: Carddo.Multiplayer.GameRegistry},
+      Carddo.Multiplayer.RoomSupervisor,
       # Start a worker by calling: Carddo.Worker.start_link(arg)
       # {Carddo.Worker, arg},
       # Start to serve requests, typically the last entry

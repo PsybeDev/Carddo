@@ -1,4 +1,4 @@
-defmodule Carddo.RoomSupervisor do
+defmodule Carddo.Multiplayer.RoomSupervisor do
   use DynamicSupervisor
 
   def start_link(init_arg),

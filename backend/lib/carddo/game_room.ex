@@ -6,7 +6,7 @@ defmodule Carddo.GameRoom do
 
   # Public API
 
-  def via_tuple(room_id), do: Carddo.GameRegistry.via_tuple(room_id)
+  def via_tuple(room_id), do: Carddo.Multiplayer.GameRegistry.via_tuple(room_id)
 
   def start_link(
         %{
@@ -66,8 +66,7 @@ defmodule Carddo.GameRoom do
       {:ok, new_state_json, _animations} ->
         case Jason.decode(new_state_json) do
           {:ok, decoded} ->
-            new_state =
-              game_over? = Map.get(decoded, "game_over") == true
+            game_over? = Map.get(decoded, "game_over") == true
 
             turn_phase = get_in(decoded, ["turn", "phase"])
 
