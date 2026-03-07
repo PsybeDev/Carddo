@@ -7,6 +7,10 @@ defmodule Carddo.MultiplayerTest do
 
   defp unique_room_id, do: "multiplayer_test_#{System.unique_integer([:positive])}"
 
+  defp cleanup(pid) do
+    DynamicSupervisor.terminate_child(Carddo.Multiplayer.RoomSupervisor, pid)
+  end
+
   # Registry deregisters a dead process asynchronously via its own monitor, so we
   # poll briefly rather than asserting immediately after receiving :DOWN.
   defp wait_until_gone(room_id, deadline \\ nil) do
@@ -29,6 +33,8 @@ defmodule Carddo.MultiplayerTest do
       room_id = unique_room_id()
 
       assert {:ok, pid} = Multiplayer.start_room(room_id, "g1", @empty_state)
+      on_exit(fn -> cleanup(pid) end)
+
       assert is_pid(pid)
       assert Multiplayer.room_exists?(room_id)
     end
@@ -36,7 +42,8 @@ defmodule Carddo.MultiplayerTest do
     test "returns error when room with same id already exists" do
       room_id = unique_room_id()
 
-      assert {:ok, _pid} = Multiplayer.start_room(room_id, "g1", @empty_state)
+      assert {:ok, pid} = Multiplayer.start_room(room_id, "g1", @empty_state)
+      on_exit(fn -> cleanup(pid) end)
 
       assert {:error, {:already_started, _pid}} =
                Multiplayer.start_room(room_id, "g1", @empty_state)
@@ -44,8 +51,11 @@ defmodule Carddo.MultiplayerTest do
 
     test "solo_mode defaults to false" do
       room_id = unique_room_id()
-      assert {:ok, _pid} = Multiplayer.start_room(room_id, "g1", @empty_state)
-      assert Multiplayer.room_exists?(room_id)
+
+      assert {:ok, pid} = Multiplayer.start_room(room_id, "g1", @empty_state)
+      on_exit(fn -> cleanup(pid) end)
+
+      assert :sys.get_state(pid).solo_mode == false
     end
   end
 
@@ -70,7 +80,8 @@ defmodule Carddo.MultiplayerTest do
       room_b = unique_room_id()
 
       {:ok, pid_a} = Multiplayer.start_room(room_a, "g1", @empty_state)
-      {:ok, _pid_b} = Multiplayer.start_room(room_b, "g1", @empty_state)
+      {:ok, pid_b} = Multiplayer.start_room(room_b, "g1", @empty_state)
+      on_exit(fn -> cleanup(pid_b) end)
 
       ref = Process.monitor(pid_a)
       Process.exit(pid_a, :kill)
