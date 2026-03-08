@@ -1,18 +1,34 @@
 defmodule Carddo.GameRoomTest do
-  use ExUnit.Case, async: true
+  # async: false so the SQL sandbox runs in shared mode, allowing background
+  # Task.start processes (spawned by GameRoom.init for DB checkpointing) to
+  # access the DB connection without OwnershipErrors.
+  use Carddo.DataCase, async: false
 
-  alias Carddo.GameRoom
+  alias Carddo.{Game, GameRoom, Repo, User}
   alias Phoenix.PubSub
 
   @empty_state ~s({"entities":{},"zones":{},"event_queue":[],"pending_animations":[],"stack_order":"Fifo","state_checks":[]})
 
-  defp start_room(opts \\ %{}) do
+  setup do
+    {:ok, user} =
+      %User{}
+      |> User.changeset(%{email: "room-#{System.unique_integer([:positive])}@example.com"})
+      |> Repo.insert()
+
+    {:ok, game} =
+      Ecto.build_assoc(user, :games)
+      |> Game.changeset(%{title: "Test Game"})
+      |> Repo.insert()
+
+    %{game: game}
+  end
+
+  defp start_room(game, opts \\ %{}) do
     room_id = "test_room_#{System.unique_integer([:positive])}"
-    game_id = Ecto.UUID.generate()
 
     base_opts = %{
       room_id: room_id,
-      game_id: game_id,
+      game_id: game.id,
       initial_state_json: @empty_state,
       solo_mode: false
     }
@@ -24,32 +40,32 @@ defmodule Carddo.GameRoomTest do
   end
 
   describe "init/1" do
-    test "starts and registers under room_id" do
-      {room_id, _pid} = start_room()
+    test "starts and registers under room_id", %{game: game} do
+      {room_id, _pid} = start_room(game)
 
       # Can retrieve state via the registered name
       state = GameRoom.get_state(room_id)
       assert {:ok, _} = Jason.decode(state)
     end
 
-    test "stores initial state correctly" do
+    test "stores initial state correctly", %{game: game} do
       custom_state =
-        ~s({"entities":{"e1":{"id":"e1","owner_id":"p1","properties":{},"abilities":[]}},"zones":{},"event_queue":[],"pending_animations":[],"stack_order":"Fifo","state_checks":[]})
+        ~s({"entities":{"e1":{"id":"e1","owner_id":"p1","template_id":"t1","properties":{},"abilities":[]}},"zones":{},"event_queue":[],"pending_animations":[],"stack_order":"Fifo","state_checks":[]})
 
-      {room_id, _pid} = start_room(initial_state_json: custom_state)
+      {room_id, _pid} = start_room(game, initial_state_json: custom_state)
 
       state = GameRoom.get_state(room_id)
       decoded = Jason.decode!(state)
       assert decoded["entities"]["e1"]["id"] == "e1"
     end
 
-    test "initial state is returned as a JSON string" do
-      {room_id, _pid} = start_room()
+    test "initial state is returned as a JSON string", %{game: game} do
+      {room_id, _pid} = start_room(game)
       assert is_binary(GameRoom.get_state(room_id))
     end
 
-    test "accepts solo_mode parameter" do
-      {room_id, _pid} = start_room(solo_mode: true)
+    test "accepts solo_mode parameter", %{game: game} do
+      {room_id, _pid} = start_room(game, solo_mode: true)
       assert is_binary(GameRoom.get_state(room_id))
     end
 
@@ -68,8 +84,8 @@ defmodule Carddo.GameRoomTest do
   end
 
   describe "get_state/1" do
-    test "returns rust_state_json" do
-      {room_id, _pid} = start_room()
+    test "returns rust_state_json", %{game: game} do
+      {room_id, _pid} = start_room(game)
       state = GameRoom.get_state(room_id)
 
       assert {:ok, decoded} = Jason.decode(state)
@@ -79,8 +95,8 @@ defmodule Carddo.GameRoomTest do
   end
 
   describe "make_move/3" do
-    test "valid move updates state and returns :ok" do
-      {room_id, _pid} = start_room()
+    test "valid move updates state and returns :ok", %{game: game} do
+      {room_id, _pid} = start_room(game)
       action = ~s("EndTurn")
 
       result = GameRoom.make_move(room_id, "player_1", action)
@@ -91,8 +107,8 @@ defmodule Carddo.GameRoomTest do
       assert {:ok, _decoded} = Jason.decode(new_state)
     end
 
-    test "valid move broadcasts state_resolved" do
-      {room_id, _pid} = start_room()
+    test "valid move broadcasts state_resolved", %{game: game} do
+      {room_id, _pid} = start_room(game)
       action = ~s("EndTurn")
 
       # Subscribe to the room topic
@@ -110,8 +126,8 @@ defmodule Carddo.GameRoomTest do
       }
     end
 
-    test "invalid action returns error without mutating state" do
-      {room_id, _pid} = start_room()
+    test "invalid action returns error without mutating state", %{game: game} do
+      {room_id, _pid} = start_room(game)
       initial_state = GameRoom.get_state(room_id)
 
       # Invalid action - targeting nonexistent entity
@@ -129,8 +145,8 @@ defmodule Carddo.GameRoomTest do
   end
 
   describe "ended game" do
-    test "rejects moves when ended: true and returns game_over error" do
-      {room_id, pid} = start_room()
+    test "rejects moves when ended: true and returns game_over error", %{game: game} do
+      {room_id, pid} = start_room(game)
 
       # Force the room into the ended state directly
       :sys.replace_state(pid, fn state -> %{state | ended: true} end)
@@ -141,8 +157,8 @@ defmodule Carddo.GameRoomTest do
   end
 
   describe "make_move/3 with repeated calls" do
-    test "handles multiple sequential moves without crashing" do
-      {room_id, _pid} = start_room()
+    test "handles multiple sequential moves without crashing", %{game: game} do
+      {room_id, _pid} = start_room(game)
 
       action = ~s("EndTurn")
 
@@ -152,13 +168,35 @@ defmodule Carddo.GameRoomTest do
   end
 
   describe "turn boundary handling" do
-    test "EndTurn action does not crash" do
-      {room_id, _pid} = start_room()
+    test "EndTurn action does not crash", %{game: game} do
+      {room_id, _pid} = start_room(game)
       action = ~s("EndTurn")
 
       # Should not raise
       result = GameRoom.make_move(room_id, "player_1", action)
       assert result == :ok
+    end
+
+    test "EndTurn increments turn_number in GenServer state", %{game: game} do
+      {room_id, pid} = start_room(game)
+
+      assert GameRoom.make_move(room_id, "player_1", ~s("EndTurn")) == :ok
+
+      %{turn_number: turn} = :sys.get_state(pid)
+      assert turn == 1
+    end
+
+    test "EndTurn upserts a game_sessions row", %{game: game} do
+      {room_id, _pid} = start_room(game)
+
+      assert GameRoom.make_move(room_id, "player_1", ~s("EndTurn")) == :ok
+
+      # Allow background task to complete
+      Process.sleep(100)
+
+      session = Carddo.Multiplayer.GameSessions.get(room_id)
+      assert session != nil
+      assert session.turn_number == 1
     end
   end
 end
