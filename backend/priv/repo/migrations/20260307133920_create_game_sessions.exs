@@ -7,7 +7,8 @@ defmodule Carddo.Repo.Migrations.CreateGameSessions do
       add(:game_id, references(:games, on_delete: :delete_all), null: false)
       add(:state_json, :jsonb, null: false)
       add(:turn_number, :integer, null: false, default: 0)
-      add(:updated_at, :naive_datetime, null: false, default: fragment("NOW()"))
+
+      timestamps(updated_at: :updated_at, inserted_at: false)
     end
 
     create(unique_index(:game_sessions, [:room_id]))

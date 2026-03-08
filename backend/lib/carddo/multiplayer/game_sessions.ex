@@ -21,7 +21,7 @@ defmodule Carddo.Multiplayer.GameSessions do
         )
 
       Repo.insert(changeset,
-        on_conflict: {:replace, [:state_json, :turn_number, :updated_at]},
+        on_conflict: {:replace, [:game_id, :state_json, :turn_number, :updated_at]},
         conflict_target: :room_id,
         returning: true
       )

@@ -25,19 +25,20 @@ defmodule Carddo.GameRoomTest do
 
   # Polls `fun` every 20ms until it returns a non-nil value or `timeout_ms` elapses.
   # Use this instead of Process.sleep when waiting for background Task.start DB writes.
-  defp wait_for(fun, timeout_ms \\ 500) do
+  # Raises with a clear message on timeout so CI failures are easy to diagnose.
+  defp wait_for(fun, timeout_ms \\ 1000) do
     deadline = System.monotonic_time(:millisecond) + timeout_ms
-    wait_for_loop(fun, deadline)
+    wait_for_loop(fun, deadline, timeout_ms)
   end
 
-  defp wait_for_loop(fun, deadline) do
+  defp wait_for_loop(fun, deadline, timeout_ms) do
     case fun.() do
       nil ->
         if System.monotonic_time(:millisecond) < deadline do
           Process.sleep(20)
-          wait_for_loop(fun, deadline)
+          wait_for_loop(fun, deadline, timeout_ms)
         else
-          nil
+          raise "wait_for/2 timed out after #{timeout_ms}ms waiting for condition to be met"
         end
 
       result ->
@@ -213,8 +214,12 @@ defmodule Carddo.GameRoomTest do
 
       assert GameRoom.make_move(room_id, "player_1", ~s("EndTurn")) == :ok
 
-      session = wait_for(fn -> Carddo.Multiplayer.GameSessions.get(room_id) end)
-      assert session != nil
+      session =
+        wait_for(fn ->
+          s = Carddo.Multiplayer.GameSessions.get(room_id)
+          if s && s.turn_number == 1, do: s, else: nil
+        end)
+
       assert session.turn_number == 1
     end
   end
