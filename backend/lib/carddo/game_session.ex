@@ -2,7 +2,6 @@ defmodule Carddo.GameSession do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @primary_key {:id, :binary_id, autogenerate: true}
   @timestamps_opts [type: :naive_datetime, updated_at: :updated_at, inserted_at: false]
 
   schema "game_sessions" do
@@ -18,5 +17,7 @@ defmodule Carddo.GameSession do
     session
     |> cast(attrs, [:state_json, :turn_number])
     |> validate_required([:state_json, :turn_number])
+    |> assoc_constraint(:game)
+    |> unique_constraint(:room_id)
   end
 end

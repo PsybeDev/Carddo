@@ -65,6 +65,9 @@ defmodule Carddo.GameRoom do
       end
     end)
 
+    # Absolute 24-hour lifetime TTL — not an idle timer. Active rooms will also be
+    # stopped after 24h. Converting this to an idle-TTL (reset on each move) is
+    # tracked as a follow-up issue.
     Process.send_after(self(), :ttl_expired, :timer.hours(24))
 
     {:ok, state}
