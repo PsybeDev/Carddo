@@ -23,6 +23,28 @@ defmodule Carddo.GameRoomTest do
     %{game: game}
   end
 
+  # Polls `fun` every 20ms until it returns a non-nil value or `timeout_ms` elapses.
+  # Use this instead of Process.sleep when waiting for background Task.start DB writes.
+  defp wait_for(fun, timeout_ms \\ 500) do
+    deadline = System.monotonic_time(:millisecond) + timeout_ms
+    wait_for_loop(fun, deadline)
+  end
+
+  defp wait_for_loop(fun, deadline) do
+    case fun.() do
+      nil ->
+        if System.monotonic_time(:millisecond) < deadline do
+          Process.sleep(20)
+          wait_for_loop(fun, deadline)
+        else
+          nil
+        end
+
+      result ->
+        result
+    end
+  end
+
   defp start_room(game, opts \\ %{}) do
     room_id = "test_room_#{System.unique_integer([:positive])}"
 
@@ -191,10 +213,7 @@ defmodule Carddo.GameRoomTest do
 
       assert GameRoom.make_move(room_id, "player_1", ~s("EndTurn")) == :ok
 
-      # Allow background task to complete
-      Process.sleep(100)
-
-      session = Carddo.Multiplayer.GameSessions.get(room_id)
+      session = wait_for(fn -> Carddo.Multiplayer.GameSessions.get(room_id) end)
       assert session != nil
       assert session.turn_number == 1
     end

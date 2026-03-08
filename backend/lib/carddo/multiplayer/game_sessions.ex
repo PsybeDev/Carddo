@@ -1,4 +1,5 @@
 defmodule Carddo.Multiplayer.GameSessions do
+  require Logger
   import Ecto.Query
   alias Carddo.{Repo, GameSession}
 
@@ -8,25 +9,27 @@ defmodule Carddo.Multiplayer.GameSessions do
   `state_json_string` is the raw JSON string returned by the NIF. It is decoded
   to a map before storage because the column is JSONB.
 
-  Returns `{:ok, %GameSession{}}` or `{:error, changeset}`.
+  Returns `{:ok, %GameSession{}}` or `{:error, changeset | :invalid_json}`.
   """
   def upsert(room_id, game_id, state_json_string, turn_number)
       when is_binary(state_json_string) do
-    state_map = Jason.decode!(state_json_string)
+    with {:ok, state_map} <- Jason.decode(state_json_string) do
+      changeset =
+        GameSession.changeset(
+          %GameSession{room_id: room_id, game_id: game_id},
+          %{state_json: state_map, turn_number: turn_number}
+        )
 
-    changeset =
-      GameSession.changeset(%GameSession{}, %{
-        room_id: room_id,
-        game_id: game_id,
-        state_json: state_map,
-        turn_number: turn_number
-      })
-
-    Repo.insert(changeset,
-      on_conflict: {:replace, [:state_json, :turn_number, :updated_at]},
-      conflict_target: :room_id,
-      returning: true
-    )
+      Repo.insert(changeset,
+        on_conflict: {:replace, [:state_json, :turn_number, :updated_at]},
+        conflict_target: :room_id,
+        returning: true
+      )
+    else
+      {:error, %Jason.DecodeError{} = reason} ->
+        Logger.error("GameSessions.upsert: invalid JSON for room=#{room_id}: #{inspect(reason)}")
+        {:error, :invalid_json}
+    end
   end
 
   @doc """
@@ -43,6 +46,6 @@ defmodule Carddo.Multiplayer.GameSessions do
   Hard-deletes the game session for a room. Called on game over or TTL expiry.
   """
   def delete(room_id) do
-    Repo.delete_all(from s in GameSession, where: s.room_id == ^room_id)
+    Repo.delete_all(from(s in GameSession, where: s.room_id == ^room_id))
   end
 end

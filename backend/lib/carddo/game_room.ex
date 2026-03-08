@@ -54,7 +54,15 @@ defmodule Carddo.GameRoom do
     }
 
     Task.start(fn ->
-      Carddo.Multiplayer.GameSessions.upsert(room_id, game_id, initial_state_json, 0)
+      case Carddo.Multiplayer.GameSessions.upsert(room_id, game_id, initial_state_json, 0) do
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.error(
+            "GameSessions initial checkpoint failed room=#{room_id}: #{inspect(reason)}"
+          )
+      end
     end)
 
     Process.send_after(self(), :ttl_expired, :timer.hours(24))
@@ -141,7 +149,7 @@ defmodule Carddo.GameRoom do
   @impl true
   def handle_info(:ttl_expired, state) do
     Logger.info("GameRoom TTL expired for room=#{state.room_id}, cleaning up abandoned session")
-    Carddo.Multiplayer.GameSessions.delete(state.room_id)
+    Task.start(fn -> Carddo.Multiplayer.GameSessions.delete(state.room_id) end)
     {:stop, :normal, state}
   end
 
