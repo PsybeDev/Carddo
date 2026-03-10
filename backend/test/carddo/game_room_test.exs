@@ -195,7 +195,6 @@ defmodule Carddo.GameRoomTest do
       {room_id, _pid} = start_room(game)
       action = ~s("EndTurn")
 
-      # Should not raise
       result = GameRoom.make_move(room_id, "player_1", action)
       assert result == :ok
     end
@@ -221,6 +220,138 @@ defmodule Carddo.GameRoomTest do
         end)
 
       assert session.turn_number == 1
+    end
+  end
+
+  describe "game over cleanup" do
+    test "game_over deletes the game_sessions row", %{game: game} do
+      {room_id, pid} = start_room(game)
+
+      wait_for(fn -> Carddo.Multiplayer.GameSessions.get(room_id) end)
+
+      :sys.replace_state(pid, fn state ->
+        game_over_json =
+          Jason.encode!(%{
+            entities: %{},
+            zones: %{},
+            event_queue: [],
+            pending_animations: [],
+            stack_order: "Fifo",
+            state_checks: [],
+            game_over: true,
+            turn_ended: false
+          })
+
+        %{state | rust_state_json: game_over_json}
+      end)
+
+      assert GameRoom.make_move(room_id, "player_1", ~s("EndTurn")) == :ok
+
+      wait_for(fn ->
+        if Carddo.Multiplayer.GameSessions.get(room_id) == nil, do: :deleted, else: nil
+      end)
+    end
+  end
+
+  describe "upsert failure resilience" do
+    test "failed checkpoint does not crash the GameRoom", %{game: game} do
+      {room_id, pid} = start_room(game)
+
+      wait_for(fn -> Carddo.Multiplayer.GameSessions.get(room_id) end)
+
+      :sys.replace_state(pid, fn state ->
+        %{state | game_id: -999_999}
+      end)
+
+      assert GameRoom.make_move(room_id, "player_1", ~s("EndTurn")) == :ok
+
+      Process.sleep(100)
+      assert Process.alive?(pid)
+      assert is_binary(GameRoom.get_state(room_id))
+    end
+  end
+
+  describe "TTL expiry" do
+    test "ttl_expired deletes session and stops the room", %{game: game} do
+      {room_id, pid} = start_room(game)
+
+      wait_for(fn -> Carddo.Multiplayer.GameSessions.get(room_id) end)
+
+      ref = Process.monitor(pid)
+      send(pid, :ttl_expired)
+
+      assert_receive {:DOWN, ^ref, :process, ^pid, :normal}, 5000
+
+      wait_for(fn ->
+        if Carddo.Multiplayer.GameSessions.get(room_id) == nil, do: :deleted, else: nil
+      end)
+    end
+  end
+
+  describe "crash recovery" do
+    test "checkpointed state survives room restart", %{game: game} do
+      {room_id, pid} = start_room(game)
+
+      assert GameRoom.make_move(room_id, "player_1", ~s("EndTurn")) == :ok
+
+      session =
+        wait_for(fn ->
+          s = Carddo.Multiplayer.GameSessions.get(room_id)
+          if s && s.turn_number == 1, do: s, else: nil
+        end)
+
+      assert session.turn_number == 1
+
+      Process.exit(pid, :kill)
+      ref = Process.monitor(pid)
+      assert_receive {:DOWN, ^ref, :process, ^pid, :killed}, 5000
+
+      resumed_state_json = Jason.encode!(session.state_json)
+
+      new_room_id = "resumed_#{System.unique_integer([:positive])}"
+
+      {:ok, new_pid} =
+        start_supervised(
+          {GameRoom,
+           %{
+             room_id: new_room_id,
+             game_id: game.id,
+             initial_state_json: resumed_state_json,
+             solo_mode: false
+           }},
+          id: :resumed_room
+        )
+
+      recovered_state = GameRoom.get_state(new_room_id)
+      assert {:ok, decoded} = Jason.decode(recovered_state)
+
+      assert decoded["entities"] == session.state_json["entities"]
+      assert decoded["zones"] == session.state_json["zones"]
+      assert Process.alive?(new_pid)
+    end
+
+    test "mid-turn crash loses only current turn", %{game: game} do
+      {room_id, pid} = start_room(game)
+
+      assert GameRoom.make_move(room_id, "player_1", ~s("EndTurn")) == :ok
+      assert GameRoom.make_move(room_id, "player_1", ~s("EndTurn")) == :ok
+
+      session =
+        wait_for(fn ->
+          s = Carddo.Multiplayer.GameSessions.get(room_id)
+          if s && s.turn_number == 2, do: s, else: nil
+        end)
+
+      assert session.turn_number == 2
+      checkpoint_state = session.state_json
+
+      Process.exit(pid, :kill)
+      ref = Process.monitor(pid)
+      assert_receive {:DOWN, ^ref, :process, ^pid, :killed}, 5000
+
+      post_crash_session = Carddo.Multiplayer.GameSessions.get(room_id)
+      assert post_crash_session.turn_number == 2
+      assert post_crash_session.state_json == checkpoint_state
     end
   end
 end

@@ -39,7 +39,7 @@ defmodule Carddo.Multiplayer.GameSessionsTest do
       assert updated.turn_number == 3
       assert Repo.aggregate(GameSession, :count) >= 1
       # Only one row for this room_id
-      assert Repo.one(from s in GameSession, where: s.room_id == ^rid, select: count()) == 1
+      assert Repo.one(from(s in GameSession, where: s.room_id == ^rid, select: count())) == 1
     end
 
     test "stores state as a map (JSONB)", %{game: game} do
@@ -76,6 +76,18 @@ defmodule Carddo.Multiplayer.GameSessionsTest do
 
     test "no-ops on unknown room_id" do
       assert {0, _} = GameSessions.delete("nonexistent_room")
+    end
+  end
+
+  describe "upsert/4 error handling" do
+    test "returns {:error, :invalid_json} for malformed JSON string", %{game: game} do
+      rid = room_id()
+      assert {:error, :invalid_json} = GameSessions.upsert(rid, game.id, "not json {{{", 0)
+    end
+
+    test "returns {:error, :invalid_json} for empty string", %{game: game} do
+      rid = room_id()
+      assert {:error, :invalid_json} = GameSessions.upsert(rid, game.id, "", 0)
     end
   end
 

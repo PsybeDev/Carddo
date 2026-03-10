@@ -79,13 +79,12 @@ defmodule Carddo.GameRoom do
   end
 
   def handle_call({:make_move, player_id, action_json}, _from, state) do
-    end_turn? = match?({:ok, "EndTurn"}, Jason.decode(action_json))
-
     case Carddo.Native.process_move(state.rust_state_json, action_json, player_id) do
       {:ok, new_state_json, _animations} ->
         case Jason.decode(new_state_json) do
           {:ok, decoded} ->
             game_over? = Map.get(decoded, "game_over") == true
+            turn_ended? = Map.get(decoded, "turn_ended") == true
 
             {event, new_state} =
               cond do
@@ -96,7 +95,7 @@ defmodule Carddo.GameRoom do
 
                   {"game_over", %{state | rust_state_json: new_state_json, ended: true}}
 
-                end_turn? ->
+                turn_ended? ->
                   new_turn = state.turn_number + 1
 
                   Task.start(fn ->
