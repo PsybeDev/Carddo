@@ -58,7 +58,7 @@ defmodule Carddo.GameRoomTest do
 
     opts = Map.merge(base_opts, Enum.into(opts, %{}))
 
-    {:ok, pid} = start_supervised({GameRoom, opts})
+    {:ok, pid} = start_supervised(Supervisor.child_spec({GameRoom, opts}, restart: :temporary))
     {room_id, pid}
   end
 

@@ -53,17 +53,13 @@ defmodule Carddo.GameRoom do
       ended: false
     }
 
-    Task.start(fn ->
-      case Carddo.Multiplayer.GameSessions.upsert(room_id, game_id, initial_state_json, 0) do
-        {:ok, _} ->
-          :ok
+    case Carddo.Multiplayer.GameSessions.upsert(room_id, game_id, initial_state_json, 0) do
+      {:ok, _} ->
+        :ok
 
-        {:error, reason} ->
-          Logger.error(
-            "GameSessions initial checkpoint failed room=#{room_id}: #{inspect(reason)}"
-          )
-      end
-    end)
+      {:error, reason} ->
+        Logger.error("GameSessions initial checkpoint failed room=#{room_id}: #{inspect(reason)}")
+    end
 
     # Absolute 24-hour lifetime TTL — not an idle timer. Active rooms will also be
     # stopped after 24h. Converting this to an idle-TTL (reset on each move) is
@@ -151,7 +147,7 @@ defmodule Carddo.GameRoom do
   @impl true
   def handle_info(:ttl_expired, state) do
     Logger.info("GameRoom TTL expired for room=#{state.room_id}, cleaning up abandoned session")
-    Task.start(fn -> Carddo.Multiplayer.GameSessions.delete(state.room_id) end)
+    Carddo.Multiplayer.GameSessions.delete(state.room_id)
     {:stop, :normal, state}
   end
 

@@ -20,11 +20,34 @@ defmodule Carddo.Multiplayer.GameSessions do
           %{state_json: state_map, turn_number: turn_number}
         )
 
-      Repo.insert(changeset,
-        on_conflict: {:replace, [:game_id, :state_json, :turn_number, :updated_at]},
-        conflict_target: :room_id,
-        returning: true
-      )
+      case Repo.insert(changeset,
+             on_conflict: :nothing,
+             conflict_target: :room_id,
+             returning: true
+           ) do
+        {:ok, %GameSession{id: nil}} ->
+          now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+
+          Repo.update_all(
+            from(s in GameSession,
+              where: s.room_id == ^room_id and s.turn_number < ^turn_number
+            ),
+            set: [
+              game_id: game_id,
+              state_json: state_map,
+              turn_number: turn_number,
+              updated_at: now
+            ]
+          )
+
+          {:ok, Repo.get_by(GameSession, room_id: room_id)}
+
+        {:ok, session} ->
+          {:ok, session}
+
+        {:error, changeset} ->
+          {:error, changeset}
+      end
     else
       {:error, %Jason.DecodeError{} = reason} ->
         Logger.error("GameSessions.upsert: invalid JSON for room=#{room_id}: #{inspect(reason)}")
