@@ -14,40 +14,35 @@ defmodule Carddo.Multiplayer.GameSessions do
   def upsert(room_id, game_id, state_json_string, turn_number)
       when is_binary(state_json_string) do
     with {:ok, state_map} <- Jason.decode(state_json_string) do
+      now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+
       changeset =
         GameSession.changeset(
           %GameSession{room_id: room_id, game_id: game_id},
           %{state_json: state_map, turn_number: turn_number}
         )
 
-      case Repo.insert(changeset,
-             on_conflict: :nothing,
-             conflict_target: :room_id,
-             returning: true
-           ) do
-        {:ok, %GameSession{id: nil}} ->
-          now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-
-          Repo.update_all(
-            from(s in GameSession,
-              where: s.room_id == ^room_id and s.turn_number < ^turn_number
-            ),
-            set: [
-              game_id: game_id,
-              state_json: state_map,
-              turn_number: turn_number,
-              updated_at: now
+      # Single-round-trip upsert: ON CONFLICT DO UPDATE only fires when the stored
+      # turn_number is strictly older than the incoming one, preventing stale
+      # out-of-order writes from rolling back a newer checkpoint. When the condition
+      # is false (stale write) Postgres returns no rows, so Ecto yields {:ok, %GameSession{id: nil}}.
+      Repo.insert(
+        changeset,
+        on_conflict:
+          from(s in GameSession,
+            where: s.room_id == ^room_id and s.turn_number < ^turn_number,
+            update: [
+              set: [
+                game_id: ^game_id,
+                state_json: ^state_map,
+                turn_number: ^turn_number,
+                updated_at: ^now
+              ]
             ]
-          )
-
-          {:ok, Repo.get_by(GameSession, room_id: room_id)}
-
-        {:ok, session} ->
-          {:ok, session}
-
-        {:error, changeset} ->
-          {:error, changeset}
-      end
+          ),
+        conflict_target: :room_id,
+        returning: true
+      )
     else
       {:error, %Jason.DecodeError{} = reason} ->
         Logger.error("GameSessions.upsert: invalid JSON for room=#{room_id}: #{inspect(reason)}")

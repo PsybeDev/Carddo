@@ -85,10 +85,7 @@ defmodule Carddo.GameRoom do
             {event, new_state} =
               cond do
                 game_over? ->
-                  Task.start(fn ->
-                    Carddo.Multiplayer.GameSessions.delete(state.room_id)
-                  end)
-
+                  Carddo.Multiplayer.GameSessions.delete(state.room_id)
                   {"game_over", %{state | rust_state_json: new_state_json, ended: true}}
 
                 turn_ended? ->

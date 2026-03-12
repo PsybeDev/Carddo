@@ -1,6 +1,6 @@
 defmodule Carddo.GameRoomTest do
   # async: false so the SQL sandbox runs in shared mode, allowing background
-  # Task.start processes (spawned by GameRoom.init for DB checkpointing) to
+  # Task.start processes (spawned by GameRoom.make_move/3 for turn checkpointing) to
   # access the DB connection without OwnershipErrors.
   use Carddo.DataCase, async: false
 
