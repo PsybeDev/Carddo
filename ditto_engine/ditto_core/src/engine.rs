@@ -6,33 +6,48 @@ use crate::state::{Action, Animation, Condition, Event, GameState, StackOrder, S
 
 pub fn validate_action(state: &GameState, action: &Action) -> Result<(), String> {
     match action {
-        Action::MoveEntity { entity_id, from_zone, to_zone, .. } => {
-            let src = state.zones.get(from_zone)
+        Action::MoveEntity {
+            entity_id,
+            from_zone,
+            to_zone,
+            ..
+        } => {
+            let src = state
+                .zones
+                .get(from_zone)
                 .ok_or_else(|| format!("source zone '{}' not found", from_zone))?;
             if !state.zones.contains_key(to_zone) {
                 return Err(format!("destination zone '{}' not found", to_zone));
             }
             if !src.entities.contains(entity_id) {
-                return Err(format!("entity '{}' not in zone '{}'", entity_id, from_zone));
+                return Err(format!(
+                    "entity '{}' not in zone '{}'",
+                    entity_id, from_zone
+                ));
             }
             if !state.entities.contains_key(entity_id) {
                 return Err(format!("entity '{}' not found in state", entity_id));
             }
             Ok(())
         }
-        Action::MutateProperty { target_id, .. } => {
-            state.entities.contains_key(target_id)
-                .then_some(())
-                .ok_or_else(|| format!("entity '{}' not found", target_id))
-        }
+        Action::MutateProperty { target_id, .. } => state
+            .entities
+            .contains_key(target_id)
+            .then_some(())
+            .ok_or_else(|| format!("entity '{}' not found", target_id)),
         Action::SpawnEntity { zone_id, entity } => {
-            let zone = state.zones.get(zone_id)
+            let zone = state
+                .zones
+                .get(zone_id)
                 .ok_or_else(|| format!("zone '{}' not found", zone_id))?;
             if state.entities.contains_key(&entity.id) {
                 return Err(format!("entity '{}' already exists", entity.id));
             }
             if zone.entities.contains(&entity.id) {
-                return Err(format!("entity '{}' already present in zone '{}'", entity.id, zone_id));
+                return Err(format!(
+                    "entity '{}' already present in zone '{}'",
+                    entity.id, zone_id
+                ));
             }
             Ok(())
         }
@@ -76,6 +91,7 @@ impl GameState {
     }
 
     fn resolve_queue_impl(&mut self, max_steps: Option<usize>) -> Result<(), String> {
+        self.turn_ended = false;
         let order = self.stack_order;
         let mut steps = 0;
         loop {
@@ -143,7 +159,13 @@ impl GameState {
         for entity_id in entity_ids {
             let entity = self.entities[&entity_id].clone();
             for ability in &entity.abilities {
-                if !trigger_matches(&ability.trigger, phase_prefix, action_str, &entity_id, event) {
+                if !trigger_matches(
+                    &ability.trigger,
+                    phase_prefix,
+                    action_str,
+                    &entity_id,
+                    event,
+                ) {
                     continue;
                 }
                 if !self.evaluate_conditions(&ability.conditions, &entity_id) {
@@ -305,7 +327,7 @@ impl GameState {
             }
 
             Action::EndTurn => {
-                // Handled at a higher layer; no direct state mutation here.
+                self.turn_ended = true;
             }
         }
     }
@@ -555,9 +577,10 @@ mod tests {
     #[test]
     fn mutate_property_updates_entity_and_pushes_animation() {
         let mut state = GameState::new();
-        state
-            .entities
-            .insert("hero".to_string(), make_entity("hero", vec![("health", 20)], vec![]));
+        state.entities.insert(
+            "hero".to_string(),
+            make_entity("hero", vec![("health", 20)], vec![]),
+        );
         state.event_queue.push_back(Event {
             source_id: "player_1".to_string(),
             action: Action::MutateProperty {
@@ -572,7 +595,11 @@ mod tests {
         assert_eq!(state.entities["hero"].properties["health"], 15);
         assert_eq!(state.pending_animations.len(), 1);
         match &state.pending_animations[0] {
-            Animation::FloatText { target_id, text, color } => {
+            Animation::FloatText {
+                target_id,
+                text,
+                color,
+            } => {
                 assert_eq!(target_id, "hero");
                 assert_eq!(text, "-5");
                 assert_eq!(color, "red");
@@ -611,9 +638,10 @@ mod tests {
             "entity_b".to_string(),
             make_entity("entity_b", vec![("health", 10)], vec![thorns]),
         );
-        state
-            .zones
-            .insert("battlefield".to_string(), make_zone("battlefield", vec!["entity_a", "entity_b"]));
+        state.zones.insert(
+            "battlefield".to_string(),
+            make_zone("battlefield", vec!["entity_a", "entity_b"]),
+        );
 
         // Entity A deals 3 damage to Entity B.
         state.event_queue.push_back(Event {
@@ -628,16 +656,17 @@ mod tests {
         state.resolve_queue();
 
         assert_eq!(
-            state.entities["entity_b"].properties["health"],
-            7,
+            state.entities["entity_b"].properties["health"], 7,
             "entity_b should have taken 3 damage"
         );
         assert_eq!(
-            state.entities["entity_a"].properties["health"],
-            9,
+            state.entities["entity_a"].properties["health"], 9,
             "entity_a should have taken 1 Thorns damage"
         );
-        assert!(state.event_queue.is_empty(), "queue should be fully drained");
+        assert!(
+            state.event_queue.is_empty(),
+            "queue should be fully drained"
+        );
     }
 
     // ------------------------------------------
@@ -656,9 +685,10 @@ mod tests {
         };
 
         let mut state = GameState::new();
-        state
-            .entities
-            .insert("hero".to_string(), make_entity("hero", vec![("health", 10)], vec![shield]));
+        state.entities.insert(
+            "hero".to_string(),
+            make_entity("hero", vec![("health", 10)], vec![shield]),
+        );
 
         state.event_queue.push_back(Event {
             source_id: "enemy".to_string(),
@@ -672,8 +702,7 @@ mod tests {
         state.resolve_queue();
 
         assert_eq!(
-            state.entities["hero"].properties["health"],
-            10,
+            state.entities["hero"].properties["health"], 10,
             "health should be unchanged — the attack was canceled"
         );
         assert!(
@@ -717,9 +746,10 @@ mod tests {
             "entity_b".to_string(),
             make_entity("entity_b", vec![("health", 4)], vec![counterattack]),
         );
-        state
-            .zones
-            .insert("battlefield".to_string(), make_zone("battlefield", vec!["entity_a", "entity_b"]));
+        state.zones.insert(
+            "battlefield".to_string(),
+            make_zone("battlefield", vec!["entity_a", "entity_b"]),
+        );
 
         state.event_queue.push_back(Event {
             source_id: "entity_a".to_string(),
@@ -735,8 +765,7 @@ mod tests {
         // Entity B's hook did not fire, so Entity A is untouched.
         assert_eq!(state.entities["entity_b"].properties["health"], 3);
         assert_eq!(
-            state.entities["entity_a"].properties["health"],
-            10,
+            state.entities["entity_a"].properties["health"], 10,
             "entity_a should be unharmed — condition blocked the hook"
         );
     }
@@ -752,9 +781,10 @@ mod tests {
     fn lifo_resolves_events_in_reverse_push_order() {
         let mut state = GameState::new();
         state.stack_order = StackOrder::Lifo;
-        state
-            .entities
-            .insert("hero".to_string(), make_entity("hero", vec![("health", 20)], vec![]));
+        state.entities.insert(
+            "hero".to_string(),
+            make_entity("hero", vec![("health", 20)], vec![]),
+        );
 
         // Push event A first, then event B.
         state.event_queue.push_back(Event {
@@ -814,9 +844,10 @@ mod tests {
             "creature".to_string(),
             make_entity("creature", vec![("health", 1)], vec![]),
         );
-        state
-            .zones
-            .insert("battlefield".to_string(), make_zone("battlefield", vec!["creature"]));
+        state.zones.insert(
+            "battlefield".to_string(),
+            make_zone("battlefield", vec!["creature"]),
+        );
         state
             .zones
             .insert("graveyard".to_string(), make_zone("graveyard", vec![]));
@@ -834,11 +865,15 @@ mod tests {
 
         assert_eq!(state.entities["creature"].properties["health"], 0);
         assert!(
-            !state.zones["battlefield"].entities.contains(&"creature".to_string()),
+            !state.zones["battlefield"]
+                .entities
+                .contains(&"creature".to_string()),
             "creature should be removed from battlefield"
         );
         assert!(
-            state.zones["graveyard"].entities.contains(&"creature".to_string()),
+            state.zones["graveyard"]
+                .entities
+                .contains(&"creature".to_string()),
             "creature should be in graveyard"
         );
     }
@@ -860,9 +895,10 @@ mod tests {
         state
             .zones
             .insert("active".to_string(), make_zone("active", vec!["pikachu"]));
-        state
-            .zones
-            .insert("discard_pile".to_string(), make_zone("discard_pile", vec![]));
+        state.zones.insert(
+            "discard_pile".to_string(),
+            make_zone("discard_pile", vec![]),
+        );
 
         state.event_queue.push_back(Event {
             source_id: "opponent".to_string(),
@@ -876,12 +912,14 @@ mod tests {
         state.resolve_queue();
 
         assert!(
-            state.zones["discard_pile"].entities.contains(&"pikachu".to_string()),
+            state.zones["discard_pile"]
+                .entities
+                .contains(&"pikachu".to_string()),
             "pikachu should be in the discard_pile, not a hardcoded graveyard"
         );
-        assert!(
-            !state.zones["active"].entities.contains(&"pikachu".to_string()),
-        );
+        assert!(!state.zones["active"]
+            .entities
+            .contains(&"pikachu".to_string()),);
     }
 
     // ------------------------------------------
@@ -912,7 +950,9 @@ mod tests {
         );
         assert_eq!(state.entities["token_001"].properties["power"], 1);
         assert!(
-            state.zones["battlefield"].entities.contains(&"token_001".to_string()),
+            state.zones["battlefield"]
+                .entities
+                .contains(&"token_001".to_string()),
             "spawned entity should be placed in the target zone"
         );
     }
@@ -975,14 +1015,18 @@ mod tests {
         state.resolve_queue();
 
         assert!(
-            state.zones["hand"].entities.contains(&"entity_a".to_string()),
+            state.zones["hand"]
+                .entities
+                .contains(&"entity_a".to_string()),
             "$target should have resolved to entity_a, moving it to hand"
         );
-        assert!(
-            !state.zones["battlefield"].entities.contains(&"entity_a".to_string()),
-        );
+        assert!(!state.zones["battlefield"]
+            .entities
+            .contains(&"entity_a".to_string()),);
         // entity_b is unaffected.
-        assert!(state.zones["battlefield"].entities.contains(&"entity_b".to_string()));
+        assert!(state.zones["battlefield"]
+            .entities
+            .contains(&"entity_b".to_string()));
     }
 
     // ------------------------------------------
@@ -1024,9 +1068,10 @@ mod tests {
         let mut watcher = make_entity("watcher", vec![("counter", 0)], vec![]);
         watcher.abilities.push(make_counter_ability(1));
         state.entities.insert("watcher".to_string(), watcher);
-        state
-            .entities
-            .insert("target".to_string(), make_entity("target", vec![("health", 10)], vec![]));
+        state.entities.insert(
+            "target".to_string(),
+            make_entity("target", vec![("health", 10)], vec![]),
+        );
 
         state.event_queue.push_back(Event {
             source_id: "watcher".to_string(),
@@ -1040,8 +1085,7 @@ mod tests {
         state.resolve_queue();
 
         assert_eq!(
-            state.entities["watcher"].properties["counter"],
-            1,
+            state.entities["watcher"].properties["counter"], 1,
             "on_after_any should fire for a MutateProperty action"
         );
     }
@@ -1076,8 +1120,7 @@ mod tests {
         state.resolve_queue();
 
         assert_eq!(
-            state.entities["watcher"].properties["counter"],
-            1,
+            state.entities["watcher"].properties["counter"], 1,
             "on_after_any should fire for a MoveEntity action"
         );
     }
@@ -1097,9 +1140,15 @@ mod tests {
         let result = state.resolve_queue_bounded(3);
         assert!(result.is_err(), "expected Err when step limit is exceeded");
         let msg = result.unwrap_err();
-        assert!(msg.contains("resolution limit exceeded"), "unexpected message: {msg}");
+        assert!(
+            msg.contains("resolution limit exceeded"),
+            "unexpected message: {msg}"
+        );
         // Remaining events must still be in the queue — none were silently dropped.
-        assert!(!state.event_queue.is_empty(), "unprocessed events must remain in the queue");
+        assert!(
+            !state.event_queue.is_empty(),
+            "unprocessed events must remain in the queue"
+        );
     }
 
     #[test]
@@ -1115,5 +1164,103 @@ mod tests {
 
         assert!(state.resolve_queue_bounded(10).is_ok());
         assert!(state.event_queue.is_empty());
+    }
+
+    #[test]
+    fn turn_ended_set_by_end_turn_action() {
+        let mut state = GameState::new();
+        assert!(!state.turn_ended);
+
+        state.event_queue.push_back(Event {
+            source_id: "player_1".to_string(),
+            action: Action::EndTurn,
+        });
+        state.resolve_queue();
+
+        assert!(
+            state.turn_ended,
+            "turn_ended should be true after EndTurn resolves"
+        );
+    }
+
+    #[test]
+    fn turn_ended_false_when_no_end_turn() {
+        let mut state = GameState::new();
+        state.entities.insert(
+            "hero".to_string(),
+            make_entity("hero", vec![("health", 20)], vec![]),
+        );
+
+        state.event_queue.push_back(Event {
+            source_id: "player_1".to_string(),
+            action: Action::MutateProperty {
+                target_id: "hero".to_string(),
+                property: "health".to_string(),
+                delta: -3,
+            },
+        });
+        state.resolve_queue();
+
+        assert!(
+            !state.turn_ended,
+            "turn_ended should be false when no EndTurn was processed"
+        );
+    }
+
+    #[test]
+    fn turn_ended_reset_between_resolution_passes() {
+        let mut state = GameState::new();
+
+        state.event_queue.push_back(Event {
+            source_id: "player_1".to_string(),
+            action: Action::EndTurn,
+        });
+        state.resolve_queue();
+        assert!(state.turn_ended);
+
+        state.event_queue.push_back(Event {
+            source_id: "player_1".to_string(),
+            action: Action::EndTurn,
+        });
+
+        state.event_queue.clear();
+        state.resolve_queue();
+        assert!(
+            !state.turn_ended,
+            "turn_ended should reset at the start of each resolution pass"
+        );
+    }
+
+    #[test]
+    fn turn_ended_set_by_ability_triggered_end_turn() {
+        let force_end = Ability {
+            id: "force_end_01".to_string(),
+            name: "Force End Turn".to_string(),
+            trigger: "on_after_mutate_property".to_string(),
+            conditions: vec![],
+            actions: vec![Action::EndTurn],
+            cancels: false,
+        };
+
+        let mut state = GameState::new();
+        state.entities.insert(
+            "hero".to_string(),
+            make_entity("hero", vec![("health", 10)], vec![force_end]),
+        );
+
+        state.event_queue.push_back(Event {
+            source_id: "player_1".to_string(),
+            action: Action::MutateProperty {
+                target_id: "hero".to_string(),
+                property: "health".to_string(),
+                delta: -1,
+            },
+        });
+        state.resolve_queue();
+
+        assert!(
+            state.turn_ended,
+            "turn_ended should be true when EndTurn is triggered by a card ability"
+        );
     }
 }

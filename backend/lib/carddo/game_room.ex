@@ -53,6 +53,19 @@ defmodule Carddo.GameRoom do
       ended: false
     }
 
+    case Carddo.Multiplayer.GameSessions.upsert(room_id, game_id, initial_state_json, 0) do
+      {:ok, _} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.error("GameSessions initial checkpoint failed room=#{room_id}: #{inspect(reason)}")
+    end
+
+    # Absolute 24-hour lifetime TTL — not an idle timer. Active rooms will also be
+    # stopped after 24h. Converting this to an idle-TTL (reset on each move) is
+    # tracked as a follow-up issue.
+    Process.send_after(self(), :ttl_expired, :timer.hours(24))
+
     {:ok, state}
   end
 
@@ -67,20 +80,33 @@ defmodule Carddo.GameRoom do
         case Jason.decode(new_state_json) do
           {:ok, decoded} ->
             game_over? = Map.get(decoded, "game_over") == true
-
-            turn_phase = get_in(decoded, ["turn", "phase"])
+            turn_ended? = Map.get(decoded, "turn_ended") == true
 
             {event, new_state} =
               cond do
                 game_over? ->
+                  Carddo.Multiplayer.GameSessions.delete(state.room_id)
                   {"game_over", %{state | rust_state_json: new_state_json, ended: true}}
 
-                turn_phase == "end" ->
+                turn_ended? ->
                   new_turn = state.turn_number + 1
 
-                  Logger.debug(
-                    "CAR-63 TODO: checkpoint game_id=#{state.game_id}, turn=#{new_turn}"
-                  )
+                  Task.start(fn ->
+                    case Carddo.Multiplayer.GameSessions.upsert(
+                           state.room_id,
+                           state.game_id,
+                           new_state_json,
+                           new_turn
+                         ) do
+                      {:ok, _} ->
+                        :ok
+
+                      {:error, reason} ->
+                        Logger.error(
+                          "GameSessions.upsert failed room=#{state.room_id}: #{inspect(reason)}"
+                        )
+                    end
+                  end)
 
                   {"state_resolved",
                    %{state | rust_state_json: new_state_json, turn_number: new_turn}}
@@ -113,6 +139,13 @@ defmodule Carddo.GameRoom do
   @impl true
   def handle_call(:get_state, _from, state) do
     {:reply, state.rust_state_json, state}
+  end
+
+  @impl true
+  def handle_info(:ttl_expired, state) do
+    Logger.info("GameRoom TTL expired for room=#{state.room_id}, cleaning up abandoned session")
+    Carddo.Multiplayer.GameSessions.delete(state.room_id)
+    {:stop, :normal, state}
   end
 
   defp broadcast(room_id, event, payload) do
