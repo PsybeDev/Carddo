@@ -53,12 +53,21 @@ defmodule Carddo.GameRoom do
       ended: false
     }
 
-    case Carddo.Multiplayer.GameSessions.upsert(room_id, game_id, initial_state_json, 0) do
-      {:ok, _} ->
-        :ok
+    try do
+      case Carddo.Multiplayer.GameSessions.upsert(room_id, game_id, initial_state_json, 0) do
+        {:ok, _} ->
+          :ok
 
-      {:error, reason} ->
-        Logger.error("GameSessions initial checkpoint failed room=#{room_id}: #{inspect(reason)}")
+        {:error, reason} ->
+          Logger.error(
+            "GameSessions initial checkpoint failed room=#{room_id}: #{inspect(reason)}"
+          )
+      end
+    rescue
+      e ->
+        Logger.error(
+          "GameSessions initial checkpoint exception room=#{room_id}: #{Exception.message(e)}"
+        )
     end
 
     # Absolute 24-hour lifetime TTL — not an idle timer. Active rooms will also be
@@ -85,7 +94,15 @@ defmodule Carddo.GameRoom do
             {event, new_state} =
               cond do
                 game_over? ->
-                  Carddo.Multiplayer.GameSessions.delete(state.room_id)
+                  try do
+                    Carddo.Multiplayer.GameSessions.delete(state.room_id)
+                  rescue
+                    e ->
+                      Logger.error(
+                        "GameSessions delete exception (game_over) room=#{state.room_id}: #{Exception.message(e)}"
+                      )
+                  end
+
                   {"game_over", %{state | rust_state_json: new_state_json, ended: true}}
 
                 turn_ended? ->
@@ -144,7 +161,16 @@ defmodule Carddo.GameRoom do
   @impl true
   def handle_info(:ttl_expired, state) do
     Logger.info("GameRoom TTL expired for room=#{state.room_id}, cleaning up abandoned session")
-    Carddo.Multiplayer.GameSessions.delete(state.room_id)
+
+    try do
+      Carddo.Multiplayer.GameSessions.delete(state.room_id)
+    rescue
+      e ->
+        Logger.error(
+          "GameSessions delete exception (ttl) room=#{state.room_id}: #{Exception.message(e)}"
+        )
+    end
+
     {:stop, :normal, state}
   end
 
