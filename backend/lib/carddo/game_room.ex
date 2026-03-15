@@ -109,18 +109,25 @@ defmodule Carddo.GameRoom do
                   new_turn = state.turn_number + 1
 
                   Task.start(fn ->
-                    case Carddo.Multiplayer.GameSessions.upsert(
-                           state.room_id,
-                           state.game_id,
-                           new_state_json,
-                           new_turn
-                         ) do
-                      {:ok, _} ->
-                        :ok
+                    try do
+                      case Carddo.Multiplayer.GameSessions.upsert(
+                             state.room_id,
+                             state.game_id,
+                             new_state_json,
+                             new_turn
+                           ) do
+                        {:ok, _} ->
+                          :ok
 
-                      {:error, reason} ->
+                        {:error, reason} ->
+                          Logger.error(
+                            "GameSessions.upsert failed room=#{state.room_id}: #{inspect(reason)}"
+                          )
+                      end
+                    rescue
+                      e ->
                         Logger.error(
-                          "GameSessions.upsert failed room=#{state.room_id}: #{inspect(reason)}"
+                          "GameSessions.upsert exception room=#{state.room_id}: #{Exception.message(e)}"
                         )
                     end
                   end)

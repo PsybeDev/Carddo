@@ -12,5 +12,6 @@ defmodule Carddo.Repo.Migrations.CreateGameSessions do
     end
 
     create(unique_index(:game_sessions, [:room_id]))
+    create(index(:game_sessions, [:game_id]))
   end
 end
