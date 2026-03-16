@@ -59,6 +59,13 @@ pub struct GameState {
     /// ```
     #[serde(default)]
     pub state_checks: Vec<StateCheck>,
+
+    /// Set to `true` during queue resolution when an `EndTurn` action executes.
+    /// Reset to `false` at the start of each resolution pass. The Elixir layer
+    /// inspects this field in the resolved state JSON to detect turn boundaries
+    /// — including turns ended by card-effect abilities, not just player actions.
+    #[serde(default)]
+    pub turn_ended: bool,
 }
 
 impl GameState {
@@ -70,6 +77,7 @@ impl GameState {
             pending_animations: Vec::new(),
             stack_order: StackOrder::Fifo,
             state_checks: Vec::new(),
+            turn_ended: false,
         }
     }
 }
@@ -119,9 +127,9 @@ pub struct Zone {
 #[cfg_attr(feature = "ts", derive(TS))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Visibility {
-    Public,          // Everyone sees the cards (e.g., The Board)
-    OwnerOnly,       // Only the owner sees them (e.g., A Player's Hand)
-    Hidden(usize),   // No one sees them, just a count (e.g., A Deck)
+    Public,        // Everyone sees the cards (e.g., The Board)
+    OwnerOnly,     // Only the owner sees them (e.g., A Player's Hand)
+    Hidden(usize), // No one sees them, just a count (e.g., A Deck)
 }
 
 // ==========================================
