@@ -272,8 +272,8 @@ defmodule Carddo.GameRoomTest do
 
       assert session.turn_number == 1
 
-      Process.exit(pid, :kill)
       ref = Process.monitor(pid)
+      Process.exit(pid, :kill)
       assert_receive {:DOWN, ^ref, :process, ^pid, :killed}, 5000
 
       resumed_state_json = Jason.encode!(session.state_json)
@@ -315,8 +315,8 @@ defmodule Carddo.GameRoomTest do
       assert session.turn_number == 2
       checkpoint_state = session.state_json
 
-      Process.exit(pid, :kill)
       ref = Process.monitor(pid)
+      Process.exit(pid, :kill)
       assert_receive {:DOWN, ^ref, :process, ^pid, :killed}, 5000
 
       post_crash_session = Carddo.Multiplayer.GameSessions.get(room_id)

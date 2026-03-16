@@ -88,6 +88,8 @@ defmodule Carddo.GameRoom do
       {:ok, new_state_json, _animations} ->
         case Jason.decode(new_state_json) do
           {:ok, decoded} ->
+            # game_over is not yet a field in ditto_core::GameState; this will
+            # always be false until the engine adds an explicit game_over signal.
             game_over? = Map.get(decoded, "game_over") == true
             turn_ended? = Map.get(decoded, "turn_ended") == true
 
