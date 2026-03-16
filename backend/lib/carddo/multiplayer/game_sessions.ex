@@ -9,7 +9,15 @@ defmodule Carddo.Multiplayer.GameSessions do
   `state_json_string` is the raw JSON string returned by the NIF. It is decoded
   to a map before storage because the column is JSONB.
 
-  Returns `{:ok, %GameSession{}}` or `{:error, changeset | :invalid_json}`.
+  The upsert is monotonic: the conflict update only fires when the incoming
+  `turn_number` is strictly greater than the stored one, so out-of-order writes
+  from concurrent `Task.start` checkpoint tasks never roll back a newer checkpoint.
+
+  Returns:
+  - `{:ok, %GameSession{}}` — row was inserted or updated successfully
+  - `{:ok, :stale}` — incoming `turn_number` was not newer than the stored one; write silently skipped
+  - `{:error, changeset}` — changeset validation failed
+  - `{:error, :invalid_json}` — `state_json_string` could not be decoded
   """
   def upsert(room_id, game_id, state_json_string, turn_number)
       when is_binary(state_json_string) do
@@ -22,27 +30,26 @@ defmodule Carddo.Multiplayer.GameSessions do
           %{state_json: state_map, turn_number: turn_number}
         )
 
-      # Single-round-trip upsert: ON CONFLICT DO UPDATE only fires when the stored
-      # turn_number is strictly older than the incoming one, preventing stale
-      # out-of-order writes from rolling back a newer checkpoint. When the condition
-      # is false (stale write) Postgres returns no rows, so Ecto yields {:ok, %GameSession{id: nil}}.
-      Repo.insert(
-        changeset,
-        on_conflict:
-          from(s in GameSession,
-            where: s.room_id == ^room_id and s.turn_number < ^turn_number,
-            update: [
-              set: [
-                game_id: ^game_id,
-                state_json: ^state_map,
-                turn_number: ^turn_number,
-                updated_at: ^now
-              ]
-            ]
-          ),
-        conflict_target: :room_id,
-        returning: true
-      )
+      case Repo.insert(
+             changeset,
+             on_conflict:
+               from(s in GameSession,
+                 where: s.room_id == ^room_id and s.turn_number < ^turn_number,
+                 update: [
+                   set: [
+                     game_id: ^game_id,
+                     state_json: ^state_map,
+                     turn_number: ^turn_number,
+                     updated_at: ^now
+                   ]
+                 ]
+               ),
+             conflict_target: :room_id,
+             returning: true
+           ) do
+        {:ok, %GameSession{id: nil}} -> {:ok, :stale}
+        other -> other
+      end
     else
       {:error, %Jason.DecodeError{} = reason} ->
         Logger.error("GameSessions.upsert: invalid JSON for room=#{room_id}: #{inspect(reason)}")

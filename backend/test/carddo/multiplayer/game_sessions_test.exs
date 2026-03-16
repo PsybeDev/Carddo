@@ -48,6 +48,20 @@ defmodule Carddo.Multiplayer.GameSessionsTest do
       assert session.state_json["entities"] == %{}
       assert session.state_json["zones"] == %{}
     end
+
+    test "returns :stale when incoming turn_number is not newer than stored", %{game: game} do
+      rid = room_id()
+      {:ok, _} = GameSessions.upsert(rid, game.id, @empty_state_json, 5)
+      assert {:ok, :stale} = GameSessions.upsert(rid, game.id, @empty_state_json, 3)
+      assert GameSessions.get(rid).turn_number == 5
+    end
+
+    test "returns :stale when incoming turn_number equals stored", %{game: game} do
+      rid = room_id()
+      {:ok, _} = GameSessions.upsert(rid, game.id, @empty_state_json, 2)
+      assert {:ok, :stale} = GameSessions.upsert(rid, game.id, @empty_state_json, 2)
+      assert GameSessions.get(rid).turn_number == 2
+    end
   end
 
   describe "get/1" do

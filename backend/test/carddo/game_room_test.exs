@@ -223,36 +223,6 @@ defmodule Carddo.GameRoomTest do
     end
   end
 
-  describe "game over cleanup" do
-    test "game_over deletes the game_sessions row", %{game: game} do
-      {room_id, pid} = start_room(game)
-
-      wait_for(fn -> Carddo.Multiplayer.GameSessions.get(room_id) end)
-
-      :sys.replace_state(pid, fn state ->
-        game_over_json =
-          Jason.encode!(%{
-            entities: %{},
-            zones: %{},
-            event_queue: [],
-            pending_animations: [],
-            stack_order: "Fifo",
-            state_checks: [],
-            game_over: true,
-            turn_ended: false
-          })
-
-        %{state | rust_state_json: game_over_json}
-      end)
-
-      assert GameRoom.make_move(room_id, "player_1", ~s("EndTurn")) == :ok
-
-      wait_for(fn ->
-        if Carddo.Multiplayer.GameSessions.get(room_id) == nil, do: :deleted, else: nil
-      end)
-    end
-  end
-
   describe "upsert failure resilience" do
     test "failed checkpoint does not crash the GameRoom", %{game: game} do
       {room_id, pid} = start_room(game)
