@@ -53,29 +53,39 @@ defmodule Carddo.GameRoom do
       ended: false
     }
 
-    try do
-      case Carddo.Multiplayer.GameSessions.upsert(room_id, game_id, initial_state_json, 0) do
-        {:ok, _} ->
-          :ok
-
-        {:error, reason} ->
-          Logger.error(
-            "GameSessions initial checkpoint failed room=#{room_id}: #{inspect(reason)}"
-          )
-      end
-    rescue
-      e ->
-        Logger.error(
-          "GameSessions initial checkpoint exception room=#{room_id}: #{Exception.message(e)}"
-        )
-    end
-
     # Absolute 24-hour lifetime TTL — not an idle timer. Active rooms will also be
     # stopped after 24h. Converting this to an idle-TTL (reset on each move) is
     # tracked as a follow-up issue.
     Process.send_after(self(), :ttl_expired, :timer.hours(24))
 
-    {:ok, state}
+    {:ok, state, {:continue, :initial_checkpoint}}
+  end
+
+  @impl true
+  def handle_continue(:initial_checkpoint, state) do
+    try do
+      case Carddo.Multiplayer.GameSessions.upsert(
+             state.room_id,
+             state.game_id,
+             state.rust_state_json,
+             0
+           ) do
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.error(
+            "GameSessions initial checkpoint failed room=#{state.room_id}: #{inspect(reason)}"
+          )
+      end
+    rescue
+      e ->
+        Logger.error(
+          "GameSessions initial checkpoint exception room=#{state.room_id}: #{Exception.message(e)}"
+        )
+    end
+
+    {:noreply, state}
   end
 
   @impl true
@@ -88,57 +98,40 @@ defmodule Carddo.GameRoom do
       {:ok, new_state_json, _animations} ->
         case Jason.decode(new_state_json) do
           {:ok, decoded} ->
-            # game_over is not yet a field in ditto_core::GameState; this will
-            # always be false until the engine adds an explicit game_over signal.
-            game_over? = Map.get(decoded, "game_over") == true
             turn_ended? = Map.get(decoded, "turn_ended") == true
 
             {event, new_state} =
-              cond do
-                game_over? ->
+              if turn_ended? do
+                new_turn = state.turn_number + 1
+
+                Task.start(fn ->
                   try do
-                    Carddo.Multiplayer.GameSessions.delete(state.room_id)
+                    case Carddo.Multiplayer.GameSessions.upsert(
+                           state.room_id,
+                           state.game_id,
+                           new_state_json,
+                           new_turn
+                         ) do
+                      {:ok, _} ->
+                        :ok
+
+                      {:error, reason} ->
+                        Logger.error(
+                          "GameSessions.upsert failed room=#{state.room_id}: #{inspect(reason)}"
+                        )
+                    end
                   rescue
                     e ->
                       Logger.error(
-                        "GameSessions delete exception (game_over) room=#{state.room_id}: #{Exception.message(e)}"
+                        "GameSessions.upsert exception room=#{state.room_id}: #{Exception.message(e)}"
                       )
                   end
+                end)
 
-                  {"game_over", %{state | rust_state_json: new_state_json, ended: true}}
-
-                turn_ended? ->
-                  new_turn = state.turn_number + 1
-
-                  Task.start(fn ->
-                    try do
-                      case Carddo.Multiplayer.GameSessions.upsert(
-                             state.room_id,
-                             state.game_id,
-                             new_state_json,
-                             new_turn
-                           ) do
-                        {:ok, _} ->
-                          :ok
-
-                        {:error, reason} ->
-                          Logger.error(
-                            "GameSessions.upsert failed room=#{state.room_id}: #{inspect(reason)}"
-                          )
-                      end
-                    rescue
-                      e ->
-                        Logger.error(
-                          "GameSessions.upsert exception room=#{state.room_id}: #{Exception.message(e)}"
-                        )
-                    end
-                  end)
-
-                  {"state_resolved",
-                   %{state | rust_state_json: new_state_json, turn_number: new_turn}}
-
-                true ->
-                  {"state_resolved", %{state | rust_state_json: new_state_json}}
+                {"state_resolved",
+                 %{state | rust_state_json: new_state_json, turn_number: new_turn}}
+              else
+                {"state_resolved", %{state | rust_state_json: new_state_json}}
               end
 
             broadcast(state.room_id, event, %{state: new_state_json})
