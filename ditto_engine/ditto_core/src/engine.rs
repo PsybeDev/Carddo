@@ -1218,12 +1218,7 @@ mod tests {
         state.resolve_queue();
         assert!(state.turn_ended);
 
-        state.event_queue.push_back(Event {
-            source_id: "player_1".to_string(),
-            action: Action::EndTurn,
-        });
-
-        state.event_queue.clear();
+        // Second pass with empty queue should reset the flag
         state.resolve_queue();
         assert!(
             !state.turn_ended,

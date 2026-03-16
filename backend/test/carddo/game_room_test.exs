@@ -1,7 +1,8 @@
 defmodule Carddo.GameRoomTest do
   # async: false so the SQL sandbox runs in shared mode, allowing background
-  # Task.start processes (spawned by GameRoom.make_move/3 for turn checkpointing) to
-  # access the DB connection without OwnershipErrors.
+  # Task.start processes (spawned by GameRoom.make_move/3 for turn checkpointing)
+  # and synchronous DB calls in handle_continue/2 (initial checkpoint) to access
+  # the DB connection without OwnershipErrors.
   use Carddo.DataCase, async: false
 
   alias Carddo.{Game, GameRoom, Repo, User}
@@ -282,13 +283,16 @@ defmodule Carddo.GameRoomTest do
 
       {:ok, new_pid} =
         start_supervised(
-          {GameRoom,
-           %{
-             room_id: new_room_id,
-             game_id: game.id,
-             initial_state_json: resumed_state_json,
-             solo_mode: false
-           }},
+          Supervisor.child_spec(
+            {GameRoom,
+             %{
+               room_id: new_room_id,
+               game_id: game.id,
+               initial_state_json: resumed_state_json,
+               solo_mode: false
+             }},
+            restart: :temporary
+          ),
           id: :resumed_room
         )
 
