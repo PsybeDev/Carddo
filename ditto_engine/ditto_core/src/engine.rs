@@ -400,21 +400,19 @@ impl GameState {
                         }
                     })?;
 
-                    // An entity must exist in exactly one zone. Multiple zone membership
-                    // indicates a bug in the engine's move/spawn logic.
                     debug_assert!(
-                        zone_ids
-                            .iter()
-                            .filter(|zone_id| {
-                                *zone_id != &to_zone
-                                    && self
-                                        .zones
-                                        .get(*zone_id)
+                        {
+                            let zones_containing_entity = zone_ids
+                                .iter()
+                                .filter(|zid| {
+                                    self.zones
+                                        .get(*zid)
                                         .is_some_and(|z| z.entities.contains(&entity_id))
-                            })
-                            .count()
-                            == 1,
-                        "entity '{entity_id}' found in multiple zones — invariant violated"
+                                })
+                                .count();
+                            zones_containing_entity == 1
+                        },
+                        "entity '{entity_id}' must exist in exactly one zone before move"
                     );
 
                     Some(Event {

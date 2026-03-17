@@ -263,7 +263,15 @@ defmodule Carddo.Multiplayer.GameInitializer do
 
   defp normalize_properties(_), do: %{}
 
-  defp trunc_value(v) when is_integer(v), do: v
-  defp trunc_value(v) when is_float(v), do: trunc(v)
+  # Rust deserializes properties as i32, so clamp to valid range
+  @i32_min -2_147_483_648
+  @i32_max 2_147_483_647
+
+  defp trunc_value(v) when is_integer(v), do: clamp_i32(v)
+  defp trunc_value(v) when is_float(v), do: clamp_i32(trunc(v))
   defp trunc_value(_), do: 0
+
+  defp clamp_i32(v) when v < @i32_min, do: @i32_min
+  defp clamp_i32(v) when v > @i32_max, do: @i32_max
+  defp clamp_i32(v), do: v
 end

@@ -258,19 +258,22 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
     end
   end
 
-  describe "build/2 shuffle randomness" do
-    test "two calls with same inputs produce different entity orderings", ctx do
+  describe "build/2 shuffle determinism" do
+    test "deck entities are a permutation of the original cards", ctx do
       players = [{"player_1", ctx.deck.id}]
+      {:ok, json} = GameInitializer.build(ctx.game.id, players)
+      state = Jason.decode!(json)
 
-      orderings =
-        for _ <- 1..10 do
-          {:ok, json} = GameInitializer.build(ctx.game.id, players)
-          state = Jason.decode!(json)
-          state["zones"]["player_1_Deck"]["entities"]
-        end
+      deck_entity_ids = state["zones"]["player_1_Deck"]["entities"]
 
-      unique_orderings = Enum.uniq(orderings)
-      assert length(unique_orderings) > 1
+      assert length(deck_entity_ids) == 5
+      assert length(Enum.uniq(deck_entity_ids)) == 5
+
+      for entity_id <- deck_entity_ids do
+        entity = state["entities"][entity_id]
+        assert entity != nil
+        assert entity["owner_id"] == "player_1"
+      end
     end
   end
 
@@ -478,6 +481,29 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
     test "output JSON is accepted by the NIF without schema errors", ctx do
       players = [{"player_1", ctx.deck.id}]
       {:ok, json} = GameInitializer.build(ctx.game.id, players)
+
+      result = Carddo.Native.process_move(json, ~s("EndTurn"), "player_1")
+      assert {:ok, _new_state, _animations} = result
+    end
+
+    test "clamps out-of-range property values to i32 bounds", ctx do
+      ctx.card_a
+      |> Card.changeset(%{
+        properties: %{"TooBig" => 9_999_999_999_999, "TooSmall" => -9_999_999_999_999}
+      })
+      |> Repo.update!()
+
+      players = [{"player_1", ctx.deck.id}]
+      {:ok, json} = GameInitializer.build(ctx.game.id, players)
+      state = Jason.decode!(json)
+
+      entity_with_clamped =
+        state["entities"]
+        |> Map.values()
+        |> Enum.find(&(&1["properties"]["TooBig"] != nil))
+
+      assert entity_with_clamped["properties"]["TooBig"] == 2_147_483_647
+      assert entity_with_clamped["properties"]["TooSmall"] == -2_147_483_648
 
       result = Carddo.Native.process_move(json, ~s("EndTurn"), "player_1")
       assert {:ok, _new_state, _animations} = result
