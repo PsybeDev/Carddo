@@ -388,7 +388,7 @@ impl GameState {
                 .into_iter()
                 .filter_map(|(entity_id, to_zone)| {
                     let from_zone = zone_ids.iter().find_map(|zone_id| {
-                        if *zone_id != to_zone
+                        if zone_id != &to_zone
                             && self
                                 .zones
                                 .get(zone_id)
@@ -406,7 +406,7 @@ impl GameState {
                         zone_ids
                             .iter()
                             .filter(|zone_id| {
-                                **zone_id != to_zone
+                                *zone_id != &to_zone
                                     && self
                                         .zones
                                         .get(*zone_id)
@@ -506,9 +506,9 @@ fn event_targets_entity(event: &Event, entity_id: &str) -> bool {
 /// - `"$target"` — the primary target entity of the triggering event.
 ///
 /// Supported placeholders in zone fields (`from_zone`, `to_zone`, `zone_id`):
-/// - `"$owner_<ZoneName>"` — resolves to `"{ability_owner_id}_{ZoneName}"`.
-///   Requires `ability_owner_id` to identify the entity whose ability fired.
-fn resolve_placeholders(action: &Action, event: &Event, ability_owner_id: &str) -> Action {
+/// - `"$owner_<ZoneName>"` — resolves to `"{entity_owner_id}_{ZoneName}"`.
+///   `entity_owner_id` is the player ID from the ability-bearing entity's `owner_id` field.
+fn resolve_placeholders(action: &Action, event: &Event, entity_owner_id: &str) -> Action {
     match action {
         Action::MutateProperty {
             target_id,
@@ -526,13 +526,13 @@ fn resolve_placeholders(action: &Action, event: &Event, ability_owner_id: &str) 
             index,
         } => Action::MoveEntity {
             entity_id: resolve_entity_ref(entity_id, event),
-            from_zone: resolve_zone_ref(from_zone, ability_owner_id),
-            to_zone: resolve_zone_ref(to_zone, ability_owner_id),
+            from_zone: resolve_zone_ref(from_zone, entity_owner_id),
+            to_zone: resolve_zone_ref(to_zone, entity_owner_id),
             index: *index,
         },
         Action::SpawnEntity { entity, zone_id } => Action::SpawnEntity {
             entity: entity.clone(),
-            zone_id: resolve_zone_ref(zone_id, ability_owner_id),
+            zone_id: resolve_zone_ref(zone_id, entity_owner_id),
         },
         _ => action.clone(),
     }

@@ -420,6 +420,17 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
                GameInitializer.build(ctx.game.id, [{"p1", ctx.deck.id}])
     end
 
+    test "returns error for non-map zone definition in config", ctx do
+      config = %{"zones" => ["Deck", "Hand"]}
+
+      ctx.game
+      |> Game.update_changeset(%{config: config})
+      |> Repo.update!()
+
+      assert {:error, "Each zone definition must be a map"} =
+               GameInitializer.build(ctx.game.id, [{"p1", ctx.deck.id}])
+    end
+
     test "unknown visibility value does not crash", ctx do
       config = %{
         "zones" => [

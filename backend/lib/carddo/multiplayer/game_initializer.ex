@@ -61,17 +61,21 @@ defmodule Carddo.Multiplayer.GameInitializer do
   defp validate_config(_), do: {:error, "Game config is invalid"}
 
   defp validate_zone_defs(zones, config) do
-    names = Enum.map(zones, & &1["name"])
+    if Enum.any?(zones, &(!is_map(&1))) do
+      {:error, "Each zone definition must be a map"}
+    else
+      names = Enum.map(zones, & &1["name"])
 
-    cond do
-      Enum.any?(names, &(!is_binary(&1) or &1 == "")) ->
-        {:error, "All zones must have a non-empty string name"}
+      cond do
+        Enum.any?(names, &(!is_binary(&1) or &1 == "")) ->
+          {:error, "All zones must have a non-empty string name"}
 
-      length(names) != length(Enum.uniq(names)) ->
-        {:error, "Duplicate zone names are not allowed"}
+        length(names) != length(Enum.uniq(names)) ->
+          {:error, "Duplicate zone names are not allowed"}
 
-      true ->
-        {:ok, config}
+        true ->
+          {:ok, config}
+      end
     end
   end
 
