@@ -1422,6 +1422,59 @@ mod tests {
     }
 
     #[test]
+    fn ability_resolves_owner_zone_in_spawn_entity() {
+        let spawner = Ability {
+            id: "spawn_01".to_string(),
+            name: "Summon Token".to_string(),
+            trigger: "on_after_mutate_property:self".to_string(),
+            conditions: vec![],
+            actions: vec![Action::SpawnEntity {
+                entity: Entity {
+                    id: "token_001".to_string(),
+                    owner_id: "player_1".to_string(),
+                    template_id: "token_template".to_string(),
+                    properties: [("power".to_string(), 1)].into_iter().collect(),
+                    abilities: vec![],
+                },
+                zone_id: "$owner_Board".to_string(),
+            }],
+            cancels: false,
+        };
+
+        let mut state = GameState::new();
+        let mut summoner = make_entity("summoner", vec![("health", 10)], vec![spawner]);
+        summoner.owner_id = "player_1".to_string();
+        state.entities.insert("summoner".to_string(), summoner);
+
+        state.zones.insert(
+            "player_1_Board".to_string(),
+            make_zone("player_1_Board", vec!["summoner"]),
+        );
+
+        state.event_queue.push_back(Event {
+            source_id: "player_1".to_string(),
+            action: Action::MutateProperty {
+                target_id: "summoner".to_string(),
+                property: "health".to_string(),
+                delta: -1,
+            },
+        });
+
+        state.resolve_queue();
+
+        assert!(
+            state.entities.contains_key("token_001"),
+            "spawned token should exist in entities"
+        );
+        assert!(
+            state.zones["player_1_Board"]
+                .entities
+                .contains(&"token_001".to_string()),
+            "$owner_Board in SpawnEntity should resolve to player_1_Board"
+        );
+    }
+
+    #[test]
     fn state_check_with_literal_zone_still_works() {
         let mut state = GameState::new();
         state.state_checks.push(make_death_check("graveyard"));

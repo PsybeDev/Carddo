@@ -8,6 +8,8 @@ defmodule Carddo.Multiplayer.GameInitializer do
 
   alias Carddo.Games
 
+  @valid_visibilities ~w(Hidden OwnerOnly Public)
+
   @doc """
   Builds initial `GameState` JSON from a game's config and player decks.
 
@@ -34,10 +36,15 @@ defmodule Carddo.Multiplayer.GameInitializer do
   defp validate_players(players) do
     player_ids = Enum.map(players, fn {id, _} -> id end)
 
-    if length(player_ids) != length(Enum.uniq(player_ids)) do
-      {:error, "Duplicate player IDs are not allowed"}
-    else
-      :ok
+    cond do
+      Enum.any?(player_ids, &(!is_binary(&1) or &1 == "")) ->
+        {:error, "All player IDs must be non-empty strings"}
+
+      length(player_ids) != length(Enum.uniq(player_ids)) ->
+        {:error, "Duplicate player IDs are not allowed"}
+
+      true ->
+        :ok
     end
   end
 
@@ -65,6 +72,7 @@ defmodule Carddo.Multiplayer.GameInitializer do
       {:error, "Each zone definition must be a map"}
     else
       names = Enum.map(zones, & &1["name"])
+      visibilities = Enum.map(zones, & &1["visibility"])
 
       cond do
         Enum.any?(names, &(!is_binary(&1) or &1 == "")) ->
@@ -72,6 +80,10 @@ defmodule Carddo.Multiplayer.GameInitializer do
 
         length(names) != length(Enum.uniq(names)) ->
           {:error, "Duplicate zone names are not allowed"}
+
+        bad = Enum.find(visibilities, &(&1 != nil and &1 not in @valid_visibilities)) ->
+          {:error,
+           "Unknown visibility #{inspect(bad)}, expected one of: #{Enum.join(@valid_visibilities, ", ")}"}
 
         true ->
           {:ok, config}
@@ -225,7 +237,6 @@ defmodule Carddo.Multiplayer.GameInitializer do
   defp map_visibility("OwnerOnly", _count), do: "OwnerOnly"
   defp map_visibility("Public", _count), do: "Public"
   defp map_visibility(nil, _count), do: "Public"
-  defp map_visibility(other, _count), do: other
 
   defp normalize_properties(props) when is_map(props) do
     Map.new(props, fn {key, value} -> {to_string(key), trunc_value(value)} end)

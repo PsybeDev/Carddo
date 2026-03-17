@@ -393,6 +393,16 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
                ])
     end
 
+    test "returns error for nil player_id", ctx do
+      assert {:error, "All player IDs must be non-empty strings"} =
+               GameInitializer.build(ctx.game.id, [{nil, ctx.deck.id}])
+    end
+
+    test "returns error for empty string player_id", ctx do
+      assert {:error, "All player IDs must be non-empty strings"} =
+               GameInitializer.build(ctx.game.id, [{"", ctx.deck.id}])
+    end
+
     test "returns error for nil zone name in config", ctx do
       config = %{"zones" => [%{"name" => nil, "visibility" => "Public"}]}
 
@@ -431,7 +441,7 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
                GameInitializer.build(ctx.game.id, [{"p1", ctx.deck.id}])
     end
 
-    test "unknown visibility value does not crash", ctx do
+    test "returns error for unknown visibility value", ctx do
       config = %{
         "zones" => [
           %{"name" => "Deck", "visibility" => "SomeNewType"},
@@ -443,10 +453,11 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
       |> Game.update_changeset(%{config: config})
       |> Repo.update!()
 
-      players = [{"player_1", ctx.deck.id}]
-      {:ok, json} = GameInitializer.build(ctx.game.id, players)
-      state = Jason.decode!(json)
-      assert state["zones"]["player_1_Deck"]["visibility"] == "SomeNewType"
+      assert {:error, msg} =
+               GameInitializer.build(ctx.game.id, [{"player_1", ctx.deck.id}])
+
+      assert msg =~ "Unknown visibility"
+      assert msg =~ "SomeNewType"
     end
   end
 
