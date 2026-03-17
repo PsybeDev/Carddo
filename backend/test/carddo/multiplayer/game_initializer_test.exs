@@ -396,6 +396,16 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
   end
 
   describe "build/2 input validation" do
+    test "returns error for non-list players", ctx do
+      assert {:error, "players must be a list"} =
+               GameInitializer.build(ctx.game.id, "not a list")
+    end
+
+    test "returns error for invalid game_id type", _ctx do
+      assert {:error, "Invalid game_id"} =
+               GameInitializer.build("not_an_integer", [{"p1", 1}])
+    end
+
     test "returns error for empty players list", ctx do
       assert {:error, "At least one player is required"} =
                GameInitializer.build(ctx.game.id, [])

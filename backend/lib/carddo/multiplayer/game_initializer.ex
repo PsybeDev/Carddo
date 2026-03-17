@@ -30,6 +30,8 @@ defmodule Carddo.Multiplayer.GameInitializer do
     end
   end
 
+  def build(_game_id, _players), do: {:error, "players must be a list"}
+
   # ── Fetching & Validation ───────────────────────────────────────────────
 
   defp validate_players([]), do: {:error, "At least one player is required"}
@@ -58,6 +60,8 @@ defmodule Carddo.Multiplayer.GameInitializer do
       nil -> {:error, "Game not found"}
       game -> {:ok, game}
     end
+  rescue
+    Ecto.Query.CastError -> {:error, "Invalid game_id"}
   end
 
   defp validate_config(config) when is_map(config) do
