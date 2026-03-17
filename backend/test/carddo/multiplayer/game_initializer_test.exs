@@ -303,6 +303,19 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
 
       assert state["stack_order"] == "Lifo"
     end
+
+    test "returns error for invalid stack_order", ctx do
+      config = Map.put(@valid_config, "stack_order", "fifo")
+
+      ctx.game
+      |> Game.update_changeset(%{config: config})
+      |> Repo.update!()
+
+      assert {:error, msg} =
+               GameInitializer.build(ctx.game.id, [{"player_1", ctx.deck.id}])
+
+      assert msg =~ "Unknown stack_order"
+    end
   end
 
   describe "build/2 validation errors" do

@@ -2,13 +2,14 @@ defmodule Carddo.Multiplayer.GameInitializer do
   @moduledoc """
   Assembles the initial `GameState` JSON from a game's config and player decks.
 
-  Called by `GameChannel.join/3` when no session checkpoint exists.
+  Intended caller: `GameChannel.join/3` (CAR-37) when no session checkpoint exists.
   Output JSON matches the canonical `GameState` struct from `ditto_core/src/state.rs`.
   """
 
   alias Carddo.Games
 
   @valid_visibilities ~w(Hidden OwnerOnly Public)
+  @valid_stack_orders ~w(Fifo Lifo)
 
   @doc """
   Builds initial `GameState` JSON from a game's config and player decks.
@@ -58,7 +59,9 @@ defmodule Carddo.Multiplayer.GameInitializer do
   defp validate_config(config) when is_map(config) do
     case config do
       %{"zones" => zones} when is_list(zones) and zones != [] ->
-        validate_zone_defs(zones, config)
+        with {:ok, config} <- validate_zone_defs(zones, config) do
+          validate_stack_order(config)
+        end
 
       _ ->
         {:error, "Game config must have at least one zone defined"}
@@ -90,6 +93,17 @@ defmodule Carddo.Multiplayer.GameInitializer do
       end
     end
   end
+
+  defp validate_stack_order(%{"stack_order" => order} = config) when is_binary(order) do
+    if order in @valid_stack_orders do
+      {:ok, config}
+    else
+      {:error,
+       "Unknown stack_order #{inspect(order)}, expected one of: #{Enum.join(@valid_stack_orders, ", ")}"}
+    end
+  end
+
+  defp validate_stack_order(config), do: {:ok, config}
 
   defp validate_starting_zone(config) do
     starting_zone = config["starting_zone"] || "Deck"
