@@ -35,17 +35,21 @@ defmodule Carddo.Multiplayer.GameInitializer do
   defp validate_players([]), do: {:error, "At least one player is required"}
 
   defp validate_players(players) do
-    player_ids = Enum.map(players, fn {id, _} -> id end)
+    if Enum.any?(players, &(!match?({_, _}, &1))) do
+      {:error, "Each player entry must be a {player_id, deck_id} tuple"}
+    else
+      player_ids = Enum.map(players, fn {id, _} -> id end)
 
-    cond do
-      Enum.any?(player_ids, &(!is_binary(&1) or &1 == "")) ->
-        {:error, "All player IDs must be non-empty strings"}
+      cond do
+        Enum.any?(player_ids, &(!is_binary(&1) or &1 == "")) ->
+          {:error, "All player IDs must be non-empty strings"}
 
-      length(player_ids) != length(Enum.uniq(player_ids)) ->
-        {:error, "Duplicate player IDs are not allowed"}
+        length(player_ids) != length(Enum.uniq(player_ids)) ->
+          {:error, "Duplicate player IDs are not allowed"}
 
-      true ->
-        :ok
+        true ->
+          :ok
+      end
     end
   end
 
@@ -147,6 +151,7 @@ defmodule Carddo.Multiplayer.GameInitializer do
       end
     rescue
       Ecto.NoResultsError -> {:error, "Deck #{deck_id} not found"}
+      Ecto.Query.CastError -> {:error, "Invalid deck_id: #{inspect(deck_id)}"}
     end
   end
 
