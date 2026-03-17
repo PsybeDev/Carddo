@@ -319,6 +319,50 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
 
       assert msg =~ "Unknown stack_order"
     end
+
+    test "returns error for empty string starting_zone", ctx do
+      config = Map.put(@valid_config, "starting_zone", "")
+
+      ctx.game
+      |> Game.update_changeset(%{config: config})
+      |> Repo.update!()
+
+      assert {:error, "starting_zone must be a non-empty string"} =
+               GameInitializer.build(ctx.game.id, [{"player_1", ctx.deck.id}])
+    end
+
+    test "returns error for non-string starting_zone", ctx do
+      config = Map.put(@valid_config, "starting_zone", 42)
+
+      ctx.game
+      |> Game.update_changeset(%{config: config})
+      |> Repo.update!()
+
+      assert {:error, "starting_zone must be a non-empty string"} =
+               GameInitializer.build(ctx.game.id, [{"player_1", ctx.deck.id}])
+    end
+
+    test "returns error when state_check move_to_zone references unknown zone", ctx do
+      config =
+        Map.put(@valid_config, "state_checks", [
+          %{
+            "watch_property" => "Health",
+            "operator" => "<=",
+            "threshold" => 0,
+            "move_to_zone" => "Limbo"
+          }
+        ])
+
+      ctx.game
+      |> Game.update_changeset(%{config: config})
+      |> Repo.update!()
+
+      assert {:error, msg} =
+               GameInitializer.build(ctx.game.id, [{"player_1", ctx.deck.id}])
+
+      assert msg =~ "unknown zone"
+      assert msg =~ "Limbo"
+    end
   end
 
   describe "build/2 validation errors" do

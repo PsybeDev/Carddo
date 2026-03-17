@@ -67,7 +67,8 @@ defmodule Carddo.Multiplayer.GameInitializer do
   defp validate_config(config) when is_map(config) do
     case config do
       %{"zones" => zones} when is_list(zones) and zones != [] ->
-        with {:ok, config} <- validate_zone_defs(zones, config) do
+        with {:ok, config} <- validate_zone_defs(zones, config),
+             {:ok, config} <- validate_state_check_zones(config) do
           validate_stack_order(config)
         end
 
@@ -113,14 +114,41 @@ defmodule Carddo.Multiplayer.GameInitializer do
 
   defp validate_stack_order(config), do: {:ok, config}
 
-  defp validate_starting_zone(config) do
-    starting_zone = config["starting_zone"] || "Deck"
+  defp validate_state_check_zones(%{"state_checks" => checks} = config) when is_list(checks) do
     zone_names = Enum.map(config["zones"], & &1["name"])
 
-    if starting_zone in zone_names do
-      {:ok, starting_zone}
+    bad =
+      Enum.find(checks, fn
+        %{"move_to_zone" => zone} when is_binary(zone) -> zone not in zone_names
+        _ -> false
+      end)
+
+    if bad do
+      {:error,
+       "state_check references unknown zone #{inspect(bad["move_to_zone"])}, expected one of: #{Enum.join(zone_names, ", ")}"}
     else
-      {:error, "No #{starting_zone} zone defined in game config"}
+      {:ok, config}
+    end
+  end
+
+  defp validate_state_check_zones(config), do: {:ok, config}
+
+  defp validate_starting_zone(config) do
+    raw = config["starting_zone"]
+
+    cond do
+      not is_nil(raw) and (not is_binary(raw) or raw == "") ->
+        {:error, "starting_zone must be a non-empty string"}
+
+      true ->
+        starting_zone = raw || "Deck"
+        zone_names = Enum.map(config["zones"], & &1["name"])
+
+        if starting_zone in zone_names do
+          {:ok, starting_zone}
+        else
+          {:error, "No #{starting_zone} zone defined in game config"}
+        end
     end
   end
 
