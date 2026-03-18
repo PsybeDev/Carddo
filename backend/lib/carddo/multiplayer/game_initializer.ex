@@ -11,6 +11,8 @@ defmodule Carddo.Multiplayer.GameInitializer do
   @valid_visibilities ~w(Hidden OwnerOnly Public)
   @valid_stack_orders ~w(Fifo Lifo)
   @valid_operators ~w(<= < == > >= !=)
+  @i32_min -2_147_483_648
+  @i32_max 2_147_483_647
 
   @doc """
   Builds initial `GameState` JSON from a game's config and player decks.
@@ -139,6 +141,9 @@ defmodule Carddo.Multiplayer.GameInitializer do
 
           not is_integer(check["threshold"]) ->
             "state_check threshold must be an integer, got: #{inspect(check["threshold"])}"
+
+          check["threshold"] < @i32_min or check["threshold"] > @i32_max ->
+            "state_check threshold #{inspect(check["threshold"])} is out of i32 range (#{@i32_min}..#{@i32_max})"
 
           not (is_binary(check["move_to_zone"]) and check["move_to_zone"] != "") ->
             "state_check move_to_zone must be a non-empty string"
@@ -332,10 +337,6 @@ defmodule Carddo.Multiplayer.GameInitializer do
   end
 
   defp normalize_properties(_), do: %{}
-
-  # Rust deserializes properties as i32, so clamp to valid range
-  @i32_min -2_147_483_648
-  @i32_max 2_147_483_647
 
   defp trunc_value(v) when is_integer(v), do: clamp_i32(v)
   defp trunc_value(v) when is_float(v), do: clamp_i32(trunc(v))

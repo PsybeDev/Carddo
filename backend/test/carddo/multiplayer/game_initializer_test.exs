@@ -527,6 +527,48 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
       assert msg =~ "threshold must be an integer"
     end
 
+    test "returns error for state_check threshold exceeding i32 max", ctx do
+      config =
+        Map.put(@valid_config, "state_checks", [
+          %{
+            "watch_property" => "Health",
+            "operator" => "<=",
+            "threshold" => 9_999_999_999,
+            "move_to_zone" => "Graveyard"
+          }
+        ])
+
+      ctx.game
+      |> Game.update_changeset(%{config: config})
+      |> Repo.update!()
+
+      assert {:error, msg} =
+               GameInitializer.build(ctx.game.id, [{"player_1", ctx.deck.id}])
+
+      assert msg =~ "out of i32 range"
+    end
+
+    test "returns error for state_check threshold below i32 min", ctx do
+      config =
+        Map.put(@valid_config, "state_checks", [
+          %{
+            "watch_property" => "Health",
+            "operator" => ">=",
+            "threshold" => -9_999_999_999,
+            "move_to_zone" => "Graveyard"
+          }
+        ])
+
+      ctx.game
+      |> Game.update_changeset(%{config: config})
+      |> Repo.update!()
+
+      assert {:error, msg} =
+               GameInitializer.build(ctx.game.id, [{"player_1", ctx.deck.id}])
+
+      assert msg =~ "out of i32 range"
+    end
+
     test "returns error when player_id and zone_name produce colliding zone IDs", ctx do
       config = %{
         "zones" => [
