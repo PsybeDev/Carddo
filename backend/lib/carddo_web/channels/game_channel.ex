@@ -2,8 +2,8 @@ defmodule CarddoWeb.GameChannel do
   @moduledoc """
   Routes WebSocket messages between Svelte clients and `GameRoom` GenServers.
 
-  This is a thin routing layer (ADR-002) — no game logic, no Repo calls.
-  Handles join/resume, action dispatch, and error pushes.
+  Thin routing layer (ADR-002) — no game logic. Auth and state resolution
+  delegate to context modules; no direct Repo access.
   """
 
   use Phoenix.Channel
@@ -18,9 +18,9 @@ defmodule CarddoWeb.GameChannel do
     current_user = socket.assigns.current_user
     player_id = to_string(current_user.id)
 
-    with {:ok, %{game_id: room_game_id, state_json: state_json}} <-
+    with {:ok, _game} <- authorize_game(game_id, current_user),
+         {:ok, %{game_id: room_game_id, state_json: state_json}} <-
            resolve_room_boot(room_id, game_id, player_id, deck_id),
-         {:ok, _game} <- authorize_game(room_game_id, current_user),
          :ok <- ensure_room_started(room_id, room_game_id, state_json) do
       {:ok, %{state: state_json}, assign(socket, :room_id, room_id)}
     else

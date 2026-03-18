@@ -51,22 +51,27 @@ defmodule CarddoWeb.GameChannelTest do
     ])
 
     {:ok, socket} = connect(CarddoWeb.UserSocket, %{"token" => token})
+    test_prefix = "chtest_#{System.unique_integer([:positive])}_"
 
     on_exit(fn ->
       for {_id, pid, _type, _modules} <-
-            DynamicSupervisor.which_children(Carddo.Multiplayer.RoomSupervisor) do
+            DynamicSupervisor.which_children(Carddo.Multiplayer.RoomSupervisor),
+          [key | _] <- [Registry.keys(Carddo.Multiplayer.GameRegistry, pid)],
+          String.starts_with?(key, test_prefix) do
         DynamicSupervisor.terminate_child(Carddo.Multiplayer.RoomSupervisor, pid)
       end
     end)
 
-    %{socket: socket, user: user, game: game, deck: deck, token: token}
+    %{socket: socket, user: user, game: game, deck: deck, token: token, test_prefix: test_prefix}
   end
 
-  defp unique_room_id, do: "test_#{System.unique_integer([:positive])}"
+  defp unique_room_id(ctx) do
+    "#{ctx.test_prefix}#{System.unique_integer([:positive])}"
+  end
 
   describe "join/3 fresh game" do
     test "returns {:ok, %{state: json}} with valid params", ctx do
-      room_id = unique_room_id()
+      room_id = unique_room_id(ctx)
 
       {:ok, reply, _socket} =
         subscribe_and_join(
@@ -83,7 +88,7 @@ defmodule CarddoWeb.GameChannelTest do
     end
 
     test "starts a GameRoom GenServer for the room", ctx do
-      room_id = unique_room_id()
+      room_id = unique_room_id(ctx)
 
       {:ok, _reply, _socket} =
         subscribe_and_join(
@@ -97,7 +102,7 @@ defmodule CarddoWeb.GameChannelTest do
     end
 
     test "assigns room_id to socket", ctx do
-      room_id = unique_room_id()
+      room_id = unique_room_id(ctx)
 
       {:ok, _reply, socket} =
         subscribe_and_join(
@@ -111,7 +116,7 @@ defmodule CarddoWeb.GameChannelTest do
     end
 
     test "returns error with nonexistent game_id", ctx do
-      room_id = unique_room_id()
+      room_id = unique_room_id(ctx)
 
       assert {:error, %{reason: "Game not found"}} =
                subscribe_and_join(
@@ -123,7 +128,7 @@ defmodule CarddoWeb.GameChannelTest do
     end
 
     test "returns error when missing required params", ctx do
-      room_id = unique_room_id()
+      room_id = unique_room_id(ctx)
 
       assert {:error, %{reason: "Missing required params: game_id, deck_id"}} =
                subscribe_and_join(
@@ -146,7 +151,7 @@ defmodule CarddoWeb.GameChannelTest do
       {:ok, other_token, _} = Guardian.encode_and_sign(other_user)
       {:ok, other_socket} = connect(CarddoWeb.UserSocket, %{"token" => other_token})
 
-      room_id = unique_room_id()
+      room_id = unique_room_id(ctx)
 
       assert {:error, %{reason: "Forbidden"}} =
                subscribe_and_join(
@@ -158,7 +163,7 @@ defmodule CarddoWeb.GameChannelTest do
     end
 
     test "owner can join their own game", ctx do
-      room_id = unique_room_id()
+      room_id = unique_room_id(ctx)
 
       assert {:ok, _reply, _socket} =
                subscribe_and_join(
@@ -172,7 +177,7 @@ defmodule CarddoWeb.GameChannelTest do
 
   describe "join/3 session resume" do
     test "resumes from stored session state instead of fresh init", ctx do
-      room_id = unique_room_id()
+      room_id = unique_room_id(ctx)
 
       stored_state = %{
         "entities" => %{
@@ -214,7 +219,7 @@ defmodule CarddoWeb.GameChannelTest do
     end
 
     test "rejects resume when requested game_id does not match room session game_id", ctx do
-      room_id = unique_room_id()
+      room_id = unique_room_id(ctx)
 
       Repo.insert!(%GameSession{
         room_id: room_id,
@@ -257,7 +262,7 @@ defmodule CarddoWeb.GameChannelTest do
 
   describe "handle_in submit_action" do
     setup ctx do
-      room_id = unique_room_id()
+      room_id = unique_room_id(ctx)
 
       {:ok, _reply, socket} =
         subscribe_and_join(
@@ -338,7 +343,7 @@ defmodule CarddoWeb.GameChannelTest do
 
   describe "handle_in unknown event" do
     setup ctx do
-      room_id = unique_room_id()
+      room_id = unique_room_id(ctx)
 
       {:ok, _reply, socket} =
         subscribe_and_join(
