@@ -68,6 +68,11 @@ defmodule CarddoWeb.GameChannel do
     end
   end
 
+  def handle_in("submit_action", _payload, socket) do
+    {:reply, {:error, %{reason: "invalid_payload: requires client_sequence_id and action"}},
+     socket}
+  end
+
   def handle_in(event, _payload, socket) do
     Logger.warning("GameChannel received unknown event: #{event}")
     {:reply, {:error, %{reason: "unknown_event"}}, socket}
