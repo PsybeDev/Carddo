@@ -320,6 +320,40 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
       assert msg =~ "Unknown stack_order"
     end
 
+    test "treats nil stack_order as absent and uses default", ctx do
+      config = Map.put(@valid_config, "stack_order", nil)
+
+      ctx.game
+      |> Game.update_changeset(%{config: config})
+      |> Repo.update!()
+
+      {:ok, json} = GameInitializer.build(ctx.game.id, [{"player_1", ctx.deck.id}])
+      state = Jason.decode!(json)
+
+      assert state["stack_order"] == "Fifo"
+    end
+
+    test "accepts pre-prefixed $owner_ move_to_zone in state_checks", ctx do
+      config =
+        Map.put(@valid_config, "state_checks", [
+          %{
+            "watch_property" => "Health",
+            "operator" => "<=",
+            "threshold" => 0,
+            "move_to_zone" => "$owner_Graveyard"
+          }
+        ])
+
+      ctx.game
+      |> Game.update_changeset(%{config: config})
+      |> Repo.update!()
+
+      {:ok, json} = GameInitializer.build(ctx.game.id, [{"player_1", ctx.deck.id}])
+      state = Jason.decode!(json)
+
+      assert hd(state["state_checks"])["move_to_zone"] == "$owner_Graveyard"
+    end
+
     test "returns error for empty string starting_zone", ctx do
       config = Map.put(@valid_config, "starting_zone", "")
 

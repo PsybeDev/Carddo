@@ -114,6 +114,8 @@ defmodule Carddo.Multiplayer.GameInitializer do
     end
   end
 
+  defp validate_stack_order(%{"stack_order" => nil} = config), do: {:ok, config}
+
   defp validate_stack_order(%{"stack_order" => order}) do
     {:error, "stack_order must be a string, got: #{inspect(order)}"}
   end
@@ -141,7 +143,8 @@ defmodule Carddo.Multiplayer.GameInitializer do
           not (is_binary(check["move_to_zone"]) and check["move_to_zone"] != "") ->
             "state_check move_to_zone must be a non-empty string"
 
-          check["move_to_zone"] not in zone_names ->
+          check["move_to_zone"] not in zone_names and
+              not Enum.any?(zone_names, &("$owner_#{&1}" == check["move_to_zone"])) ->
             "state_check references unknown zone #{inspect(check["move_to_zone"])}, expected one of: #{Enum.join(zone_names, ", ")}"
 
           true ->
