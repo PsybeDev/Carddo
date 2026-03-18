@@ -178,7 +178,7 @@ impl GameState {
                 for action in &ability.actions {
                     hook_events.push(Event {
                         source_id: entity_id.clone(),
-                        action: resolve_placeholders(action, event),
+                        action: resolve_placeholders(action, event, &entity.owner_id),
                     });
                 }
 
@@ -345,14 +345,15 @@ impl GameState {
         let checks: Vec<StateCheck> = self.state_checks.clone();
         let order = self.stack_order;
 
-        for check in &checks {
-            // Skip if the destination zone doesn't exist — execute_action would no-op,
-            // leaving entities in place and re-enqueueing the same move every tick.
-            if !self.zones.contains_key(&check.move_to_zone) {
-                continue;
-            }
+        // Sort zone IDs for deterministic from_zone selection if an entity is
+        // (incorrectly) present in multiple zones simultaneously.
+        let mut zone_ids: Vec<String> = self.zones.keys().cloned().collect();
+        zone_ids.sort();
 
-            let matching_ids: Vec<String> = self
+        for check in &checks {
+            // Collect (entity_id, resolved_to_zone) pairs. The destination is resolved
+            // per-entity because `$owner_` placeholders expand differently for each owner.
+            let mut matching: Vec<(String, String)> = self
                 .entities
                 .iter()
                 .filter_map(|(id, entity)| {
@@ -366,27 +367,28 @@ impl GameState {
                         "<=" => *val <= check.threshold,
                         _ => false,
                     };
-                    passes.then(|| id.clone())
+                    if !passes {
+                        return None;
+                    }
+                    let to_zone = resolve_zone_ref(&check.move_to_zone, &entity.owner_id);
+                    if !self.zones.contains_key(&to_zone) {
+                        return None;
+                    }
+                    Some((id.clone(), to_zone))
                 })
                 .collect();
 
             // Sort for deterministic death-event ordering across runs.
-            let mut matching_ids = matching_ids;
-            matching_ids.sort();
-
-            // Sort zone IDs for deterministic from_zone selection if an entity is
-            // (incorrectly) present in multiple zones simultaneously.
-            let mut zone_ids: Vec<String> = self.zones.keys().cloned().collect();
-            zone_ids.sort();
+            matching.sort_by(|a, b| a.0.cmp(&b.0));
 
             // Collect death events before pushing so we can respect stack_order.
             // FIFO: push to front (resolves immediately, before previously-queued events).
             // LIFO: push to back (top of stack, same priority as hook-triggered events).
-            let death_events: Vec<Event> = matching_ids
+            let death_events: Vec<Event> = matching
                 .into_iter()
-                .filter_map(|entity_id| {
+                .filter_map(|(entity_id, to_zone)| {
                     let from_zone = zone_ids.iter().find_map(|zone_id| {
-                        if zone_id != &check.move_to_zone
+                        if zone_id != &to_zone
                             && self
                                 .zones
                                 .get(zone_id)
@@ -398,21 +400,19 @@ impl GameState {
                         }
                     })?;
 
-                    // An entity must exist in exactly one zone. Multiple zone membership
-                    // indicates a bug in the engine's move/spawn logic.
                     debug_assert!(
-                        zone_ids
-                            .iter()
-                            .filter(|zone_id| {
-                                *zone_id != &check.move_to_zone
-                                    && self
-                                        .zones
-                                        .get(*zone_id)
+                        {
+                            let zones_containing_entity = zone_ids
+                                .iter()
+                                .filter(|zid| {
+                                    self.zones
+                                        .get(*zid)
                                         .is_some_and(|z| z.entities.contains(&entity_id))
-                            })
-                            .count()
-                            == 1,
-                        "entity '{entity_id}' found in multiple zones — invariant violated"
+                                })
+                                .count();
+                            zones_containing_entity == 1
+                        },
+                        "entity '{entity_id}' must exist in exactly one zone before move"
                     );
 
                     Some(Event {
@@ -420,7 +420,7 @@ impl GameState {
                         action: Action::MoveEntity {
                             entity_id,
                             from_zone,
-                            to_zone: check.move_to_zone.clone(),
+                            to_zone,
                             index: None,
                         },
                     })
@@ -502,7 +502,11 @@ fn event_targets_entity(event: &Event, entity_id: &str) -> bool {
 /// Supported placeholders in `target_id` / `entity_id`:
 /// - `"$source"` — the `source_id` of the triggering event.
 /// - `"$target"` — the primary target entity of the triggering event.
-fn resolve_placeholders(action: &Action, event: &Event) -> Action {
+///
+/// Supported placeholders in zone fields (`from_zone`, `to_zone`, `zone_id`):
+/// - `"$owner_<ZoneName>"` — resolves to `"{entity_owner_id}_{ZoneName}"`.
+///   `entity_owner_id` is the player ID from the ability-bearing entity's `owner_id` field.
+fn resolve_placeholders(action: &Action, event: &Event, entity_owner_id: &str) -> Action {
     match action {
         Action::MutateProperty {
             target_id,
@@ -520,9 +524,13 @@ fn resolve_placeholders(action: &Action, event: &Event) -> Action {
             index,
         } => Action::MoveEntity {
             entity_id: resolve_entity_ref(entity_id, event),
-            from_zone: from_zone.clone(),
-            to_zone: to_zone.clone(),
+            from_zone: resolve_zone_ref(from_zone, entity_owner_id),
+            to_zone: resolve_zone_ref(to_zone, entity_owner_id),
             index: *index,
+        },
+        Action::SpawnEntity { entity, zone_id } => Action::SpawnEntity {
+            entity: entity.clone(),
+            zone_id: resolve_zone_ref(zone_id, entity_owner_id),
         },
         _ => action.clone(),
     }
@@ -539,6 +547,15 @@ fn resolve_entity_ref(id: &str, event: &Event) -> String {
             _ => id.to_string(),
         },
         _ => id.to_string(),
+    }
+}
+
+/// Resolves `"$owner_<ZoneName>"` to `"{owner_id}_{ZoneName}"`.
+/// Non-placeholder strings are returned unchanged.
+fn resolve_zone_ref(zone_ref: &str, owner_id: &str) -> String {
+    match zone_ref.strip_prefix("$owner_") {
+        Some(zone_name) => format!("{}_{}", owner_id, zone_name),
+        None => zone_ref.to_string(),
     }
 }
 
@@ -1256,6 +1273,237 @@ mod tests {
         assert!(
             state.turn_ended,
             "turn_ended should be true when EndTurn is triggered by a card ability"
+        );
+    }
+
+    // ------------------------------------------
+    // $owner_ zone placeholder resolution
+    // ------------------------------------------
+
+    #[test]
+    fn resolve_zone_ref_expands_owner_prefix() {
+        assert_eq!(resolve_zone_ref("$owner_Hand", "player_1"), "player_1_Hand");
+        assert_eq!(
+            resolve_zone_ref("$owner_Graveyard", "player_2"),
+            "player_2_Graveyard"
+        );
+    }
+
+    #[test]
+    fn resolve_zone_ref_passes_through_literal() {
+        assert_eq!(resolve_zone_ref("shared_board", "player_1"), "shared_board");
+        assert_eq!(resolve_zone_ref("Graveyard", "player_1"), "Graveyard");
+    }
+
+    #[test]
+    fn state_check_resolves_owner_zone_per_entity() {
+        let mut state = GameState::new();
+        state.state_checks.push(StateCheck {
+            watch_property: "health".to_string(),
+            operator: "<=".to_string(),
+            threshold: 0,
+            move_to_zone: "$owner_Graveyard".to_string(),
+        });
+
+        let mut p1_creature = make_entity("p1_creature", vec![("health", 1)], vec![]);
+        p1_creature.owner_id = "player_1".to_string();
+        state
+            .entities
+            .insert("p1_creature".to_string(), p1_creature);
+
+        let mut p2_creature = make_entity("p2_creature", vec![("health", 1)], vec![]);
+        p2_creature.owner_id = "player_2".to_string();
+        state
+            .entities
+            .insert("p2_creature".to_string(), p2_creature);
+
+        state.zones.insert(
+            "player_1_Board".to_string(),
+            make_zone("player_1_Board", vec!["p1_creature"]),
+        );
+        state.zones.insert(
+            "player_2_Board".to_string(),
+            make_zone("player_2_Board", vec!["p2_creature"]),
+        );
+        state.zones.insert(
+            "player_1_Graveyard".to_string(),
+            make_zone("player_1_Graveyard", vec![]),
+        );
+        state.zones.insert(
+            "player_2_Graveyard".to_string(),
+            make_zone("player_2_Graveyard", vec![]),
+        );
+
+        state.event_queue.push_back(Event {
+            source_id: "engine".to_string(),
+            action: Action::MutateProperty {
+                target_id: "p1_creature".to_string(),
+                property: "health".to_string(),
+                delta: -1,
+            },
+        });
+        state.event_queue.push_back(Event {
+            source_id: "engine".to_string(),
+            action: Action::MutateProperty {
+                target_id: "p2_creature".to_string(),
+                property: "health".to_string(),
+                delta: -1,
+            },
+        });
+
+        state.resolve_queue();
+
+        assert!(
+            state.zones["player_1_Graveyard"]
+                .entities
+                .contains(&"p1_creature".to_string()),
+            "player_1's creature should go to player_1's graveyard"
+        );
+        assert!(
+            state.zones["player_2_Graveyard"]
+                .entities
+                .contains(&"p2_creature".to_string()),
+            "player_2's creature should go to player_2's graveyard"
+        );
+        assert!(state.zones["player_1_Board"].entities.is_empty());
+        assert!(state.zones["player_2_Board"].entities.is_empty());
+    }
+
+    #[test]
+    fn ability_resolves_owner_zone_in_move_entity() {
+        let bounce = Ability {
+            id: "bounce_01".to_string(),
+            name: "Bounce to Hand".to_string(),
+            trigger: "on_after_mutate_property:self".to_string(),
+            conditions: vec![],
+            actions: vec![Action::MoveEntity {
+                entity_id: "$target".to_string(),
+                from_zone: "$owner_Board".to_string(),
+                to_zone: "$owner_Hand".to_string(),
+                index: None,
+            }],
+            cancels: false,
+        };
+
+        let mut state = GameState::new();
+        let mut creature = make_entity("creature", vec![("health", 10)], vec![bounce]);
+        creature.owner_id = "player_1".to_string();
+        state.entities.insert("creature".to_string(), creature);
+
+        state.zones.insert(
+            "player_1_Board".to_string(),
+            make_zone("player_1_Board", vec!["creature"]),
+        );
+        state.zones.insert(
+            "player_1_Hand".to_string(),
+            make_zone("player_1_Hand", vec![]),
+        );
+
+        state.event_queue.push_back(Event {
+            source_id: "player_1".to_string(),
+            action: Action::MutateProperty {
+                target_id: "creature".to_string(),
+                property: "health".to_string(),
+                delta: -1,
+            },
+        });
+
+        state.resolve_queue();
+
+        assert!(
+            state.zones["player_1_Hand"]
+                .entities
+                .contains(&"creature".to_string()),
+            "$owner_Hand should resolve to player_1_Hand"
+        );
+        assert!(state.zones["player_1_Board"].entities.is_empty());
+    }
+
+    #[test]
+    fn ability_resolves_owner_zone_in_spawn_entity() {
+        let spawner = Ability {
+            id: "spawn_01".to_string(),
+            name: "Summon Token".to_string(),
+            trigger: "on_after_mutate_property:self".to_string(),
+            conditions: vec![],
+            actions: vec![Action::SpawnEntity {
+                entity: Entity {
+                    id: "token_001".to_string(),
+                    owner_id: "player_1".to_string(),
+                    template_id: "token_template".to_string(),
+                    properties: [("power".to_string(), 1)].into_iter().collect(),
+                    abilities: vec![],
+                },
+                zone_id: "$owner_Board".to_string(),
+            }],
+            cancels: false,
+        };
+
+        let mut state = GameState::new();
+        let mut summoner = make_entity("summoner", vec![("health", 10)], vec![spawner]);
+        summoner.owner_id = "player_1".to_string();
+        state.entities.insert("summoner".to_string(), summoner);
+
+        state.zones.insert(
+            "player_1_Board".to_string(),
+            make_zone("player_1_Board", vec!["summoner"]),
+        );
+
+        state.event_queue.push_back(Event {
+            source_id: "player_1".to_string(),
+            action: Action::MutateProperty {
+                target_id: "summoner".to_string(),
+                property: "health".to_string(),
+                delta: -1,
+            },
+        });
+
+        state.resolve_queue();
+
+        assert!(
+            state.entities.contains_key("token_001"),
+            "spawned token should exist in entities"
+        );
+        assert!(
+            state.zones["player_1_Board"]
+                .entities
+                .contains(&"token_001".to_string()),
+            "$owner_Board in SpawnEntity should resolve to player_1_Board"
+        );
+    }
+
+    #[test]
+    fn state_check_with_literal_zone_still_works() {
+        let mut state = GameState::new();
+        state.state_checks.push(make_death_check("graveyard"));
+        state.entities.insert(
+            "creature".to_string(),
+            make_entity("creature", vec![("health", 1)], vec![]),
+        );
+        state.zones.insert(
+            "battlefield".to_string(),
+            make_zone("battlefield", vec!["creature"]),
+        );
+        state
+            .zones
+            .insert("graveyard".to_string(), make_zone("graveyard", vec![]));
+
+        state.event_queue.push_back(Event {
+            source_id: "player_1".to_string(),
+            action: Action::MutateProperty {
+                target_id: "creature".to_string(),
+                property: "health".to_string(),
+                delta: -1,
+            },
+        });
+
+        state.resolve_queue();
+
+        assert!(
+            state.zones["graveyard"]
+                .entities
+                .contains(&"creature".to_string()),
+            "literal zone refs must still work for shared zones"
         );
     }
 }
