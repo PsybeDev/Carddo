@@ -187,11 +187,15 @@ defmodule Carddo.Multiplayer.GameInitializer do
     zone_ids =
       for {player_id, _} <- players, zone_name <- zone_names, do: "#{player_id}_#{zone_name}"
 
-    if length(zone_ids) == length(Enum.uniq(zone_ids)) do
+    dupes = zone_ids -- Enum.uniq(zone_ids)
+
+    if dupes == [] do
       :ok
     else
+      collisions = dupes |> Enum.uniq() |> Enum.join(", ")
+
       {:error,
-       "Player IDs and zone names produce ambiguous zone IDs; avoid underscores in player_id or zone names"}
+       "Zone ID collision detected: #{collisions} — player_id + zone_name combinations must produce unique IDs"}
     end
   end
 

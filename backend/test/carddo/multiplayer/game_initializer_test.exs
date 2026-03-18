@@ -586,7 +586,8 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
       assert {:error, msg} =
                GameInitializer.build(ctx.game.id, [{"a", ctx.deck.id}, {"a_b", ctx.deck.id}])
 
-      assert msg =~ "ambiguous zone IDs"
+      assert msg =~ "Zone ID collision detected"
+      assert msg =~ "a_b_Deck"
     end
   end
 
