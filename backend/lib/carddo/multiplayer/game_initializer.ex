@@ -10,6 +10,7 @@ defmodule Carddo.Multiplayer.GameInitializer do
 
   @valid_visibilities ~w(Hidden OwnerOnly Public)
   @valid_stack_orders ~w(Fifo Lifo)
+  @valid_operators ~w(<= < == > >= !=)
 
   @doc """
   Builds initial `GameState` JSON from a game's config and player decks.
@@ -24,6 +25,7 @@ defmodule Carddo.Multiplayer.GameInitializer do
          {:ok, game} <- fetch_game(game_id),
          {:ok, config} <- validate_config(game.config),
          {:ok, starting_zone} <- validate_starting_zone(config),
+         :ok <- validate_zone_id_uniqueness(players, config),
          {:ok, decks} <- load_and_validate_decks(game_id, players) do
       game_state = assemble_state(config, starting_zone, players, decks)
       {:ok, Jason.encode!(game_state)}
@@ -112,23 +114,42 @@ defmodule Carddo.Multiplayer.GameInitializer do
     end
   end
 
+  defp validate_stack_order(%{"stack_order" => order}) do
+    {:error, "stack_order must be a string, got: #{inspect(order)}"}
+  end
+
   defp validate_stack_order(config), do: {:ok, config}
 
   defp validate_state_check_zones(%{"state_checks" => checks} = config) when is_list(checks) do
     zone_names = Enum.map(config["zones"], & &1["name"])
 
-    bad =
-      Enum.find(checks, fn
-        %{"move_to_zone" => zone} when is_binary(zone) -> zone not in zone_names
-        _ -> false
+    error =
+      Enum.find_value(checks, fn check ->
+        cond do
+          not is_map(check) ->
+            "Each state_check must be a map, got: #{inspect(check)}"
+
+          not (is_binary(check["watch_property"]) and check["watch_property"] != "") ->
+            "state_check watch_property must be a non-empty string"
+
+          check["operator"] not in @valid_operators ->
+            "state_check operator #{inspect(check["operator"])} is invalid, expected one of: #{Enum.join(@valid_operators, ", ")}"
+
+          not is_integer(check["threshold"]) ->
+            "state_check threshold must be an integer, got: #{inspect(check["threshold"])}"
+
+          not (is_binary(check["move_to_zone"]) and check["move_to_zone"] != "") ->
+            "state_check move_to_zone must be a non-empty string"
+
+          check["move_to_zone"] not in zone_names ->
+            "state_check references unknown zone #{inspect(check["move_to_zone"])}, expected one of: #{Enum.join(zone_names, ", ")}"
+
+          true ->
+            nil
+        end
       end)
 
-    if bad do
-      {:error,
-       "state_check references unknown zone #{inspect(bad["move_to_zone"])}, expected one of: #{Enum.join(zone_names, ", ")}"}
-    else
-      {:ok, config}
-    end
+    if error, do: {:error, error}, else: {:ok, config}
   end
 
   defp validate_state_check_zones(config), do: {:ok, config}
@@ -149,6 +170,20 @@ defmodule Carddo.Multiplayer.GameInitializer do
         else
           {:error, "No #{starting_zone} zone defined in game config"}
         end
+    end
+  end
+
+  defp validate_zone_id_uniqueness(players, config) do
+    zone_names = Enum.map(config["zones"], & &1["name"])
+
+    zone_ids =
+      for {player_id, _} <- players, zone_name <- zone_names, do: "#{player_id}_#{zone_name}"
+
+    if length(zone_ids) == length(Enum.uniq(zone_ids)) do
+      :ok
+    else
+      {:error,
+       "Player IDs and zone names produce ambiguous zone IDs; avoid underscores in player_id or zone names"}
     end
   end
 

@@ -234,7 +234,7 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
       assert map_size(state["entities"]) == 7
     end
 
-    test "each player's entities are shuffled independently", ctx do
+    test "each player's deck has correct entity count and no cross-player entity overlap", ctx do
       {:ok, deck_2} =
         Ecto.build_assoc(ctx.game, :decks)
         |> Deck.changeset(%{name: "Player 2 Deck"})
@@ -436,6 +436,81 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
                GameInitializer.build(ctx.game.id, [{"p1", empty_deck.id}])
 
       assert msg =~ "has no cards"
+    end
+
+    test "returns error for non-string stack_order", ctx do
+      config = Map.put(@valid_config, "stack_order", 42)
+
+      ctx.game
+      |> Game.update_changeset(%{config: config})
+      |> Repo.update!()
+
+      assert {:error, msg} =
+               GameInitializer.build(ctx.game.id, [{"player_1", ctx.deck.id}])
+
+      assert msg =~ "stack_order must be a string"
+    end
+
+    test "returns error for malformed state_check entry", ctx do
+      config =
+        Map.put(@valid_config, "state_checks", [
+          %{
+            "watch_property" => "Health",
+            "operator" => "BAD",
+            "threshold" => 0,
+            "move_to_zone" => "Graveyard"
+          }
+        ])
+
+      ctx.game
+      |> Game.update_changeset(%{config: config})
+      |> Repo.update!()
+
+      assert {:error, msg} =
+               GameInitializer.build(ctx.game.id, [{"player_1", ctx.deck.id}])
+
+      assert msg =~ "operator"
+    end
+
+    test "returns error for state_check with non-integer threshold", ctx do
+      config =
+        Map.put(@valid_config, "state_checks", [
+          %{
+            "watch_property" => "Health",
+            "operator" => "<=",
+            "threshold" => "zero",
+            "move_to_zone" => "Graveyard"
+          }
+        ])
+
+      ctx.game
+      |> Game.update_changeset(%{config: config})
+      |> Repo.update!()
+
+      assert {:error, msg} =
+               GameInitializer.build(ctx.game.id, [{"player_1", ctx.deck.id}])
+
+      assert msg =~ "threshold must be an integer"
+    end
+
+    test "returns error when player_id and zone_name produce colliding zone IDs", ctx do
+      config = %{
+        "zones" => [
+          %{"name" => "Deck", "visibility" => "Hidden"},
+          %{"name" => "b_Deck", "visibility" => "Public"}
+        ]
+      }
+
+      ctx.game
+      |> Game.update_changeset(%{config: config})
+      |> Repo.update!()
+
+      # player "a" + zone "b_Deck" = "a_b_Deck"
+      # player "a_b" + zone "Deck" = "a_b_Deck"  ← collision
+      assert {:error, msg} =
+               GameInitializer.build(ctx.game.id, [{"a", ctx.deck.id}, {"a_b", ctx.deck.id}])
+
+      assert msg =~ "ambiguous zone IDs"
     end
   end
 
