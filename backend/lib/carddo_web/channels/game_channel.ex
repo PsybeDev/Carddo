@@ -23,8 +23,9 @@ defmodule CarddoWeb.GameChannel do
     with {:ok, _game} <- authorize_game(game_id, current_user),
          {:ok, %{game_id: room_game_id, state_json: state_json}} <-
            resolve_room_boot(room_id, game_id, player_id, deck_id),
-         :ok <- ensure_room_started(room_id, room_game_id, state_json) do
-      {:ok, %{state: state_json}, assign(socket, :room_id, room_id)}
+         :ok <- ensure_room_started(room_id, room_game_id, state_json),
+         {:ok, live_state_json} <- fetch_live_state(room_id) do
+      {:ok, %{state: live_state_json}, assign(socket, :room_id, room_id)}
     else
       {:error, {code, message}} ->
         {:error, error_envelope(message, code)}
@@ -130,7 +131,17 @@ defmodule CarddoWeb.GameChannel do
   defp fetch_live_room(room_id) do
     {:ok, GameRoom.get_room_info(room_id)}
   catch
-    :exit, _ -> :not_running
+    :exit, {:noproc, _} -> :not_running
+    :exit, {:normal, _} -> :not_running
+    :exit, {:shutdown, _} -> :not_running
+  end
+
+  defp fetch_live_state(room_id) do
+    {:ok, GameRoom.get_state(room_id)}
+  catch
+    :exit, reason ->
+      Logger.error("Failed to fetch live state for room #{room_id}: #{inspect(reason)}")
+      {:error, {"room_unavailable", "Game room is unavailable"}}
   end
 
   defp ensure_room_started(room_id, game_id, state_json) do
