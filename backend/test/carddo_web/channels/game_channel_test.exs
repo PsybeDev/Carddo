@@ -307,6 +307,77 @@ defmodule CarddoWeb.GameChannelTest do
     end
   end
 
+  describe "join/3 room start failure" do
+    setup ctx do
+      previous = Application.get_env(:carddo, :multiplayer_module)
+
+      on_exit(fn ->
+        if previous do
+          Application.put_env(:carddo, :multiplayer_module, previous)
+        else
+          Application.delete_env(:carddo, :multiplayer_module)
+        end
+      end)
+
+      ctx
+    end
+
+    test "returns error when room startup fails for non-race reasons", ctx do
+      defmodule FailStartRoom do
+        @behaviour Carddo.Multiplayer
+
+        def room_exists?(_room_id), do: false
+
+        def start_room(_room_id, _game_id, _state_json, _solo_mode \\ false),
+          do: {:error, :max_children}
+      end
+
+      Application.put_env(:carddo, :multiplayer_module, FailStartRoom)
+
+      room_id = unique_room_id(ctx)
+
+      assert {:error,
+              %{errors: [%{message: "Failed to start game room", code: "room_start_failed"}]}} =
+               subscribe_and_join(
+                 ctx.socket,
+                 CarddoWeb.GameChannel,
+                 "room:#{room_id}",
+                 %{"game_id" => ctx.game.id, "deck_id" => ctx.deck.id}
+               )
+    end
+
+    test "join succeeds when start_room returns {:already_started, pid}", ctx do
+      defmodule AlreadyStartedRoom do
+        @behaviour Carddo.Multiplayer
+
+        def room_exists?(_room_id), do: false
+
+        def start_room(room_id, game_id, initial_state_json, _solo_mode \\ false) do
+          # Actually start the room so fetch_live_state can read from it
+          Carddo.Multiplayer.start_room(room_id, game_id, initial_state_json)
+          |> case do
+            {:ok, pid} -> {:error, {:already_started, pid}}
+            other -> other
+          end
+        end
+      end
+
+      Application.put_env(:carddo, :multiplayer_module, AlreadyStartedRoom)
+
+      room_id = unique_room_id(ctx)
+
+      assert {:ok, %{state: state_json}, _socket} =
+               subscribe_and_join(
+                 ctx.socket,
+                 CarddoWeb.GameChannel,
+                 "room:#{room_id}",
+                 %{"game_id" => ctx.game.id, "deck_id" => ctx.deck.id}
+               )
+
+      assert {:ok, _} = Jason.decode(state_json)
+    end
+  end
+
   describe "handle_in submit_action" do
     setup ctx do
       room_id = unique_room_id(ctx)

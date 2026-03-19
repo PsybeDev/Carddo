@@ -11,9 +11,11 @@ defmodule CarddoWeb.GameChannel do
   use Phoenix.Channel
   require Logger
 
-  alias Carddo.{Games, Multiplayer}
+  alias Carddo.Games
   alias Carddo.Multiplayer.{GameInitializer, GameSessions}
   alias Carddo.GameRoom
+
+  defp multiplayer, do: Application.get_env(:carddo, :multiplayer_module, Carddo.Multiplayer)
 
   @impl true
   def join("room:" <> room_id, %{"game_id" => game_id, "deck_id" => deck_id}, socket) do
@@ -151,10 +153,12 @@ defmodule CarddoWeb.GameChannel do
   end
 
   defp ensure_room_started(room_id, game_id, state_json) do
-    if Multiplayer.room_exists?(room_id) do
+    mod = multiplayer()
+
+    if mod.room_exists?(room_id) do
       :ok
     else
-      case Multiplayer.start_room(room_id, game_id, state_json) do
+      case mod.start_room(room_id, game_id, state_json, false) do
         {:ok, _pid} ->
           :ok
 
