@@ -4,6 +4,10 @@
 #
 # Idempotent — safe to run multiple times without creating duplicates.
 
+if Mix.env() == :prod do
+  raise "Refusing to run seed script in production. Set MIX_ENV=dev to override."
+end
+
 import Ecto.Changeset
 alias Carddo.{Card, Deck, DeckCard, Game, Repo, User}
 
@@ -105,8 +109,8 @@ cards =
           properties: %{"Health" => 20, "Attack" => attack},
           abilities: [
             %{
-              "id" => "strike_#{ability_id}",
-              "name" => "Strike",
+              "id" => "deploy_cost_#{ability_id}",
+              "name" => "Deploy Cost",
               "trigger" => "on_after_move_entity:self",
               "conditions" => [],
               "actions" => [
