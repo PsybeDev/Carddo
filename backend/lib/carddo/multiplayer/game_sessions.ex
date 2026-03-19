@@ -45,7 +45,8 @@ defmodule Carddo.Multiplayer.GameSessions do
                  ]
                ),
              conflict_target: :room_id,
-             returning: true
+             returning: true,
+             allow_stale: true
            ) do
         {:ok, %GameSession{id: nil}} -> {:ok, :stale}
         other -> other
