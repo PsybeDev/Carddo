@@ -195,6 +195,33 @@ defmodule CarddoWeb.GameChannelTest do
     end
   end
 
+  describe "join/3 live room" do
+    test "second join returns same state as the running room", ctx do
+      room_id = unique_room_id(ctx)
+      join_params = %{"game_id" => ctx.game.id, "deck_id" => ctx.deck.id}
+
+      {:ok, first_reply, _socket} =
+        subscribe_and_join(
+          ctx.socket,
+          CarddoWeb.GameChannel,
+          "room:#{room_id}",
+          join_params
+        )
+
+      {:ok, second_socket} = connect(CarddoWeb.UserSocket, %{"token" => ctx.token})
+
+      {:ok, second_reply, _socket} =
+        subscribe_and_join(
+          second_socket,
+          CarddoWeb.GameChannel,
+          "room:#{room_id}",
+          join_params
+        )
+
+      assert first_reply.state == second_reply.state
+    end
+  end
+
   describe "join/3 session resume" do
     test "resumes from stored session state instead of fresh init", ctx do
       room_id = unique_room_id(ctx)

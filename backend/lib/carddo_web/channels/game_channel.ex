@@ -23,8 +23,9 @@ defmodule CarddoWeb.GameChannel do
     with {:ok, _game} <- authorize_game(game_id, current_user),
          {:ok, %{game_id: room_game_id, state_json: state_json}} <-
            resolve_room_boot(room_id, game_id, player_id, deck_id),
-         :ok <- ensure_room_started(room_id, room_game_id, state_json) do
-      {:ok, %{state: state_json}, assign(socket, :room_id, room_id)}
+         :ok <- ensure_room_started(room_id, room_game_id, state_json),
+         {:ok, live_state_json} <- fetch_live_state(room_id, room_game_id) do
+      {:ok, %{state: live_state_json}, assign(socket, :room_id, room_id)}
     else
       {:error, {code, message}} ->
         {:error, error_envelope(message, code)}
@@ -98,23 +99,55 @@ defmodule CarddoWeb.GameChannel do
     do: {:error, {"invalid_game_id", "Invalid game_id"}}
 
   defp resolve_room_boot(room_id, requested_game_id, player_id, deck_id) do
-    case GameSessions.get(room_id) do
-      nil ->
-        case GameInitializer.build(requested_game_id, [{player_id, deck_id}]) do
-          {:ok, state_json} ->
-            {:ok, %{game_id: requested_game_id, state_json: state_json}}
-
-          {:error, reason} ->
-            {:error, {"init_failed", reason}}
-        end
-
-      session ->
-        if to_string(session.game_id) == to_string(requested_game_id) do
-          {:ok, %{game_id: session.game_id, state_json: Jason.encode!(session.state_json)}}
+    case fetch_live_room(room_id) do
+      {:ok, info} ->
+        if to_string(info.game_id) == to_string(requested_game_id) do
+          {:ok, info}
         else
           {:error, {"room_game_mismatch", "Room/game mismatch"}}
         end
+
+      :not_running ->
+        case GameSessions.get(room_id) do
+          nil ->
+            case GameInitializer.build(requested_game_id, [{player_id, deck_id}]) do
+              {:ok, state_json} ->
+                {:ok, %{game_id: requested_game_id, state_json: state_json}}
+
+              {:error, reason} ->
+                {:error, {"init_failed", reason}}
+            end
+
+          session ->
+            if to_string(session.game_id) == to_string(requested_game_id) do
+              {:ok, %{game_id: session.game_id, state_json: Jason.encode!(session.state_json)}}
+            else
+              {:error, {"room_game_mismatch", "Room/game mismatch"}}
+            end
+        end
     end
+  end
+
+  defp fetch_live_room(room_id) do
+    {:ok, GameRoom.get_room_info(room_id)}
+  catch
+    :exit, {:noproc, _} -> :not_running
+    :exit, {:normal, _} -> :not_running
+    :exit, {:shutdown, _} -> :not_running
+  end
+
+  defp fetch_live_state(room_id, expected_game_id) do
+    info = GameRoom.get_room_info(room_id)
+
+    if to_string(info.game_id) == to_string(expected_game_id) do
+      {:ok, info.state_json}
+    else
+      {:error, {"room_game_mismatch", "Room/game mismatch"}}
+    end
+  catch
+    :exit, reason ->
+      Logger.error("Failed to fetch live state for room #{room_id}: #{inspect(reason)}")
+      {:error, {"room_unavailable", "Game room is unavailable"}}
   end
 
   defp ensure_room_started(room_id, game_id, state_json) do
