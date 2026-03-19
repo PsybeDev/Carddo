@@ -1,9 +1,24 @@
 defmodule Carddo.MultiplayerTest do
-  use ExUnit.Case, async: true
+  # async: false required so spawned GameRoom processes share the DB sandbox
+  use Carddo.DataCase, async: false
 
-  alias Carddo.Multiplayer
+  alias Carddo.{Game, Multiplayer, Repo, User}
 
   @empty_state ~s({"entities":{},"zones":{},"event_queue":[],"pending_animations":[],"stack_order":"Fifo","state_checks":[]})
+
+  setup do
+    {:ok, user} =
+      %User{}
+      |> User.changeset(%{email: "multiplayer-#{System.unique_integer([:positive])}@example.com"})
+      |> Repo.insert()
+
+    {:ok, game} =
+      Ecto.build_assoc(user, :games)
+      |> Game.changeset(%{title: "Test Game"})
+      |> Repo.insert()
+
+    %{game_id: game.id}
+  end
 
   defp unique_room_id, do: "multiplayer_test_#{System.unique_integer([:positive])}"
 
@@ -18,30 +33,30 @@ defmodule Carddo.MultiplayerTest do
   end
 
   describe "start_room/4" do
-    test "returns {:ok, pid} and registers the room" do
+    test "returns {:ok, pid} and registers the room", %{game_id: game_id} do
       room_id = unique_room_id()
 
-      assert {:ok, pid} = Multiplayer.start_room(room_id, "g1", @empty_state)
+      assert {:ok, pid} = Multiplayer.start_room(room_id, game_id, @empty_state)
       on_exit(fn -> cleanup(pid) end)
 
       assert is_pid(pid)
       assert Multiplayer.room_exists?(room_id)
     end
 
-    test "returns error when room with same id already exists" do
+    test "returns error when room with same id already exists", %{game_id: game_id} do
       room_id = unique_room_id()
 
-      assert {:ok, pid} = Multiplayer.start_room(room_id, "g1", @empty_state)
+      assert {:ok, pid} = Multiplayer.start_room(room_id, game_id, @empty_state)
       on_exit(fn -> cleanup(pid) end)
 
       assert {:error, {:already_started, _pid}} =
-               Multiplayer.start_room(room_id, "g1", @empty_state)
+               Multiplayer.start_room(room_id, game_id, @empty_state)
     end
 
-    test "solo_mode defaults to false" do
+    test "solo_mode defaults to false", %{game_id: game_id} do
       room_id = unique_room_id()
 
-      assert {:ok, pid} = Multiplayer.start_room(room_id, "g1", @empty_state)
+      assert {:ok, pid} = Multiplayer.start_room(room_id, game_id, @empty_state)
       on_exit(fn -> cleanup(pid) end)
 
       assert :sys.get_state(pid).solo_mode == false
@@ -53,9 +68,9 @@ defmodule Carddo.MultiplayerTest do
       refute Multiplayer.room_exists?("nonexistent_#{unique_room_id()}")
     end
 
-    test "returns false after the room process is killed" do
+    test "returns false after the room process is killed", %{game_id: game_id} do
       room_id = unique_room_id()
-      {:ok, pid} = Multiplayer.start_room(room_id, "g1", @empty_state)
+      {:ok, pid} = Multiplayer.start_room(room_id, game_id, @empty_state)
 
       ref = Process.monitor(pid)
       Process.exit(pid, :kill)
@@ -64,12 +79,12 @@ defmodule Carddo.MultiplayerTest do
       assert wait_until_gone(room_id)
     end
 
-    test "killing one room does not affect another" do
+    test "killing one room does not affect another", %{game_id: game_id} do
       room_a = unique_room_id()
       room_b = unique_room_id()
 
-      {:ok, pid_a} = Multiplayer.start_room(room_a, "g1", @empty_state)
-      {:ok, pid_b} = Multiplayer.start_room(room_b, "g1", @empty_state)
+      {:ok, pid_a} = Multiplayer.start_room(room_a, game_id, @empty_state)
+      {:ok, pid_b} = Multiplayer.start_room(room_b, game_id, @empty_state)
       on_exit(fn -> cleanup(pid_b) end)
 
       ref = Process.monitor(pid_a)
