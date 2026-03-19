@@ -5,7 +5,7 @@
 # Idempotent — safe to run multiple times without creating duplicates.
 
 if Mix.env() == :prod do
-  raise "Refusing to run seed script in production. Set MIX_ENV=dev to override."
+  raise "Refusing to run seed script in production. This script is for dev/test only."
 end
 
 import Ecto.Changeset

@@ -30,6 +30,6 @@ Idempotent — safe to run multiple times.
 
 **State checks:** Health <= 0 → move to Discard
 
-**Cards:** 10 creatures with Health 20, Attack 1–5, each with a Strike ability.
+**Cards:** 10 creatures with Health 20, Attack 1–5, each with a Deploy Cost ability (self-damage on move).
 
 **Decks:** Deck Alpha (cards 1–5), Deck Beta (cards 6–10), 1 copy each.
