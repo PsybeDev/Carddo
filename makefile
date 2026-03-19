@@ -1,4 +1,4 @@
-.PHONY: setup dev dev-backend dev-frontend build-wasm generate-types
+.PHONY: setup dev dev-backend dev-frontend build-wasm generate-types seed
 
 setup:
 	$(MAKE) build-wasm
@@ -20,3 +20,6 @@ dev-frontend:
 
 dev: generate-types
 	$(MAKE) -j2 dev-backend dev-frontend
+
+seed:
+	cd backend && mix run priv/repo/seeds.exs
