@@ -35,6 +35,10 @@ defmodule Carddo.GameRoom do
     GenServer.call(via_tuple(room_id), :get_state, timeout)
   end
 
+  def get_room_info(room_id, timeout \\ @default_timeout) do
+    GenServer.call(via_tuple(room_id), :get_room_info, timeout)
+  end
+
   # GenServer callbacks
 
   @impl true
@@ -158,6 +162,11 @@ defmodule Carddo.GameRoom do
   @impl true
   def handle_call(:get_state, _from, state) do
     {:reply, state.rust_state_json, state}
+  end
+
+  @impl true
+  def handle_call(:get_room_info, _from, state) do
+    {:reply, %{game_id: state.game_id, state_json: state.rust_state_json}, state}
   end
 
   @impl true

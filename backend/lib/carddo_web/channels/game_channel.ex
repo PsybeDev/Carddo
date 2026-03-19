@@ -98,26 +98,39 @@ defmodule CarddoWeb.GameChannel do
     do: {:error, {"invalid_game_id", "Invalid game_id"}}
 
   defp resolve_room_boot(room_id, requested_game_id, player_id, deck_id) do
-    cond do
-      Multiplayer.room_exists?(room_id) ->
-        {:ok, %{game_id: requested_game_id, state_json: GameRoom.get_state(room_id)}}
-
-      session = GameSessions.get(room_id) ->
-        if to_string(session.game_id) == to_string(requested_game_id) do
-          {:ok, %{game_id: session.game_id, state_json: Jason.encode!(session.state_json)}}
+    case fetch_live_room(room_id) do
+      {:ok, info} ->
+        if to_string(info.game_id) == to_string(requested_game_id) do
+          {:ok, info}
         else
           {:error, {"room_game_mismatch", "Room/game mismatch"}}
         end
 
-      true ->
-        case GameInitializer.build(requested_game_id, [{player_id, deck_id}]) do
-          {:ok, state_json} ->
-            {:ok, %{game_id: requested_game_id, state_json: state_json}}
+      :not_running ->
+        case GameSessions.get(room_id) do
+          nil ->
+            case GameInitializer.build(requested_game_id, [{player_id, deck_id}]) do
+              {:ok, state_json} ->
+                {:ok, %{game_id: requested_game_id, state_json: state_json}}
 
-          {:error, reason} ->
-            {:error, {"init_failed", reason}}
+              {:error, reason} ->
+                {:error, {"init_failed", reason}}
+            end
+
+          session ->
+            if to_string(session.game_id) == to_string(requested_game_id) do
+              {:ok, %{game_id: session.game_id, state_json: Jason.encode!(session.state_json)}}
+            else
+              {:error, {"room_game_mismatch", "Room/game mismatch"}}
+            end
         end
     end
+  end
+
+  defp fetch_live_room(room_id) do
+    {:ok, GameRoom.get_room_info(room_id)}
+  catch
+    :exit, _ -> :not_running
   end
 
   defp ensure_room_started(room_id, game_id, state_json) do
