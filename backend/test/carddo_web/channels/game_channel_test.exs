@@ -118,7 +118,7 @@ defmodule CarddoWeb.GameChannelTest do
     test "returns error with nonexistent game_id", ctx do
       room_id = unique_room_id(ctx)
 
-      assert {:error, %{reason: "Game not found"}} =
+      assert {:error, %{errors: [%{message: "Game not found", code: "not_found"}]}} =
                subscribe_and_join(
                  ctx.socket,
                  CarddoWeb.GameChannel,
@@ -130,7 +130,7 @@ defmodule CarddoWeb.GameChannelTest do
     test "returns error with non-integer game_id", ctx do
       room_id = unique_room_id(ctx)
 
-      assert {:error, %{reason: "Invalid game_id"}} =
+      assert {:error, %{errors: [%{message: "Invalid game_id", code: "invalid_game_id"}]}} =
                subscribe_and_join(
                  ctx.socket,
                  CarddoWeb.GameChannel,
@@ -142,7 +142,15 @@ defmodule CarddoWeb.GameChannelTest do
     test "returns error when missing required params", ctx do
       room_id = unique_room_id(ctx)
 
-      assert {:error, %{reason: "Missing required params: game_id, deck_id"}} =
+      assert {:error,
+              %{
+                errors: [
+                  %{
+                    message: "Missing required params: game_id, deck_id",
+                    code: "missing_params"
+                  }
+                ]
+              }} =
                subscribe_and_join(
                  ctx.socket,
                  CarddoWeb.GameChannel,
@@ -165,7 +173,7 @@ defmodule CarddoWeb.GameChannelTest do
 
       room_id = unique_room_id(ctx)
 
-      assert {:error, %{reason: "Forbidden"}} =
+      assert {:error, %{errors: [%{message: "Forbidden", code: "forbidden"}]}} =
                subscribe_and_join(
                  other_socket,
                  CarddoWeb.GameChannel,
@@ -262,7 +270,7 @@ defmodule CarddoWeb.GameChannelTest do
         |> Game.changeset(%{title: "Other Game"})
         |> Repo.insert()
 
-      assert {:error, %{reason: "Room/game mismatch"}} =
+      assert {:error, %{errors: [%{message: "Room/game mismatch", code: "room_game_mismatch"}]}} =
                subscribe_and_join(
                  other_socket,
                  CarddoWeb.GameChannel,
@@ -317,8 +325,8 @@ defmodule CarddoWeb.GameChannelTest do
 
       assert_push("action_rejected", payload)
       assert payload.client_sequence_id == 42
-      assert payload.error.type == "native_error"
-      assert is_binary(payload.error.message)
+      assert [%{code: "native_error", message: msg}] = payload.errors
+      assert is_binary(msg)
     end
 
     test "action_rejected is not broadcast to other clients", ctx do
@@ -349,7 +357,7 @@ defmodule CarddoWeb.GameChannelTest do
 
       assert_push("action_rejected", payload)
       assert payload.client_sequence_id == 10
-      assert payload.error.type == "room_unavailable"
+      assert [%{code: "room_unavailable"}] = payload.errors
     end
   end
 
@@ -370,14 +378,19 @@ defmodule CarddoWeb.GameChannelTest do
 
     test "replies with error for unknown events", ctx do
       ref = push(ctx.channel_socket, "bogus_event", %{})
-      assert_reply(ref, :error, %{reason: "unknown_event"})
+      assert_reply(ref, :error, %{errors: [%{message: "Unknown event", code: "unknown_event"}]})
     end
 
     test "submit_action with missing payload fields replies invalid_payload", ctx do
       ref = push(ctx.channel_socket, "submit_action", %{"action" => "EndTurn"})
 
       assert_reply(ref, :error, %{
-        reason: "invalid_payload: requires client_sequence_id and action"
+        errors: [
+          %{
+            message: "Invalid payload: requires client_sequence_id and action",
+            code: "invalid_payload"
+          }
+        ]
       })
     end
   end

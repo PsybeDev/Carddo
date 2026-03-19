@@ -4,6 +4,8 @@ defmodule CarddoWeb.GameChannel do
 
   Thin routing layer (ADR-002) — no game logic. Auth and state resolution
   delegate to context modules; no direct Repo access.
+
+  Error payloads follow the CAR-60 envelope: `%{errors: [%{message, code}]}`.
   """
 
   use Phoenix.Channel
@@ -24,13 +26,13 @@ defmodule CarddoWeb.GameChannel do
          :ok <- ensure_room_started(room_id, room_game_id, state_json) do
       {:ok, %{state: state_json}, assign(socket, :room_id, room_id)}
     else
-      {:error, reason} ->
-        {:error, %{reason: reason}}
+      {:error, {code, message}} ->
+        {:error, error_envelope(message, code)}
     end
   end
 
   def join("room:" <> _room_id, _params, _socket) do
-    {:error, %{reason: "Missing required params: game_id, deck_id"}}
+    {:error, error_envelope("Missing required params: game_id, deck_id", "missing_params")}
   end
 
   @impl true
@@ -61,7 +63,7 @@ defmodule CarddoWeb.GameChannel do
       {:error, %{type: type, message: msg}} ->
         push(socket, "action_rejected", %{
           client_sequence_id: seq_id,
-          error: %{type: type, message: msg}
+          errors: [%{message: msg, code: type}]
         })
 
         {:noreply, socket}
@@ -69,37 +71,48 @@ defmodule CarddoWeb.GameChannel do
   end
 
   def handle_in("submit_action", _payload, socket) do
-    {:reply, {:error, %{reason: "invalid_payload: requires client_sequence_id and action"}},
-     socket}
+    {:reply,
+     {:error,
+      error_envelope(
+        "Invalid payload: requires client_sequence_id and action",
+        "invalid_payload"
+      )}, socket}
   end
 
   def handle_in(event, _payload, socket) do
     Logger.warning("GameChannel received unknown event: #{event}")
-    {:reply, {:error, %{reason: "unknown_event"}}, socket}
+    {:reply, {:error, error_envelope("Unknown event", "unknown_event")}, socket}
   end
+
+  defp error_envelope(message, code), do: %{errors: [%{message: message, code: code}]}
 
   defp authorize_game(game_id, current_user) when is_integer(game_id) do
     case Games.get_game(game_id) do
-      nil -> {:error, "Game not found"}
+      nil -> {:error, {"not_found", "Game not found"}}
       game when game.owner_id == current_user.id -> {:ok, game}
-      _game -> {:error, "Forbidden"}
+      _game -> {:error, {"forbidden", "Forbidden"}}
     end
   end
 
-  defp authorize_game(_game_id, _current_user), do: {:error, "Invalid game_id"}
+  defp authorize_game(_game_id, _current_user),
+    do: {:error, {"invalid_game_id", "Invalid game_id"}}
 
   defp resolve_room_boot(room_id, requested_game_id, player_id, deck_id) do
     case GameSessions.get(room_id) do
       nil ->
-        with {:ok, state_json} <- GameInitializer.build(requested_game_id, [{player_id, deck_id}]) do
-          {:ok, %{game_id: requested_game_id, state_json: state_json}}
+        case GameInitializer.build(requested_game_id, [{player_id, deck_id}]) do
+          {:ok, state_json} ->
+            {:ok, %{game_id: requested_game_id, state_json: state_json}}
+
+          {:error, reason} ->
+            {:error, {"init_failed", reason}}
         end
 
       session ->
         if to_string(session.game_id) == to_string(requested_game_id) do
           {:ok, %{game_id: session.game_id, state_json: Jason.encode!(session.state_json)}}
         else
-          {:error, "Room/game mismatch"}
+          {:error, {"room_game_mismatch", "Room/game mismatch"}}
         end
     end
   end
@@ -117,7 +130,7 @@ defmodule CarddoWeb.GameChannel do
 
         {:error, reason} ->
           Logger.error("Failed to start room #{room_id}: #{inspect(reason)}")
-          {:error, "Failed to start game room"}
+          {:error, {"room_start_failed", "Failed to start game room"}}
       end
     end
   end
