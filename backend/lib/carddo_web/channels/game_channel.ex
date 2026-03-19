@@ -78,13 +78,15 @@ defmodule CarddoWeb.GameChannel do
     {:reply, {:error, %{reason: "unknown_event"}}, socket}
   end
 
-  defp authorize_game(game_id, current_user) do
+  defp authorize_game(game_id, current_user) when is_integer(game_id) do
     case Games.get_game(game_id) do
       nil -> {:error, "Game not found"}
       game when game.owner_id == current_user.id -> {:ok, game}
       _game -> {:error, "Forbidden"}
     end
   end
+
+  defp authorize_game(_game_id, _current_user), do: {:error, "Invalid game_id"}
 
   defp resolve_room_boot(room_id, requested_game_id, player_id, deck_id) do
     case GameSessions.get(room_id) do

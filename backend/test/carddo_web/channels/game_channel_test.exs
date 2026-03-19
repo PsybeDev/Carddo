@@ -127,6 +127,18 @@ defmodule CarddoWeb.GameChannelTest do
                )
     end
 
+    test "returns error with non-integer game_id", ctx do
+      room_id = unique_room_id(ctx)
+
+      assert {:error, %{reason: "Invalid game_id"}} =
+               subscribe_and_join(
+                 ctx.socket,
+                 CarddoWeb.GameChannel,
+                 "room:#{room_id}",
+                 %{"game_id" => "abc", "deck_id" => ctx.deck.id}
+               )
+    end
+
     test "returns error when missing required params", ctx do
       room_id = unique_room_id(ctx)
 
@@ -359,6 +371,14 @@ defmodule CarddoWeb.GameChannelTest do
     test "replies with error for unknown events", ctx do
       ref = push(ctx.channel_socket, "bogus_event", %{})
       assert_reply(ref, :error, %{reason: "unknown_event"})
+    end
+
+    test "submit_action with missing payload fields replies invalid_payload", ctx do
+      ref = push(ctx.channel_socket, "submit_action", %{"action" => "EndTurn"})
+
+      assert_reply(ref, :error, %{
+        reason: "invalid_payload: requires client_sequence_id and action"
+      })
     end
   end
 
