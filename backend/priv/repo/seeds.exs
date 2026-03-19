@@ -20,7 +20,14 @@ user =
       |> Repo.insert!()
 
     existing ->
-      existing
+      if existing.subscription_tier != "pro" do
+        existing
+        |> User.changeset(%{})
+        |> put_change(:subscription_tier, "pro")
+        |> Repo.update!()
+      else
+        existing
+      end
   end
 
 IO.puts("✓ Demo user: #{user.email} (id: #{user.id})")
@@ -59,9 +66,13 @@ config = %{
 }
 
 game =
-  game
-  |> Game.update_changeset(%{config: config})
-  |> Repo.update!()
+  if game.config != config do
+    game
+    |> Game.update_changeset(%{config: config})
+    |> Repo.update!()
+  else
+    game
+  end
 
 IO.puts("✓ Demo game: #{game.title} (id: #{game.id})")
 
@@ -101,7 +112,7 @@ cards =
               "actions" => [
                 %{
                   "MutateProperty" => %{
-                    "target_id" => "$source",
+                    "target_id" => "$target",
                     "property" => "Health",
                     "delta" => -attack
                   }
@@ -140,7 +151,7 @@ Enum.each(deck_specs, fn {deck_name, deck_cards} ->
     end
 
   Enum.each(deck_cards, fn card ->
-    Repo.insert(
+    Repo.insert!(
       %DeckCard{deck_id: deck.id, card_id: card.id, quantity: 1},
       on_conflict: :nothing
     )
