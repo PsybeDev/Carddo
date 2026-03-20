@@ -61,14 +61,17 @@ export const authStore = {
 	},
 
 	async login(email: string, password: string): Promise<void> {
-		const data = await apiPost<AuthResponse>('/api/users/login', { email, password });
+		const data = await apiPost<AuthResponse>('/api/users/login', { email: email.trim(), password });
 		token = data.token;
 		currentUser = data.user;
 		writeCookie(data.token);
 	},
 
 	async register(email: string, password: string): Promise<void> {
-		const data = await apiPost<AuthResponse>('/api/users/register', { email, password });
+		const data = await apiPost<AuthResponse>('/api/users/register', {
+			email: email.trim(),
+			password
+		});
 		token = data.token;
 		currentUser = data.user;
 		writeCookie(data.token);
