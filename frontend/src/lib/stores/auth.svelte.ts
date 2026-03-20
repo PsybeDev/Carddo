@@ -52,12 +52,11 @@ export const authStore = {
 		try {
 			currentUser = await apiGet<User>('/api/users/me');
 		} catch (err) {
-			if (err instanceof ApiError && err.status === 401) {
-				token = null;
-				currentUser = null;
-				clearCookie();
-				goto('/login');
-			}
+			if (!(err instanceof ApiError) || err.status !== 401) return;
+			token = null;
+			currentUser = null;
+			clearCookie();
+			goto('/login');
 		}
 	},
 

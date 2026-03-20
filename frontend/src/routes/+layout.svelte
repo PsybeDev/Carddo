@@ -7,7 +7,7 @@
 	let { children } = $props();
 
 	$effect(() => {
-		if (browser) authStore.init();
+		if (browser) void authStore.init();
 	});
 </script>
 
