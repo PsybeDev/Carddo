@@ -15,9 +15,9 @@
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run"
 	},
-  "dependencies": {
-    "ditto_wasm": "file:../ditto_engine/ditto_wasm/pkg"
-  },
+	"dependencies": {
+		"ditto_wasm": "file:../ditto_engine/ditto_wasm/pkg"
+	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.2",
 		"@eslint/js": "^9.39.2",
