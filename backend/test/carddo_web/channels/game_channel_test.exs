@@ -309,13 +309,15 @@ defmodule CarddoWeb.GameChannelTest do
 
   describe "join/3 room start failure" do
     setup ctx do
-      previous = Application.get_env(:carddo, :multiplayer_module)
+      previous = Application.fetch_env(:carddo, :multiplayer_module)
 
       on_exit(fn ->
-        if previous do
-          Application.put_env(:carddo, :multiplayer_module, previous)
-        else
-          Application.delete_env(:carddo, :multiplayer_module)
+        case previous do
+          {:ok, value} ->
+            Application.put_env(:carddo, :multiplayer_module, value)
+
+          :error ->
+            Application.delete_env(:carddo, :multiplayer_module)
         end
       end)
 
