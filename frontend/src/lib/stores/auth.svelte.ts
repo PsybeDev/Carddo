@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { goto } from '$app/navigation';
 import { ApiError, apiGet, apiPost, setTokenGetter } from '$lib/api/client';
 
 const COOKIE_NAME = 'carddo_token';
@@ -18,6 +19,10 @@ type AuthResponse = {
 let currentUser = $state<User | null>(null);
 let token = $state<string | null>(null);
 
+function secureAttr(): string {
+	return browser && window.location.protocol === 'https:' ? '; Secure' : '';
+}
+
 function readCookie(): string | null {
 	if (!browser) return null;
 	const match = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_NAME}=([^;]*)`));
@@ -25,11 +30,11 @@ function readCookie(): string | null {
 }
 
 function writeCookie(value: string): void {
-	document.cookie = `${COOKIE_NAME}=${encodeURIComponent(value)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+	document.cookie = `${COOKIE_NAME}=${encodeURIComponent(value)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax${secureAttr()}`;
 }
 
 function clearCookie(): void {
-	document.cookie = `${COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`;
+	document.cookie = `${COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax${secureAttr()}`;
 }
 
 export const authStore = {
@@ -51,6 +56,7 @@ export const authStore = {
 				token = null;
 				currentUser = null;
 				clearCookie();
+				goto('/login');
 			}
 		}
 	},
