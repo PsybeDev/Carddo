@@ -20,13 +20,18 @@ export function setTokenGetter(fn: AuthTokenGetter): void {
 
 type ErrorEnvelope = { errors?: Array<{ message: string }> };
 
+function buildUrl(path: string): string {
+	if (!PUBLIC_API_URL) throw new Error('PUBLIC_API_URL is not configured');
+	return new URL(path, PUBLIC_API_URL).toString();
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
 	const token = _getToken();
 	const headers: Record<string, string> = { Accept: 'application/json' };
 	if (token) headers['Authorization'] = `Bearer ${token}`;
 	if (body !== undefined) headers['Content-Type'] = 'application/json';
 
-	const res = await fetch(`${PUBLIC_API_URL}${path}`, {
+	const res = await fetch(buildUrl(path), {
 		method,
 		headers,
 		body: body !== undefined ? JSON.stringify(body) : undefined
