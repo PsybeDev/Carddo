@@ -3,7 +3,7 @@ import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = ({ locals }) => {
 	if (!locals.token) {
-		redirect(302, '/login');
+		throw redirect(302, '/login');
 	}
-	return { token: locals.token };
+	return { isAuthenticated: true };
 };
