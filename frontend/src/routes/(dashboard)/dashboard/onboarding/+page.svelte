@@ -16,7 +16,7 @@
 
 		loading = true;
 		try {
-			await apiPost('/api/games', { name: gameName.trim() });
+			await apiPost('/api/games', { title: gameName.trim() });
 			goto('/dashboard');
 		} catch (err) {
 			errors = err instanceof ApiError ? err.messages : ['Failed to create game. Try again.'];

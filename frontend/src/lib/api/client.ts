@@ -22,8 +22,9 @@ type ErrorEnvelope = { errors?: Array<{ message: string }> };
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
 	const token = _getToken();
-	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+	const headers: Record<string, string> = { Accept: 'application/json' };
 	if (token) headers['Authorization'] = `Bearer ${token}`;
+	if (body !== undefined) headers['Content-Type'] = 'application/json';
 
 	const res = await fetch(`${PUBLIC_API_URL}${path}`, {
 		method,
