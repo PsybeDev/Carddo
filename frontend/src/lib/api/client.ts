@@ -18,6 +18,8 @@ export function setTokenGetter(fn: AuthTokenGetter): void {
 	_getToken = fn;
 }
 
+type ErrorEnvelope = { errors?: Array<{ message: string }> };
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
 	const token = _getToken();
 	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -29,10 +31,28 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 		body: body !== undefined ? JSON.stringify(body) : undefined
 	});
 
-	const json = await res.json();
+	if (res.status === 204 || res.status === 205) {
+		return undefined as unknown as T;
+	}
+
+	let json: unknown;
+	try {
+		json = await res.json();
+	} catch {
+		if (!res.ok) {
+			let text: string | null = null;
+			try {
+				text = await res.text();
+			} catch {
+				// ignore secondary failure
+			}
+			throw new ApiError(text ? [text] : [res.statusText], res.status);
+		}
+		throw new ApiError(['Failed to parse response'], res.status);
+	}
 
 	if (!res.ok) {
-		const errs = json?.errors as Array<{ message: string }> | undefined;
+		const errs = (json as ErrorEnvelope)?.errors;
 		const messages = errs?.map((e) => e.message) ?? [res.statusText];
 		throw new ApiError(messages, res.status);
 	}
