@@ -1,4 +1,8 @@
 defmodule Carddo.Multiplayer do
+  @callback start_room(String.t(), integer(), String.t(), boolean()) ::
+              {:ok, pid()} | {:error, term()}
+  @callback room_exists?(String.t()) :: boolean()
+
   alias Carddo.GameRoom
   alias Carddo.Multiplayer.{GameRegistry, RoomSupervisor}
 

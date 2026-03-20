@@ -11,10 +11,27 @@ defmodule CarddoWeb.GameChannel do
   use Phoenix.Channel
   require Logger
 
-  alias Carddo.{Games, Multiplayer}
+  alias Carddo.Games
   alias Carddo.Multiplayer.{GameInitializer, GameSessions}
   alias Carddo.GameRoom
 
+  defp multiplayer do
+    case Application.get_env(:carddo, :multiplayer_module) do
+      nil ->
+        Carddo.Multiplayer
+
+      mod when is_atom(mod) ->
+        mod
+
+      other ->
+        Logger.error(
+          "Invalid :multiplayer_module config: #{inspect(other)}. " <>
+            "Falling back to Carddo.Multiplayer"
+        )
+
+        Carddo.Multiplayer
+    end
+  end
   @impl true
   def join("room:" <> room_id, %{"game_id" => game_id, "deck_id" => deck_id}, socket) do
     current_user = socket.assigns.current_user
@@ -151,10 +168,12 @@ defmodule CarddoWeb.GameChannel do
   end
 
   defp ensure_room_started(room_id, game_id, state_json) do
-    if Multiplayer.room_exists?(room_id) do
+    mod = multiplayer()
+
+    if mod.room_exists?(room_id) do
       :ok
     else
-      case Multiplayer.start_room(room_id, game_id, state_json) do
+      case mod.start_room(room_id, game_id, state_json, false) do
         {:ok, _pid} ->
           :ok
 
