@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { authStore } from '$lib/stores/auth.svelte';
+	import { toastStore } from '$lib/stores/toast.svelte';
 
 	let { children } = $props();
 
@@ -47,4 +48,20 @@
 	<main class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
 		{@render children()}
 	</main>
+</div>
+
+<!-- Toast notifications -->
+<div class="pointer-events-none fixed right-6 bottom-6 z-50 flex flex-col gap-2">
+	{#each toastStore.list as toast (toast.id)}
+		<div
+			class="pointer-events-auto flex items-center gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg shadow-black/40
+				{toast.type === 'error'
+				? 'border-red-500/30 bg-red-950/90 text-red-300'
+				: toast.type === 'success'
+					? 'border-emerald-500/30 bg-emerald-950/90 text-emerald-300'
+					: 'border-slate-600/50 bg-[#1a1d27] text-slate-300'}"
+		>
+			{toast.message}
+		</div>
+	{/each}
 </div>
