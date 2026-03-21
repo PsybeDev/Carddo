@@ -8,10 +8,14 @@ defmodule Carddo.Games do
     Repo.all(
       from(g in Game,
         left_join: c in assoc(g, :cards),
+        left_join: d in assoc(g, :decks),
         where: g.owner_id == ^user_id,
         group_by: g.id,
         order_by: [desc: g.inserted_at],
-        select_merge: %{card_count: count(c.id)}
+        select_merge: %{
+          card_count: count(fragment("DISTINCT ?", c.id)),
+          deck_count: count(fragment("DISTINCT ?", d.id))
+        }
       )
     )
   end
@@ -24,6 +28,21 @@ defmodule Carddo.Games do
 
   def get_game(id) do
     Repo.get(Game, id)
+  end
+
+  def get_game_with_counts(id) do
+    Repo.one(
+      from(g in Game,
+        left_join: c in assoc(g, :cards),
+        left_join: d in assoc(g, :decks),
+        where: g.id == ^id,
+        group_by: g.id,
+        select_merge: %{
+          card_count: count(fragment("DISTINCT ?", c.id)),
+          deck_count: count(fragment("DISTINCT ?", d.id))
+        }
+      )
+    )
   end
 
   def update_game(game, attrs) do

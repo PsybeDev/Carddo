@@ -8,6 +8,7 @@ defmodule Carddo.Game do
     field(:config, :map, default: %{})
 
     field(:card_count, :integer, virtual: true, default: 0)
+    field(:deck_count, :integer, virtual: true, default: 0)
 
     belongs_to(:owner, Carddo.User)
     has_many(:decks, Carddo.Deck)

@@ -12,6 +12,7 @@ export type Game = {
 	description: string | null;
 	config: Record<string, unknown>;
 	card_count: number;
+	deck_count: number;
 	inserted_at: string;
 	updated_at: string;
 };

@@ -4,6 +4,7 @@
 	import { ApiError, apiGet, apiPatch } from '$lib/api/client';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import type { Game } from '$lib/types/api';
+	import { setContext } from 'svelte';
 
 	let { children } = $props();
 
@@ -11,6 +12,8 @@
 	let titleInput = $state('');
 	let saving = $state(false);
 	let loadError = $state(false);
+
+	setContext('game', () => game);
 
 	$effect(() => {
 		if (page.params.id) void loadGame(page.params.id);

@@ -171,7 +171,8 @@
 					</div>
 					<p class="mt-2 text-xs text-slate-500">
 						{game.card_count}
-						{game.card_count === 1 ? 'card' : 'cards'} · Last edited {formatDate(game.updated_at)}
+						{game.card_count === 1 ? 'card' : 'cards'} · {game.deck_count}
+						{game.deck_count === 1 ? 'deck' : 'decks'} · Last edited {formatDate(game.updated_at)}
 					</p>
 				</button>
 			{/each}
