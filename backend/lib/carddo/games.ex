@@ -5,7 +5,15 @@ defmodule Carddo.Games do
   # ── Games ──────────────────────────────────────────────────────────────────
 
   def list_games(user_id) do
-    Repo.all(from(g in Game, where: g.owner_id == ^user_id, order_by: [desc: g.inserted_at]))
+    Repo.all(
+      from(g in Game,
+        left_join: c in assoc(g, :cards),
+        where: g.owner_id == ^user_id,
+        group_by: g.id,
+        order_by: [desc: g.inserted_at],
+        select_merge: %{card_count: count(c.id)}
+      )
+    )
   end
 
   def create_game(user, attrs) do

@@ -3,8 +3,7 @@
 	import { page } from '$app/state';
 	import { ApiError, apiGet, apiPatch } from '$lib/api/client';
 	import { toastStore } from '$lib/stores/toast.svelte';
-
-	type Game = { id: number; title: string; updated_at: string };
+	import type { Game } from '$lib/types/api';
 
 	let { children } = $props();
 

@@ -92,7 +92,9 @@ defmodule CarddoWeb.Api.GameController do
     %{
       id: game.id,
       title: game.title,
+      description: game.description,
       config: game.config,
+      card_count: game.card_count,
       inserted_at: game.inserted_at,
       updated_at: game.updated_at
     }

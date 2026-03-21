@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { ApiError, apiGet, apiPost } from '$lib/api/client';
-
-	type Game = { id: number; title: string; updated_at: string };
+	import type { Game } from '$lib/types/api';
 
 	let games = $state<Game[]>([]);
 	let loading = $state(true);
 	let showModal = $state(false);
 	let newTitle = $state('');
+	let newDescription = $state('');
 	let creating = $state(false);
 	let createErrors = $state<string[]>([]);
 
@@ -35,7 +35,8 @@
 		}
 		creating = true;
 		try {
-			const game = await apiPost<Game>('/api/games', { title: newTitle.trim() });
+			const desc = newDescription.trim() || undefined;
+			const game = await apiPost<Game>('/api/games', { title: newTitle.trim(), description: desc });
 			games = [game, ...games];
 			closeModal();
 		} catch (err) {
@@ -48,6 +49,7 @@
 
 	function openModal() {
 		newTitle = '';
+		newDescription = '';
 		createErrors = [];
 		showModal = true;
 	}
@@ -55,6 +57,7 @@
 	function closeModal() {
 		showModal = false;
 		newTitle = '';
+		newDescription = '';
 		createErrors = [];
 	}
 
@@ -166,7 +169,10 @@
 							<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
 						</svg>
 					</div>
-					<p class="mt-2 text-xs text-slate-500">Last edited {formatDate(game.updated_at)}</p>
+					<p class="mt-2 text-xs text-slate-500">
+						{game.card_count}
+						{game.card_count === 1 ? 'card' : 'cards'} · Last edited {formatDate(game.updated_at)}
+					</p>
 				</button>
 			{/each}
 		</div>
@@ -229,6 +235,21 @@
 						class="w-full rounded-lg border border-slate-600 bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 transition outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 disabled:opacity-50"
 						disabled={creating}
 					/>
+				</div>
+
+				<div class="mb-5">
+					<label for="new-game-description" class="mb-1.5 block text-sm font-medium text-slate-300">
+						Description <span class="text-slate-500">(optional)</span>
+					</label>
+					<textarea
+						id="new-game-description"
+						bind:value={newDescription}
+						placeholder="A short description of your game…"
+						maxlength="500"
+						rows="3"
+						class="w-full resize-none rounded-lg border border-slate-600 bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 transition outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 disabled:opacity-50"
+						disabled={creating}
+					></textarea>
 				</div>
 
 				<div class="flex gap-3">

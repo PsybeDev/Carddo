@@ -7,12 +7,20 @@
 
 	$effect(() => {
 		const id = page.params.id;
-		void apiGet<unknown[]>(`/api/games/${id}/cards`).then((cards) => {
-			cardCount = cards.length;
-		});
-		void apiGet<unknown[]>(`/api/games/${id}/decks`).then((decks) => {
-			deckCount = decks.length;
-		});
+		void apiGet<unknown[]>(`/api/games/${id}/cards`)
+			.then((cards) => {
+				cardCount = cards.length;
+			})
+			.catch(() => {
+				cardCount = 0;
+			});
+		void apiGet<unknown[]>(`/api/games/${id}/decks`)
+			.then((decks) => {
+				deckCount = decks.length;
+			})
+			.catch(() => {
+				deckCount = 0;
+			});
 	});
 </script>
 
