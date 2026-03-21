@@ -21,6 +21,8 @@
 
 	async function loadGame(id: string) {
 		loadError = false;
+		game = null;
+		titleInput = '';
 		try {
 			const loaded = await apiGet<Game>(`/api/games/${id}`);
 			game = loaded;

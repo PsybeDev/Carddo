@@ -51,7 +51,7 @@
 </div>
 
 <!-- Toast notifications -->
-<div class="pointer-events-none fixed right-6 bottom-6 z-50 flex flex-col gap-2">
+<div class="pointer-events-none fixed right-6 bottom-6 z-50 flex flex-col gap-2" aria-live="polite">
 	{#each toastStore.list as toast (toast.id)}
 		<div
 			class="pointer-events-auto flex items-center gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg shadow-black/40
@@ -60,6 +60,7 @@
 				: toast.type === 'success'
 					? 'border-emerald-500/30 bg-emerald-950/90 text-emerald-300'
 					: 'border-slate-600/50 bg-[#1a1d27] text-slate-300'}"
+			role={toast.type === 'error' ? 'alert' : 'status'}
 		>
 			{toast.message}
 		</div>

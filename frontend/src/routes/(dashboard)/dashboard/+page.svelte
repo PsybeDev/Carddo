@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { ApiError, apiGet, apiPost } from '$lib/api/client';
 	import type { Game } from '$lib/types/api';
 
@@ -159,9 +158,8 @@
 	{:else}
 		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each games as game (game.id)}
-				<button
-					type="button"
-					onclick={() => goto(`/dashboard/games/${game.id}`)}
+				<a
+					href={`/dashboard/games/${game.id}`}
 					class="group rounded-xl border border-slate-700/50 bg-[#1a1d27] p-5 text-left transition hover:border-indigo-500/40 hover:bg-[#1e2133] focus:ring-2 focus:ring-indigo-500/40 focus:outline-none"
 				>
 					<div class="flex items-start justify-between gap-2">
@@ -187,7 +185,7 @@
 						{game.card_count === 1 ? 'card' : 'cards'} · {game.deck_count}
 						{game.deck_count === 1 ? 'deck' : 'decks'} · Last edited {formatDate(game.updated_at)}
 					</p>
-				</button>
+				</a>
 			{/each}
 		</div>
 	{/if}
