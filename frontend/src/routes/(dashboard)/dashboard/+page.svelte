@@ -5,6 +5,7 @@
 
 	let games = $state<Game[]>([]);
 	let loading = $state(true);
+	let fetchError = $state(false);
 	let showModal = $state(false);
 	let newTitle = $state('');
 	let newDescription = $state('');
@@ -17,10 +18,11 @@
 
 	async function loadGames() {
 		loading = true;
+		fetchError = false;
 		try {
 			games = await apiGet<Game[]>('/api/games');
 		} catch {
-			// show empty state on error
+			fetchError = true;
 		} finally {
 			loading = false;
 		}
@@ -110,6 +112,17 @@
 				></path>
 			</svg>
 		</div>
+	{:else if fetchError}
+		<div class="flex flex-col items-center justify-center py-24 text-center">
+			<p class="text-sm text-slate-400">Failed to load games. Please check your connection.</p>
+			<button
+				type="button"
+				onclick={() => void loadGames()}
+				class="mt-3 text-sm text-indigo-400 transition hover:text-indigo-300"
+			>
+				Try again
+			</button>
+		</div>
 	{:else if games.length === 0}
 		<div class="flex flex-col items-center justify-center py-24 text-center">
 			<div
@@ -182,7 +195,13 @@
 
 <!-- Create Game Modal -->
 {#if showModal}
-	<div class="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+		onkeydown={(e) => {
+			if (e.key === 'Escape') closeModal();
+		}}
+	>
 		<div class="fixed inset-0" aria-hidden="true" onclick={closeModal}></div>
 		<div
 			role="dialog"
