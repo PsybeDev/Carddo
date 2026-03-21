@@ -197,10 +197,16 @@
 	<div
 		class="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
 		onkeydown={(e) => {
-			if (e.key === 'Escape') closeModal();
+			if (e.key === 'Escape' && !creating) closeModal();
 		}}
 	>
-		<div class="fixed inset-0" aria-hidden="true" onclick={closeModal}></div>
+		<div
+			class="fixed inset-0"
+			aria-hidden="true"
+			onclick={() => {
+				if (!creating) closeModal();
+			}}
+		></div>
 		<div
 			role="dialog"
 			aria-modal="true"

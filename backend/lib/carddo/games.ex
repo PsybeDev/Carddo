@@ -13,8 +13,8 @@ defmodule Carddo.Games do
         group_by: g.id,
         order_by: [desc: g.inserted_at],
         select_merge: %{
-          card_count: count(fragment("DISTINCT ?", c.id)),
-          deck_count: count(fragment("DISTINCT ?", d.id))
+          card_count: count(c.id, :distinct),
+          deck_count: count(d.id, :distinct)
         }
       )
     )
@@ -38,8 +38,8 @@ defmodule Carddo.Games do
         where: g.id == ^id,
         group_by: g.id,
         select_merge: %{
-          card_count: count(fragment("DISTINCT ?", c.id)),
-          deck_count: count(fragment("DISTINCT ?", d.id))
+          card_count: count(c.id, :distinct),
+          deck_count: count(d.id, :distinct)
         }
       )
     )

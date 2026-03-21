@@ -25,9 +25,11 @@
 		titleInput = '';
 		try {
 			const loaded = await apiGet<Game>(`/api/games/${id}`);
+			if (page.params.id !== id) return;
 			game = loaded;
 			titleInput = loaded.title;
 		} catch (err) {
+			if (page.params.id !== id) return;
 			if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {
 				toastStore.show('Game not found or you do not have access.');
 				goto('/dashboard');
@@ -46,12 +48,16 @@
 		}
 		if (trimmed === game.title) return;
 
+		const gameId = game.id;
 		saving = true;
 		try {
-			game = await apiPatch<Game>(`/api/games/${game.id}`, { title: trimmed });
-			titleInput = game.title;
+			const updated = await apiPatch<Game>(`/api/games/${gameId}`, { title: trimmed });
+			if (page.params.id !== String(gameId)) return;
+			game = updated;
+			titleInput = updated.title;
 		} catch {
-			titleInput = game.title;
+			if (page.params.id !== String(gameId)) return;
+			titleInput = game?.title ?? '';
 		} finally {
 			saving = false;
 		}
