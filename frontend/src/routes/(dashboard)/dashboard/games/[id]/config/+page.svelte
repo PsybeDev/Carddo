@@ -47,7 +47,14 @@
 	}
 
 	function setZoneCapacity(i: number, raw: string) {
-		config.zones[i] = { ...config.zones[i], capacity: raw === '' ? null : Number(raw) };
+		let capacity: number | null;
+		if (raw === '') {
+			capacity = null;
+		} else {
+			const parsed = Number(raw);
+			capacity = Number.isNaN(parsed) ? null : Math.max(0, parsed);
+		}
+		config.zones[i] = { ...config.zones[i], capacity };
 	}
 
 	function addProperty() {
@@ -61,7 +68,11 @@
 	}
 
 	function setPropertyDefault(i: number, raw: string) {
-		config.properties[i] = { ...config.properties[i], default: raw === '' ? 0 : Number(raw) };
+		const parsed = Number(raw);
+		config.properties[i] = {
+			...config.properties[i],
+			default: raw === '' || Number.isNaN(parsed) ? 0 : parsed
+		};
 	}
 
 	async function save() {
@@ -69,7 +80,14 @@
 		const gameId = game.id;
 		saving = true;
 		try {
-			await apiPatch<Game>(`/api/games/${gameId}`, { config });
+			const mergedConfig = {
+				...game.config,
+				zones: config.zones,
+				properties: config.properties,
+				rules: config.rules,
+				win_conditions: config.win_conditions
+			};
+			await apiPatch<Game>(`/api/games/${gameId}`, { config: mergedConfig });
 			if (page.params.id !== String(gameId)) return;
 			toastStore.show('Configuration saved.', 'success');
 		} catch {
@@ -125,6 +143,7 @@
 							type="text"
 							bind:value={zone.name}
 							placeholder="e.g. hand, graveyard"
+							aria-label={`Zone ${i + 1} name`}
 							class="w-full rounded-lg border px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition outline-none focus:ring-1 focus:ring-indigo-500/50
 								{zone.name.trim() === ''
 								? 'border-red-500/50 bg-red-950/20 focus:border-red-500'
@@ -132,6 +151,7 @@
 						/>
 						<select
 							bind:value={zone.visibility}
+							aria-label={`Zone ${i + 1} visibility`}
 							class="w-full rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 transition outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
 						>
 							<option value="public">Public</option>
@@ -144,6 +164,7 @@
 							step="1"
 							placeholder="∞"
 							value={zone.capacity ?? ''}
+							aria-label={`Zone ${i + 1} capacity`}
 							oninput={(e) => setZoneCapacity(i, (e.currentTarget as HTMLInputElement).value)}
 							class="w-full rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
 						/>
@@ -221,6 +242,7 @@
 							type="text"
 							bind:value={prop.name}
 							placeholder="e.g. health, attack"
+							aria-label={`Property ${i + 1} name`}
 							class="w-full rounded-lg border px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition outline-none focus:ring-1 focus:ring-indigo-500/50
 								{prop.name.trim() === ''
 								? 'border-red-500/50 bg-red-950/20 focus:border-red-500'
@@ -230,6 +252,7 @@
 							type="number"
 							placeholder="0"
 							value={prop.default}
+							aria-label={`Property ${i + 1} default value`}
 							oninput={(e) => setPropertyDefault(i, (e.currentTarget as HTMLInputElement).value)}
 							class="w-full rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
 						/>

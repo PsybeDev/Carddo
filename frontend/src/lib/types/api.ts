@@ -30,7 +30,7 @@ export type Game = {
 	id: number;
 	title: string;
 	description: string | null;
-	config: Partial<GameConfig>;
+	config: Partial<GameConfig> & Record<string, unknown>;
 	card_count: number;
 	deck_count: number;
 	inserted_at: string;
