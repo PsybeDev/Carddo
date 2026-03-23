@@ -74,7 +74,7 @@ defmodule CarddoWeb.Api.GameController do
 
   defp authorize_game(game_id, current_user) do
     with {:ok, id} <- parse_id(game_id),
-         game when not is_nil(game) <- Games.get_game(id) do
+         game when not is_nil(game) <- Games.get_game_with_counts(id) do
       if game.owner_id == current_user.id, do: {:ok, game}, else: {:error, :forbidden}
     else
       _ -> {:error, :not_found}
@@ -92,7 +92,10 @@ defmodule CarddoWeb.Api.GameController do
     %{
       id: game.id,
       title: game.title,
+      description: game.description,
       config: game.config,
+      card_count: game.card_count,
+      deck_count: game.deck_count,
       inserted_at: game.inserted_at,
       updated_at: game.updated_at
     }

@@ -125,3 +125,14 @@ The engine is intentionally data-driven — no hardcoded game concepts like heal
 - Use Svelte 5 rune syntax: `$state`, `$effect`, `$props`, `$derived`
 - Code style: tabs (not spaces), single quotes, line width 100, Tailwind class sorting via Prettier plugin
 - An MCP server provides Svelte 5 & SvelteKit docs — use `list-sections` then `get-documentation` for unfamiliar APIs; run `svelte-autofixer` before finalizing Svelte code
+
+## PR Review Assessment
+
+When a PR review comes in (human or bot), assess each comment before acting:
+
+1. **Classify** each comment: bug, design concern, style nit, false positive
+2. **Verify** the claim against actual code behavior — don't blindly accept. Reviewers (especially bots) can misunderstand framework-specific syntax (e.g., Svelte `{expr}` interpolation in attributes is valid, unlike JSP/React)
+3. **Assess severity**: blocking (will cause runtime errors, data corruption, security issues) vs non-blocking (perf improvement, style preference, future concern)
+4. **Check for deeper root causes** — a comment about symptom X may reveal that the real fix is Y. Example: "add stale-response guards" might be better solved by eliminating the async fetch entirely
+5. **Fix valid concerns**, reply explaining what was done and why. For false positives, reply with the reasoning. Never dismiss without explanation
+6. **Batch related comments** — if multiple comments point to the same underlying issue (e.g., "counts fetched wrong" + "full list fetched for counts"), solve them with a single cohesive fix rather than piecemeal patches
