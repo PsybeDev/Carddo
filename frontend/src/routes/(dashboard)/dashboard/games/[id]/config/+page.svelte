@@ -12,16 +12,22 @@
 	let configInitializedFor = $state<string | null>(null);
 	let saving = $state(false);
 
+	let zoneKeys = $state<number[]>([]);
+	let propKeys = $state<number[]>([]);
+	let _nextKey = 0;
+
 	$effect(() => {
 		const id = page.params.id;
 		if (game && String(game.id) === id && configInitializedFor !== id) {
-			const c = game.config as Partial<GameConfig>;
+			const c = game.config;
 			config = {
 				zones: (c.zones ?? []).map((z) => ({ ...z })),
 				properties: (c.properties ?? []).map((p) => ({ ...p })),
 				rules: [...(c.rules ?? [])],
 				win_conditions: [...(c.win_conditions ?? [])]
 			};
+			zoneKeys = config.zones.map(() => ++_nextKey);
+			propKeys = config.properties.map(() => ++_nextKey);
 			configInitializedFor = id;
 		}
 	});
@@ -32,10 +38,12 @@
 
 	function addZone() {
 		config.zones = [...config.zones, { name: '', visibility: 'public', capacity: null }];
+		zoneKeys = [...zoneKeys, ++_nextKey];
 	}
 
 	function removeZone(i: number) {
 		config.zones = config.zones.filter((_, idx) => idx !== i);
+		zoneKeys = zoneKeys.filter((_, idx) => idx !== i);
 	}
 
 	function setZoneCapacity(i: number, raw: string) {
@@ -44,10 +52,12 @@
 
 	function addProperty() {
 		config.properties = [...config.properties, { name: '', default: 0 }];
+		propKeys = [...propKeys, ++_nextKey];
 	}
 
 	function removeProperty(i: number) {
 		config.properties = config.properties.filter((_, idx) => idx !== i);
+		propKeys = propKeys.filter((_, idx) => idx !== i);
 	}
 
 	function setPropertyDefault(i: number, raw: string) {
@@ -109,7 +119,7 @@
 			</div>
 
 			<div class="space-y-2">
-				{#each config.zones as zone, i (i)}
+				{#each config.zones as zone, i (zoneKeys[i])}
 					<div class="grid grid-cols-[1fr_150px_130px_36px] items-center gap-3">
 						<input
 							type="text"
@@ -131,6 +141,7 @@
 						<input
 							type="number"
 							min="0"
+							step="1"
 							placeholder="∞"
 							value={zone.capacity ?? ''}
 							oninput={(e) => setZoneCapacity(i, (e.currentTarget as HTMLInputElement).value)}
@@ -204,7 +215,7 @@
 			</div>
 
 			<div class="space-y-2">
-				{#each config.properties as prop, i (i)}
+				{#each config.properties as prop, i (propKeys[i])}
 					<div class="grid grid-cols-[1fr_150px_36px] items-center gap-3">
 						<input
 							type="text"
