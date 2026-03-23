@@ -80,7 +80,7 @@
 			capacity = null;
 		} else {
 			const parsed = Number(raw);
-			capacity = Number.isNaN(parsed) ? null : Math.max(0, parsed);
+			capacity = !Number.isFinite(parsed) ? null : Math.max(0, parsed);
 		}
 		config.zones[i] = { ...config.zones[i], capacity };
 	}
@@ -99,7 +99,7 @@
 		const parsed = Number(raw);
 		config.properties[i] = {
 			...config.properties[i],
-			default: raw === '' || Number.isNaN(parsed) ? 0 : parsed
+			default: raw === '' || !Number.isFinite(parsed) ? 0 : parsed
 		};
 	}
 
@@ -111,7 +111,9 @@
 			const mergedConfig = {
 				...game.config,
 				zones: config.zones,
-				properties: config.properties
+				properties: config.properties,
+				rules: config.rules,
+				win_conditions: config.win_conditions
 			};
 			await apiPatch<Game>(`/api/games/${gameId}`, { config: mergedConfig });
 			if (page.params.id !== String(gameId)) return;
