@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { apiPatch } from '$lib/api/client';
 	import { toastStore } from '$lib/stores/toast.svelte';
-	import type { GameConfig, Game } from '$lib/types/api';
+	import type { GameConfig, ZoneConfig, Game } from '$lib/types/api';
 	import { getContext } from 'svelte';
 
 	const getGame = getContext<() => Game | null>('game');
@@ -16,15 +16,43 @@
 	let propKeys = $state<number[]>([]);
 	let _nextKey = 0;
 
+	function normalizeZones(value: unknown): GameConfig['zones'] {
+		if (!Array.isArray(value)) return [];
+		return value.map((z) => {
+			const obj = z && typeof z === 'object' ? (z as Record<string, unknown>) : {};
+			const name = typeof obj.name === 'string' ? obj.name : '';
+			const vis = typeof obj.visibility === 'string' ? obj.visibility : 'public';
+			const visibility = (
+				vis === 'public' || vis === 'private' || vis === 'hidden' ? vis : 'public'
+			) as ZoneConfig['visibility'];
+			const capacityRaw = obj.capacity;
+			const capacity =
+				typeof capacityRaw === 'number' && !Number.isNaN(capacityRaw) ? capacityRaw : null;
+			return { name, visibility, capacity };
+		});
+	}
+
+	function normalizeProperties(value: unknown): GameConfig['properties'] {
+		if (!Array.isArray(value)) return [];
+		return value.map((p) => {
+			const obj = p && typeof p === 'object' ? (p as Record<string, unknown>) : {};
+			const name = typeof obj.name === 'string' ? obj.name : '';
+			const defaultRaw = obj.default;
+			const defaultValue =
+				typeof defaultRaw === 'number' && !Number.isNaN(defaultRaw) ? defaultRaw : 0;
+			return { name, default: defaultValue };
+		});
+	}
+
 	$effect(() => {
 		const id = page.params.id;
 		if (game && String(game.id) === id && configInitializedFor !== id) {
 			const c = game.config;
 			config = {
-				zones: (c.zones ?? []).map((z) => ({ ...z })),
-				properties: (c.properties ?? []).map((p) => ({ ...p })),
-				rules: [...(c.rules ?? [])],
-				win_conditions: [...(c.win_conditions ?? [])]
+				zones: normalizeZones(c.zones),
+				properties: normalizeProperties(c.properties),
+				rules: Array.isArray(c.rules) ? [...c.rules] : [],
+				win_conditions: Array.isArray(c.win_conditions) ? [...c.win_conditions] : []
 			};
 			zoneKeys = config.zones.map(() => ++_nextKey);
 			propKeys = config.properties.map(() => ++_nextKey);
@@ -83,9 +111,7 @@
 			const mergedConfig = {
 				...game.config,
 				zones: config.zones,
-				properties: config.properties,
-				rules: config.rules,
-				win_conditions: config.win_conditions
+				properties: config.properties
 			};
 			await apiPatch<Game>(`/api/games/${gameId}`, { config: mergedConfig });
 			if (page.params.id !== String(gameId)) return;
