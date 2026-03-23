@@ -218,8 +218,9 @@
 				<button
 					type="button"
 					onclick={closeModal}
-					class="rounded-md p-1 text-slate-500 transition hover:bg-slate-700/60 hover:text-slate-300"
+					class="rounded-md p-1 text-slate-500 transition hover:bg-slate-700/60 hover:text-slate-300 disabled:pointer-events-none disabled:opacity-30"
 					aria-label="Close"
+					disabled={creating}
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
