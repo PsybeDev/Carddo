@@ -27,7 +27,7 @@
 			) as ZoneConfig['visibility'];
 			const capacityRaw = obj.capacity;
 			const capacity =
-				typeof capacityRaw === 'number' && !Number.isNaN(capacityRaw) ? capacityRaw : null;
+				typeof capacityRaw === 'number' && Number.isFinite(capacityRaw) ? capacityRaw : null;
 			return { name, visibility, capacity };
 		});
 	}
@@ -39,7 +39,7 @@
 			const name = typeof obj.name === 'string' ? obj.name : '';
 			const defaultRaw = obj.default;
 			const defaultValue =
-				typeof defaultRaw === 'number' && !Number.isNaN(defaultRaw) ? defaultRaw : 0;
+				typeof defaultRaw === 'number' && Number.isFinite(defaultRaw) ? defaultRaw : 0;
 			return { name, default: defaultValue };
 		});
 	}
@@ -62,6 +62,15 @@
 
 	let hasEmptyName = $derived(
 		config.zones.some((z) => !z.name.trim()) || config.properties.some((p) => !p.name.trim())
+	);
+
+	let hasDuplicateZoneName = $derived(() => {
+		const names = config.zones.map((z) => z.name.trim()).filter(Boolean);
+		return new Set(names).size !== names.length;
+	});
+
+	let canSave = $derived(
+		!hasEmptyName && !hasDuplicateZoneName() && config.zones.length > 0 && !saving
 	);
 
 	function addZone() {
@@ -104,7 +113,7 @@
 	}
 
 	async function save() {
-		if (!game || hasEmptyName || saving) return;
+		if (!game || !canSave) return;
 		const gameId = game.id;
 		saving = true;
 		try {
@@ -315,15 +324,21 @@
 	</div>
 
 	<div class="flex items-center justify-between">
-		{#if hasEmptyName}
-			<p class="text-xs text-red-400">All zones and properties must have a name before saving.</p>
-		{:else}
-			<span></span>
-		{/if}
+		<div class="space-y-1">
+			{#if config.zones.length === 0}
+				<p class="text-xs text-red-400">At least one zone is required.</p>
+			{/if}
+			{#if hasEmptyName}
+				<p class="text-xs text-red-400">All zones and properties must have a name.</p>
+			{/if}
+			{#if hasDuplicateZoneName()}
+				<p class="text-xs text-red-400">Zone names must be unique.</p>
+			{/if}
+		</div>
 		<button
 			type="button"
 			onclick={save}
-			disabled={hasEmptyName || saving}
+			disabled={!canSave}
 			class="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 focus:ring-2 focus:ring-indigo-500/50 focus:outline-none active:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
 		>
 			{#if saving}
