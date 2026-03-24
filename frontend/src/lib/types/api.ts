@@ -7,7 +7,7 @@
 
 export type ZoneConfig = {
 	name: string;
-	visibility: 'public' | 'private' | 'hidden';
+	visibility: 'Public' | 'OwnerOnly' | 'Hidden';
 	capacity: number | null;
 };
 

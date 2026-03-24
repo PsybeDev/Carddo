@@ -21,9 +21,9 @@
 		return value.map((z) => {
 			const obj = z && typeof z === 'object' ? (z as Record<string, unknown>) : {};
 			const name = typeof obj.name === 'string' ? obj.name : '';
-			const vis = typeof obj.visibility === 'string' ? obj.visibility : 'public';
+			const vis = typeof obj.visibility === 'string' ? obj.visibility : 'Public';
 			const visibility = (
-				vis === 'public' || vis === 'private' || vis === 'hidden' ? vis : 'public'
+				vis === 'Public' || vis === 'OwnerOnly' || vis === 'Hidden' ? vis : 'Public'
 			) as ZoneConfig['visibility'];
 			const capacityRaw = obj.capacity;
 			const capacity =
@@ -65,7 +65,7 @@
 	);
 
 	function addZone() {
-		config.zones = [...config.zones, { name: '', visibility: 'public', capacity: null }];
+		config.zones = [...config.zones, { name: '', visibility: 'Public', capacity: null }];
 		zoneKeys = [...zoneKeys, ++_nextKey];
 	}
 
@@ -111,9 +111,7 @@
 			const mergedConfig = {
 				...game.config,
 				zones: config.zones,
-				properties: config.properties,
-				rules: config.rules,
-				win_conditions: config.win_conditions
+				properties: config.properties
 			};
 			await apiPatch<Game>(`/api/games/${gameId}`, { config: mergedConfig });
 			if (page.params.id !== String(gameId)) return;
@@ -182,9 +180,9 @@
 							aria-label={`Zone ${i + 1} visibility`}
 							class="w-full rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 transition outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
 						>
-							<option value="public">Public</option>
-							<option value="private">Private</option>
-							<option value="hidden">Hidden</option>
+							<option value="Public">Public</option>
+							<option value="OwnerOnly">Owner only</option>
+							<option value="Hidden">Hidden</option>
 						</select>
 						<input
 							type="number"
