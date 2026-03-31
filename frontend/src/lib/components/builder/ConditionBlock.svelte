@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { EcaCondition } from '$lib/types/api';
+	import { CONDITION_OPERATORS } from './utils';
 
 	let {
 		condition = $bindable(),
@@ -26,15 +27,6 @@
 			condition.value = parsed;
 		}
 	}
-
-	const operators = [
-		{ value: '==', label: '=' },
-		{ value: '!=', label: '≠' },
-		{ value: '<', label: '<' },
-		{ value: '<=', label: '≤' },
-		{ value: '>', label: '>' },
-		{ value: '>=', label: '≥' }
-	] as const;
 </script>
 
 <div class="flex flex-wrap items-center gap-3">
@@ -65,7 +57,7 @@
 			aria-label={`Rule ${ruleIndex + 1} condition ${conditionIndex + 1} operator`}
 			class="w-20 rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 transition outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
 		>
-			{#each operators as op (op.value)}
+			{#each CONDITION_OPERATORS as op (op.value)}
 				<option value={op.value}>{op.label}</option>
 			{/each}
 		</select>

@@ -4,6 +4,7 @@
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import type { GameConfig, ZoneConfig, Game } from '$lib/types/api';
 	import RuleBuilder from '$lib/components/builder/RuleBuilder.svelte';
+	import { normalizeRule } from '$lib/components/builder/utils';
 	import { getContext } from 'svelte';
 
 	const getGame = getContext<() => Game | null>('game');
@@ -52,26 +53,8 @@
 			config = {
 				zones: normalizeZones(c.zones),
 				properties: normalizeProperties(c.properties),
-				rules: Array.isArray(c.rules)
-					? c.rules.map((r) => ({
-							id: r.id || crypto.randomUUID(),
-							name: r.name || '',
-							trigger: r.trigger || 'on_after_mutate_property',
-							conditions: Array.isArray(r.conditions) ? r.conditions : [],
-							actions: Array.isArray(r.actions) ? r.actions : [],
-							cancels: r.cancels ?? false
-						}))
-					: [],
-				win_conditions: Array.isArray(c.win_conditions)
-					? c.win_conditions.map((r) => ({
-							id: r.id || crypto.randomUUID(),
-							name: r.name || '',
-							trigger: r.trigger || 'on_after_mutate_property',
-							conditions: Array.isArray(r.conditions) ? r.conditions : [],
-							actions: Array.isArray(r.actions) ? r.actions : [],
-							cancels: r.cancels ?? false
-						}))
-					: []
+				rules: Array.isArray(c.rules) ? c.rules.map(normalizeRule) : [],
+				win_conditions: Array.isArray(c.win_conditions) ? c.win_conditions.map(normalizeRule) : []
 			};
 			zoneKeys = config.zones.map(() => ++_nextKey);
 			propKeys = config.properties.map(() => ++_nextKey);

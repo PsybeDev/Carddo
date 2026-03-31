@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { EcaRule, GameConfig } from '$lib/types/api';
 	import RuleBlock from './RuleBlock.svelte';
+	import { createEmptyRule } from './utils';
 
 	let {
 		gameConfig,
@@ -16,17 +17,7 @@
 	let _nextKey = rules.length;
 
 	function addRule() {
-		rules = [
-			...rules,
-			{
-				id: crypto.randomUUID(),
-				name: '',
-				trigger: 'on_after_mutate_property',
-				conditions: [],
-				actions: [],
-				cancels: false
-			}
-		];
+		rules = [...rules, createEmptyRule()];
 		ruleKeys = [...ruleKeys, ++_nextKey];
 	}
 
