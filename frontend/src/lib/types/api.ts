@@ -16,7 +16,34 @@ export type PropertyConfig = {
 	default: number;
 };
 
-export type EcaRule = Record<string, unknown>;
+/**
+ * ECA (Event-Condition-Action) types matching ditto_core::state.rs exactly.
+ * These will move to ditto.generated.ts once CAR-58 auto-generation is wired.
+ */
+
+export type ConditionOperator = '==' | '!=' | '<' | '<=' | '>' | '>=';
+
+export type EcaCondition = {
+	target: string;
+	property: string;
+	operator: ConditionOperator;
+	value: number;
+};
+
+export type EcaAction =
+	| { MutateProperty: { target_id: string; property: string; delta: number } }
+	| { MoveEntity: { entity_id: string; from_zone: string; to_zone: string; index: number | null } }
+	| { SpawnEntity: { entity: Record<string, unknown>; zone_id: string } }
+	| 'EndTurn';
+
+export type EcaRule = {
+	id: string;
+	name: string;
+	trigger: string;
+	conditions: EcaCondition[];
+	actions: EcaAction[];
+	cancels: boolean;
+};
 
 export type GameConfig = {
 	zones: ZoneConfig[];

@@ -3,6 +3,8 @@
 	import { apiPatch } from '$lib/api/client';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import type { GameConfig, ZoneConfig, Game } from '$lib/types/api';
+	import RuleBuilder from '$lib/components/builder/RuleBuilder.svelte';
+	import { normalizeRule } from '$lib/components/builder/utils';
 	import { getContext } from 'svelte';
 
 	const getGame = getContext<() => Game | null>('game');
@@ -51,8 +53,8 @@
 			config = {
 				zones: normalizeZones(c.zones),
 				properties: normalizeProperties(c.properties),
-				rules: Array.isArray(c.rules) ? [...c.rules] : [],
-				win_conditions: Array.isArray(c.win_conditions) ? [...c.win_conditions] : []
+				rules: Array.isArray(c.rules) ? c.rules.map(normalizeRule) : [],
+				win_conditions: Array.isArray(c.win_conditions) ? c.win_conditions.map(normalizeRule) : []
 			};
 			zoneKeys = config.zones.map(() => ++_nextKey);
 			propKeys = config.properties.map(() => ++_nextKey);
@@ -120,7 +122,9 @@
 			const mergedConfig = {
 				...game.config,
 				zones: config.zones,
-				properties: config.properties
+				properties: config.properties,
+				rules: config.rules,
+				win_conditions: config.win_conditions
 			};
 			await apiPatch<Game>(`/api/games/${gameId}`, { config: mergedConfig });
 			if (page.params.id !== String(gameId)) return;
@@ -322,6 +326,8 @@
 			</p>
 		{/if}
 	</div>
+
+	<RuleBuilder gameConfig={config} bind:rules={config.rules} />
 
 	<div class="flex items-center justify-between">
 		<div class="space-y-1">
