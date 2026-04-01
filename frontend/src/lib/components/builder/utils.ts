@@ -92,7 +92,7 @@ export function normalizeRule(r: unknown): EcaRule {
 		trigger:
 			typeof obj.trigger === 'string' && obj.trigger ? obj.trigger : 'on_after_mutate_property',
 		conditions: rawConditions.filter(isPlainObject) as EcaRule['conditions'],
-		actions: rawActions.filter(isPlainObject) as EcaRule['actions'],
+		actions: rawActions.filter((a) => isPlainObject(a) || a === 'EndTurn') as EcaRule['actions'],
 		cancels: typeof obj.cancels === 'boolean' ? obj.cancels : false
 	};
 }

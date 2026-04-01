@@ -203,6 +203,17 @@ describe('normalizeRule', () => {
 			{ MutateProperty: { target_id: 'e1', property: 'hp', delta: -1 } }
 		]);
 	});
+
+	it("preserves 'EndTurn' string actions alongside object actions", () => {
+		const normalized = normalizeRule({
+			actions: ['EndTurn', { MutateProperty: { target_id: 'e1', property: 'hp', delta: -1 } }, null, 42, 'bad']
+		});
+
+		expect(normalized.actions).toEqual([
+			'EndTurn',
+			{ MutateProperty: { target_id: 'e1', property: 'hp', delta: -1 } }
+		]);
+	});
 });
 
 describe('createEmptyRule', () => {
