@@ -105,8 +105,8 @@ describe('normalizeRule', () => {
 			id: '7f76af4a-dc6b-4fa9-8f0e-70ddf7caa731',
 			name: 'My Rule',
 			trigger: 'on_before_move_entity:self',
-			conditions: [{ left: 'a', op: '==', right: 1 }],
-			actions: [{ type: 'end_turn' }],
+			conditions: [{ target: 'self', property: 'health', operator: '<=', value: 0 }],
+			actions: [{ MoveEntity: { entity_id: 'self', from_zone: 'battlefield', to_zone: 'graveyard', index: null } }],
 			cancels: true
 		};
 
