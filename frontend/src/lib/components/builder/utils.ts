@@ -60,6 +60,23 @@ export function createEmptyRule(): EcaRule {
 	};
 }
 
+const I32_MIN = -2147483648;
+const I32_MAX = 2147483647;
+
+export function parseI32(raw: string): number | null {
+	if (raw === '') return null;
+	const parsed = parseInt(raw, 10);
+	if (Number.isNaN(parsed)) return null;
+	return Math.max(I32_MIN, Math.min(I32_MAX, parsed));
+}
+
+export function parseUsize(raw: string): number | null {
+	if (raw === '') return null;
+	const parsed = parseInt(raw, 10);
+	if (Number.isNaN(parsed) || parsed < 0) return null;
+	return Math.floor(parsed);
+}
+
 /** Fills missing fields for backward compat with rules saved before id/name/cancels existed. */
 export function normalizeRule(r: Record<string, unknown>): EcaRule {
 	return {

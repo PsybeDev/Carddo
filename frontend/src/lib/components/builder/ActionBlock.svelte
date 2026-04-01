@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { EcaAction } from '$lib/types/api';
+	import { parseI32, parseUsize } from './utils';
 
 	let {
 		action = $bindable(),
@@ -47,27 +48,13 @@
 	function handleDeltaInput(e: Event) {
 		if (typeof action !== 'object' || !('MutateProperty' in action)) return;
 		const raw = (e.currentTarget as HTMLInputElement).value;
-		if (raw === '') {
-			action.MutateProperty.delta = 0;
-			return;
-		}
-		const parsed = Number(raw);
-		if (Number.isFinite(parsed)) {
-			action.MutateProperty.delta = parsed;
-		}
+		action.MutateProperty.delta = parseI32(raw) ?? 0;
 	}
 
 	function handleIndexInput(e: Event) {
 		if (typeof action !== 'object' || !('MoveEntity' in action)) return;
 		const raw = (e.currentTarget as HTMLInputElement).value;
-		if (raw === '') {
-			action.MoveEntity.index = null;
-			return;
-		}
-		const parsed = Number(raw);
-		if (Number.isFinite(parsed)) {
-			action.MoveEntity.index = parsed;
-		}
+		action.MoveEntity.index = raw === '' ? null : (parseUsize(raw) ?? null);
 	}
 </script>
 
@@ -108,6 +95,7 @@
 				</select>
 				<input
 					type="number"
+					step="1"
 					value={action.MutateProperty.delta}
 					oninput={handleDeltaInput}
 					placeholder="0"
@@ -144,6 +132,8 @@
 				</select>
 				<input
 					type="number"
+					step="1"
+					min="0"
 					value={action.MoveEntity.index ?? ''}
 					oninput={handleIndexInput}
 					placeholder="Idx"

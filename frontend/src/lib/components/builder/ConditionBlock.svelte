@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { EcaCondition } from '$lib/types/api';
-	import { CONDITION_OPERATORS } from './utils';
+	import { CONDITION_OPERATORS, parseI32 } from './utils';
 
 	let {
 		condition = $bindable(),
@@ -18,14 +18,8 @@
 
 	function handleValueInput(e: Event) {
 		const raw = (e.currentTarget as HTMLInputElement).value;
-		if (raw === '') {
-			condition.value = 0;
-			return;
-		}
-		const parsed = Number(raw);
-		if (Number.isFinite(parsed)) {
-			condition.value = parsed;
-		}
+		const val = parseI32(raw);
+		condition.value = val ?? 0;
 	}
 </script>
 
@@ -64,6 +58,7 @@
 
 		<input
 			type="number"
+			step="1"
 			value={condition.value}
 			oninput={handleValueInput}
 			placeholder="0"

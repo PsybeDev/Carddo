@@ -7,6 +7,8 @@ import {
 	composeTrigger,
 	createEmptyRule,
 	normalizeRule,
+	parseI32,
+	parseUsize,
 	parseTrigger
 } from './utils';
 
@@ -206,5 +208,62 @@ describe('TRIGGER_PHASES', () => {
 	it('contains the two supported trigger phases', () => {
 		expect(TRIGGER_PHASES).toHaveLength(2);
 		expect(TRIGGER_PHASES.map((phase) => phase.value)).toEqual(['on_before_', 'on_after_']);
+	});
+});
+
+describe('parseI32', () => {
+	it('parses valid integers', () => {
+		expect(parseI32('42')).toBe(42);
+		expect(parseI32('-5')).toBe(-5);
+		expect(parseI32('0')).toBe(0);
+	});
+
+	it('returns null for empty string', () => {
+		expect(parseI32('')).toBeNull();
+	});
+
+	it('returns null for non-numeric input', () => {
+		expect(parseI32('abc')).toBeNull();
+	});
+
+	it('truncates decimals via parseInt', () => {
+		expect(parseI32('3.14')).toBe(3);
+		expect(parseI32('-2.9')).toBe(-2);
+	});
+
+	it('clamps to i32 max', () => {
+		expect(parseI32('2147483647')).toBe(2147483647);
+		expect(parseI32('9999999999')).toBe(2147483647);
+	});
+
+	it('clamps to i32 min', () => {
+		expect(parseI32('-2147483648')).toBe(-2147483648);
+		expect(parseI32('-9999999999')).toBe(-2147483648);
+	});
+});
+
+describe('parseUsize', () => {
+	it('parses valid non-negative integers', () => {
+		expect(parseUsize('0')).toBe(0);
+		expect(parseUsize('5')).toBe(5);
+		expect(parseUsize('100')).toBe(100);
+	});
+
+	it('returns null for empty string', () => {
+		expect(parseUsize('')).toBeNull();
+	});
+
+	it('returns null for negative values', () => {
+		expect(parseUsize('-1')).toBeNull();
+		expect(parseUsize('-100')).toBeNull();
+	});
+
+	it('returns null for non-numeric input', () => {
+		expect(parseUsize('abc')).toBeNull();
+	});
+
+	it('floors decimal values', () => {
+		expect(parseUsize('3.9')).toBe(3);
+		expect(parseUsize('0.5')).toBe(0);
 	});
 });

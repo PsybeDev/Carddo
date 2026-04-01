@@ -13,17 +13,12 @@
 		onchange?: (rules: EcaRule[]) => void;
 	} = $props();
 
-	let ruleKeys = $state<number[]>(rules.map((_, i) => i));
-	let _nextKey = rules.length;
-
 	function addRule() {
 		rules = [...rules, createEmptyRule()];
-		ruleKeys = [...ruleKeys, ++_nextKey];
 	}
 
 	function removeRule(i: number) {
 		rules = rules.filter((_, idx) => idx !== i);
-		ruleKeys = ruleKeys.filter((_, idx) => idx !== i);
 	}
 
 	$effect(() => {
@@ -61,7 +56,7 @@
 
 	{#if rules.length > 0}
 		<div class="space-y-4">
-			{#each rules as rule, i (ruleKeys[i])}
+			{#each rules as rule, i (rule.id)}
 				<RuleBlock {rule} {gameConfig} ruleIndex={i} onremove={() => removeRule(i)} />
 			{/each}
 		</div>
