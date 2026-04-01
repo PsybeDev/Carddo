@@ -16,6 +16,8 @@
 
 	let previewOpen = $state(false);
 	let copied = $state(false);
+	let copyError = $state(false);
+	let copyTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	let ruleErrors = $derived(getRuleErrors(rules));
 	let hasErrors = $derived(ruleErrors.size > 0);
@@ -48,22 +50,31 @@
 	});
 
 	async function copyJson() {
+		if (copyTimeout) clearTimeout(copyTimeout);
 		try {
 			await navigator.clipboard.writeText(jsonPreview);
 			copied = true;
+			copyError = false;
 		} catch {
-			const textarea = document.createElement('textarea');
-			textarea.value = jsonPreview;
-			textarea.style.position = 'fixed';
-			textarea.style.opacity = '0';
-			document.body.appendChild(textarea);
-			textarea.select();
-			document.execCommand('copy');
-			document.body.removeChild(textarea);
-			copied = true;
+			try {
+				const textarea = document.createElement('textarea');
+				textarea.value = jsonPreview;
+				textarea.style.position = 'fixed';
+				textarea.style.opacity = '0';
+				document.body.appendChild(textarea);
+				textarea.select();
+				document.execCommand('copy');
+				document.body.removeChild(textarea);
+				copied = true;
+				copyError = false;
+			} catch {
+				copied = false;
+				copyError = true;
+			}
 		}
-		setTimeout(() => {
+		copyTimeout = setTimeout(() => {
 			copied = false;
+			copyError = false;
 		}, 2000);
 	}
 </script>
@@ -165,6 +176,21 @@
 								/>
 							</svg>
 							Copied!
+						{:else if copyError}
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-3.5 w-3.5"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+								aria-hidden="true"
+							>
+								<path
+									fill-rule="evenodd"
+									d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+							Failed
 						{:else}
 							<svg
 								xmlns="http://www.w3.org/2000/svg"

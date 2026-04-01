@@ -279,6 +279,17 @@ describe('RuleBuilder', () => {
 		await expect.element(page.getByText('"on_after_mutate_property"')).toBeVisible();
 	});
 
+	it('shows copy error when clipboard write fails', async () => {
+		render(RuleBuilder, {
+			gameConfig,
+			rules: []
+		});
+
+		await page.getByRole('button', { name: 'Show JSON' }).click();
+
+		await expect.element(page.getByRole('button', { name: 'Copy' })).toBeVisible();
+	});
+
 	it('shows error badge when rule is invalid', async () => {
 		const rules: EcaRule[] = [
 			{

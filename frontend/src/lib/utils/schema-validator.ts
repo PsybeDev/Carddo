@@ -189,6 +189,32 @@ function validateAction(
 				field: `${prefix}.SpawnEntity.entity`,
 				message: 'SpawnEntity entity must be an object.'
 			});
+		} else {
+			const entity = p.entity as Record<string, unknown>;
+			if (typeof entity.id !== 'string' || !entity.id) {
+				errors.push({
+					ruleId,
+					ruleName,
+					field: `${prefix}.SpawnEntity.entity.id`,
+					message: 'SpawnEntity entity.id is required.'
+				});
+			}
+			if (typeof entity.template_id !== 'string' || !entity.template_id) {
+				errors.push({
+					ruleId,
+					ruleName,
+					field: `${prefix}.SpawnEntity.entity.template_id`,
+					message: 'SpawnEntity entity.template_id is required.'
+				});
+			}
+			if (typeof entity.owner_id !== 'string' || !entity.owner_id) {
+				errors.push({
+					ruleId,
+					ruleName,
+					field: `${prefix}.SpawnEntity.entity.owner_id`,
+					message: 'SpawnEntity entity.owner_id is required.'
+				});
+			}
 		}
 		if (typeof p.zone_id !== 'string' || !p.zone_id) {
 			errors.push({
