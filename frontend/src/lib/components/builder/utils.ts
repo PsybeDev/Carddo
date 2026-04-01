@@ -77,14 +77,22 @@ export function parseUsize(raw: string): number | null {
 	return Math.floor(parsed);
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 /** Fills missing fields for backward compat with rules saved before id/name/cancels existed. */
-export function normalizeRule(r: Record<string, unknown>): EcaRule {
+export function normalizeRule(r: unknown): EcaRule {
+	const obj = isPlainObject(r) ? r : {};
+	const rawConditions = Array.isArray(obj.conditions) ? obj.conditions : [];
+	const rawActions = Array.isArray(obj.actions) ? obj.actions : [];
 	return {
-		id: typeof r.id === 'string' && r.id ? r.id : crypto.randomUUID(),
-		name: typeof r.name === 'string' ? r.name : '',
-		trigger: typeof r.trigger === 'string' && r.trigger ? r.trigger : 'on_after_mutate_property',
-		conditions: Array.isArray(r.conditions) ? r.conditions : [],
-		actions: Array.isArray(r.actions) ? r.actions : [],
-		cancels: typeof r.cancels === 'boolean' ? r.cancels : false
+		id: typeof obj.id === 'string' && obj.id ? obj.id : crypto.randomUUID(),
+		name: typeof obj.name === 'string' ? obj.name : '',
+		trigger:
+			typeof obj.trigger === 'string' && obj.trigger ? obj.trigger : 'on_after_mutate_property',
+		conditions: rawConditions.filter(isPlainObject) as EcaRule['conditions'],
+		actions: rawActions.filter(isPlainObject) as EcaRule['actions'],
+		cancels: typeof obj.cancels === 'boolean' ? obj.cancels : false
 	};
 }

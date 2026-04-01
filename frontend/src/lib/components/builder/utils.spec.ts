@@ -158,6 +158,51 @@ describe('normalizeRule', () => {
 
 		expect(normalized.cancels).toBe(false);
 	});
+
+	it('coerces null input to default rule', () => {
+		const normalized = normalizeRule(null);
+
+		expect(normalized.id).toMatch(UUID_V4_REGEX);
+		expect(normalized.name).toBe('');
+		expect(normalized.trigger).toBe('on_after_mutate_property');
+		expect(normalized.conditions).toEqual([]);
+		expect(normalized.actions).toEqual([]);
+		expect(normalized.cancels).toBe(false);
+	});
+
+	it('coerces primitive input to default rule', () => {
+		const normalized = normalizeRule(42);
+
+		expect(normalized.id).toMatch(UUID_V4_REGEX);
+		expect(normalized.conditions).toEqual([]);
+	});
+
+	it('coerces string input to default rule', () => {
+		const normalized = normalizeRule('not_a_rule');
+
+		expect(normalized.id).toMatch(UUID_V4_REGEX);
+		expect(normalized.conditions).toEqual([]);
+	});
+
+	it('filters non-object elements from conditions array', () => {
+		const normalized = normalizeRule({
+			conditions: [{ target: 'self', property: 'hp', operator: '==', value: 0 }, null, 42, 'bad']
+		});
+
+		expect(normalized.conditions).toEqual([
+			{ target: 'self', property: 'hp', operator: '==', value: 0 }
+		]);
+	});
+
+	it('filters non-object elements from actions array', () => {
+		const normalized = normalizeRule({
+			actions: [{ MutateProperty: { target_id: 'e1', property: 'hp', delta: -1 } }, null, 'bad']
+		});
+
+		expect(normalized.actions).toEqual([
+			{ MutateProperty: { target_id: 'e1', property: 'hp', delta: -1 } }
+		]);
+	});
 });
 
 describe('createEmptyRule', () => {
