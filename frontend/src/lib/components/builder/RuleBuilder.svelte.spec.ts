@@ -5,7 +5,7 @@ import TriggerBlock from './TriggerBlock.svelte';
 import ConditionBlock from './ConditionBlock.svelte';
 import ActionBlock from './ActionBlock.svelte';
 import RuleBuilder from './RuleBuilder.svelte';
-import type { EcaAction, EcaCondition, GameConfig } from '$lib/types/api';
+import type { EcaAction, EcaCondition, GameConfig, EcaRule } from '$lib/types/api';
 
 const gameConfig: GameConfig = {
 	zones: [
@@ -227,5 +227,116 @@ describe('RuleBuilder', () => {
 		await expect.element(page.getByLabelText('Rule 1 condition 1 target')).toBeInTheDocument();
 		await expect.element(page.getByLabelText('Rule 1 action 1 type')).toBeInTheDocument();
 		await expect.element(page.getByLabelText('Rule 1 name')).toHaveValue('Thorns');
+	});
+
+	it('shows JSON preview when Show JSON is clicked', async () => {
+		render(RuleBuilder, {
+			gameConfig,
+			rules: []
+		});
+
+		await expect.element(page.getByText('Compiled JSON')).not.toBeInTheDocument();
+
+		await page.getByRole('button', { name: 'Show JSON' }).click();
+
+		await expect.element(page.getByText('Compiled JSON')).toBeVisible();
+	});
+
+	it('hides JSON preview when Hide JSON is clicked', async () => {
+		render(RuleBuilder, {
+			gameConfig,
+			rules: []
+		});
+
+		await page.getByRole('button', { name: 'Show JSON' }).click();
+		await expect.element(page.getByText('Compiled JSON')).toBeVisible();
+
+		await page.getByRole('button', { name: 'Hide JSON' }).click();
+		await expect.element(page.getByText('Compiled JSON')).not.toBeInTheDocument();
+	});
+
+	it('shows JSON preview with rule data when rules are present', async () => {
+		const rules: EcaRule[] = [
+			{
+				id: 'test-rule-1',
+				name: 'Test Rule',
+				trigger: 'on_after_mutate_property',
+				conditions: [],
+				actions: [{ MutateProperty: { target_id: 'self', property: 'hp', delta: 1 } }],
+				cancels: false
+			}
+		];
+
+		render(RuleBuilder, {
+			gameConfig,
+			rules
+		});
+
+		await page.getByRole('button', { name: 'Show JSON' }).click();
+
+		await expect.element(page.getByText('"id"')).toBeVisible();
+		await expect.element(page.getByText('"test-rule-1"')).toBeVisible();
+		await expect.element(page.getByText('"on_after_mutate_property"')).toBeVisible();
+	});
+
+	it('shows error badge when rule is invalid', async () => {
+		const rules: EcaRule[] = [
+			{
+				id: 'bad-rule',
+				name: 'Bad Rule',
+				trigger: '',
+				conditions: [],
+				actions: [],
+				cancels: false
+			}
+		];
+
+		render(RuleBuilder, {
+			gameConfig,
+			rules
+		});
+
+		await expect.element(page.getByText(/invalid/)).toBeVisible();
+	});
+
+	it('shows error badge with correct count for multiple invalid rules', async () => {
+		const rules: EcaRule[] = [
+			{ id: 'bad-1', name: 'Bad 1', trigger: '', conditions: [], actions: [], cancels: false },
+			{
+				id: 'bad-2',
+				name: 'Bad 2',
+				trigger: 'invalid',
+				conditions: [],
+				actions: [],
+				cancels: false
+			}
+		];
+
+		render(RuleBuilder, {
+			gameConfig,
+			rules
+		});
+
+		await expect.element(page.getByText('2 invalid')).toBeVisible();
+	});
+
+	it('shows no error badge for valid rules', async () => {
+		const rules: EcaRule[] = [
+			{
+				id: 'good-rule',
+				name: 'Good Rule',
+				trigger: 'on_after_mutate_property',
+				conditions: [{ target: 'self', property: 'hp', operator: '==', value: 0 }],
+				actions: [{ MutateProperty: { target_id: 'self', property: 'hp', delta: 1 } }],
+				cancels: false
+			}
+		];
+
+		render(RuleBuilder, {
+			gameConfig,
+			rules
+		});
+
+		await expect.element(page.getByText(/invalid/)).not.toBeInTheDocument();
 	});
 });

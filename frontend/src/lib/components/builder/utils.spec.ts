@@ -106,7 +106,16 @@ describe('normalizeRule', () => {
 			name: 'My Rule',
 			trigger: 'on_before_move_entity:self',
 			conditions: [{ target: 'self', property: 'health', operator: '<=', value: 0 }],
-			actions: [{ MoveEntity: { entity_id: 'self', from_zone: 'battlefield', to_zone: 'graveyard', index: null } }],
+			actions: [
+				{
+					MoveEntity: {
+						entity_id: 'self',
+						from_zone: 'battlefield',
+						to_zone: 'graveyard',
+						index: null
+					}
+				}
+			],
 			cancels: true
 		};
 
@@ -206,7 +215,13 @@ describe('normalizeRule', () => {
 
 	it("preserves 'EndTurn' string actions alongside object actions", () => {
 		const normalized = normalizeRule({
-			actions: ['EndTurn', { MutateProperty: { target_id: 'e1', property: 'hp', delta: -1 } }, null, 42, 'bad']
+			actions: [
+				'EndTurn',
+				{ MutateProperty: { target_id: 'e1', property: 'hp', delta: -1 } },
+				null,
+				42,
+				'bad'
+			]
 		});
 
 		expect(normalized.actions).toEqual([
