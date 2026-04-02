@@ -40,7 +40,7 @@ export type SchemaCondition = {
  */
 export type SchemaAction =
 	| { MutateProperty: { target_id: string; property: string; delta: number } }
-	| { MoveEntity: { entity_id: string; from_zone: string; to_zone: string; index: number | null } }
+	| { MoveEntity: { entity_id: string; from_zone: string; to_zone: string; index?: number | null } }
 	| { SpawnEntity: { entity: Record<string, unknown>; zone_id: string } }
 	| 'EndTurn';
 

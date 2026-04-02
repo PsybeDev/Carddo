@@ -336,15 +336,12 @@
 
 	<RuleBuilder gameConfig={config} bind:rules={config.rules} />
 
-	<div class="mt-6 space-y-2">
-		<div>
-			<h2 class="text-base font-semibold text-slate-100">Win Conditions</h2>
-			<p class="mt-0.5 text-xs text-slate-400">
-				Define how the game is won. These rules are evaluated alongside engine rules.
-			</p>
-		</div>
-		<RuleBuilder gameConfig={config} bind:rules={config.win_conditions} />
-	</div>
+	<RuleBuilder
+		gameConfig={config}
+		bind:rules={config.win_conditions}
+		title="Win Conditions"
+		description="Define how the game is won. These rules are evaluated alongside engine rules."
+	/>
 
 	<div class="flex items-center justify-between">
 		<div class="space-y-1">

@@ -62,9 +62,9 @@
 			{#if hasErrors}
 				{@const tooltipId = `rule-${ruleIndex}-errors`}
 				<div class="group relative flex-shrink-0">
-					<span
-						class="flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20 text-red-400"
-						role="img"
+					<button
+						type="button"
+						class="flex h-6 w-6 cursor-default items-center justify-center rounded-full bg-red-500/20 text-red-400 focus:ring-2 focus:ring-red-500/50 focus:outline-none"
 						aria-label={`${errors.length} validation error${errors.length > 1 ? 's' : ''}`}
 						aria-describedby={tooltipId}
 					>
@@ -81,10 +81,11 @@
 								clip-rule="evenodd"
 							/>
 						</svg>
-					</span>
+					</button>
 					<div
 						id={tooltipId}
-						class="absolute top-full right-0 z-10 mt-1 hidden w-64 rounded-lg border border-red-900/50 bg-red-950/95 p-2 text-xs text-red-300 shadow-lg group-focus-within:block group-hover:block"
+						class="absolute top-full right-0 z-10 mt-1 hidden w-64 rounded-lg border border-red-900/50 bg-red-950/95 p-2 text-xs text-red-300 shadow-lg group-focus-within:block group-hover:block group-focus:block"
+						role="tooltip"
 					>
 						<ul class="space-y-1">
 							{#each errors as error (error.field)}

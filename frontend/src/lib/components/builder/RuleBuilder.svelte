@@ -7,11 +7,15 @@
 	let {
 		gameConfig,
 		rules = $bindable(),
-		onchange
+		onchange,
+		title = 'Engine Rules',
+		description = 'Define game mechanics using Event-Condition-Action (ECA) triggers.'
 	}: {
 		gameConfig: GameConfig;
 		rules: EcaRule[];
 		onchange?: (rules: EcaRule[]) => void;
+		title?: string;
+		description?: string;
 	} = $props();
 
 	let previewOpen = $state(false);
@@ -47,6 +51,12 @@
 
 	$effect(() => {
 		onchange?.(rules);
+	});
+
+	$effect(() => {
+		return () => {
+			if (copyTimeout) clearTimeout(copyTimeout);
+		};
 	});
 
 	async function copyJson() {
@@ -89,10 +99,8 @@
 		<div class="mb-4 flex items-center justify-between">
 			<div class="flex items-center gap-3">
 				<div>
-					<h2 class="text-sm font-semibold text-slate-100">Engine Rules</h2>
-					<p class="mt-0.5 text-xs text-slate-500">
-						Define game mechanics using Event-Condition-Action (ECA) triggers.
-					</p>
+					<h2 class="text-sm font-semibold text-slate-100">{title}</h2>
+					<p class="mt-0.5 text-xs text-slate-500">{description}</p>
 				</div>
 				{#if hasErrors}
 					<span
@@ -220,7 +228,7 @@
 
 		{#if rules.length > 0}
 			<div class="space-y-4">
-				{#each rules as rule, i (rule.id)}
+				{#each rules as rule, i (i)}
 					<RuleBlock
 						{rule}
 						{gameConfig}
