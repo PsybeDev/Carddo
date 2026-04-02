@@ -228,7 +228,7 @@
 
 		{#if rules.length > 0}
 			<div class="space-y-4">
-				{#each rules as rule, i (i)}
+				{#each rules as rule, i (rule.id)}
 					<RuleBlock
 						{rule}
 						{gameConfig}
