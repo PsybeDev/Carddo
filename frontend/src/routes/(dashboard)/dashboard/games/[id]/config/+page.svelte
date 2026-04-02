@@ -135,7 +135,7 @@
 			};
 			await apiPatch<Game>(`/api/games/${gameId}`, { config: mergedConfig });
 			if (page.params.id !== String(gameId)) return;
-			toastStore.show('Configuration saved and validated.', 'success');
+			toastStore.show('Configuration saved.', 'success');
 		} catch {
 			if (page.params.id !== String(gameId)) return;
 			toastStore.show('Failed to save configuration.');
@@ -336,9 +336,15 @@
 
 	<RuleBuilder gameConfig={config} bind:rules={config.rules} />
 
-	{#if config.win_conditions.length > 0}
+	<div class="mt-6 space-y-2">
+		<div>
+			<h2 class="text-base font-semibold text-slate-100">Win Conditions</h2>
+			<p class="mt-0.5 text-xs text-slate-400">
+				Define how the game is won. These rules are evaluated alongside engine rules.
+			</p>
+		</div>
 		<RuleBuilder gameConfig={config} bind:rules={config.win_conditions} />
-	{/if}
+	</div>
 
 	<div class="flex items-center justify-between">
 		<div class="space-y-1">

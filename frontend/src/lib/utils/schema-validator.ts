@@ -13,6 +13,15 @@ export type ValidationResult = {
 	errors: ValidationError[];
 };
 
+const I32_MIN = -2147483648;
+const I32_MAX = 2147483647;
+
+function isI32(value: unknown): boolean {
+	return (
+		typeof value === 'number' && Number.isInteger(value) && value >= I32_MIN && value <= I32_MAX
+	);
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -57,12 +66,12 @@ function validateCondition(
 			message: `Condition operator must be one of: ${[...CONDITION_OPERATORS].join(', ')}.`
 		});
 	}
-	if (typeof c.value !== 'number' || !Number.isFinite(c.value)) {
+	if (!isI32(c.value)) {
 		errors.push({
 			ruleId,
 			ruleName,
 			field: `${prefix}.value`,
-			message: 'Condition value must be a finite number.'
+			message: 'Condition value must be a 32-bit integer.'
 		});
 	}
 
@@ -105,6 +114,16 @@ function validateAction(
 		return errors;
 	}
 
+	if (keys.length > 1) {
+		errors.push({
+			ruleId,
+			ruleName,
+			field: `${prefix}`,
+			message: 'Action object must represent exactly one variant.'
+		});
+		return errors;
+	}
+
 	const variant = keys[0] as string;
 	const payload = a[variant];
 
@@ -137,12 +156,12 @@ function validateAction(
 				message: 'MutateProperty property is required.'
 			});
 		}
-		if (typeof p.delta !== 'number' || !Number.isFinite(p.delta)) {
+		if (!isI32(p.delta)) {
 			errors.push({
 				ruleId,
 				ruleName,
 				field: `${prefix}.MutateProperty.delta`,
-				message: 'MutateProperty delta must be a finite number.'
+				message: 'MutateProperty delta must be a 32-bit integer.'
 			});
 		}
 	} else if (variant === 'MoveEntity') {
@@ -171,14 +190,15 @@ function validateAction(
 			});
 		}
 		if (
+			p.index !== undefined &&
 			p.index !== null &&
-			(typeof p.index !== 'number' || !Number.isFinite(p.index) || p.index < 0)
+			(typeof p.index !== 'number' || !Number.isSafeInteger(p.index) || p.index < 0)
 		) {
 			errors.push({
 				ruleId,
 				ruleName,
 				field: `${prefix}.MoveEntity.index`,
-				message: 'MoveEntity index must be null or a non-negative number.'
+				message: 'MoveEntity index may be omitted, null, or a non-negative integer.'
 			});
 		}
 	} else if (variant === 'SpawnEntity') {
@@ -245,10 +265,11 @@ function validateRule(rule: unknown): ValidationError[] {
 	}
 
 	const r = rule as Record<string, unknown>;
-	const id = typeof r.id === 'string' && r.id ? r.id : '?';
+	const rawId = typeof r.id === 'string' ? r.id : '';
+	const id = rawId || `?${rawId}`;
 	const name = typeof r.name === 'string' ? r.name : '(unnamed)';
 
-	if (typeof r.id !== 'string' || !r.id) {
+	if (!rawId) {
 		errors.push({
 			ruleId: id,
 			ruleName: name,

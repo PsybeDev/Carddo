@@ -63,10 +63,15 @@
 				textarea.style.opacity = '0';
 				document.body.appendChild(textarea);
 				textarea.select();
-				document.execCommand('copy');
+				const ok = document.execCommand('copy');
 				document.body.removeChild(textarea);
-				copied = true;
-				copyError = false;
+				if (ok) {
+					copied = true;
+					copyError = false;
+				} else {
+					copied = false;
+					copyError = true;
+				}
 			} catch {
 				copied = false;
 				copyError = true;

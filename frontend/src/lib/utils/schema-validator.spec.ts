@@ -113,7 +113,7 @@ describe('validateRuleSet', () => {
 		expect(result.valid).toBe(true);
 	});
 
-	it('returns valid for rule with cancees true', () => {
+	it('returns valid for rule with cancels true', () => {
 		const result = validateRuleSet([{ ...validRule, cancels: true }]);
 		expect(result.valid).toBe(true);
 	});
@@ -165,7 +165,7 @@ describe('validateRuleSet', () => {
 		expect(result.errors.some((e) => e.field.includes('Condition'))).toBe(true);
 	});
 
-	it('returns error for condition with invalid operator', () => {
+	it('returns valid for condition with "!=" operator', () => {
 		const result = validateRuleSet([
 			{
 				...validRule,
@@ -186,6 +186,28 @@ describe('validateRuleSet', () => {
 		expect(result.errors.some((e) => e.field.includes('value'))).toBe(true);
 	});
 
+	it('returns error for condition with decimal value', () => {
+		const result = validateRuleSet([
+			{
+				...validRule,
+				conditions: [{ target: 'self', property: 'hp', operator: '<=', value: 1.5 }]
+			}
+		]);
+		expect(result.valid).toBe(false);
+		expect(result.errors.some((e) => e.field.includes('value'))).toBe(true);
+	});
+
+	it('returns error for condition with value outside i32 range', () => {
+		const result = validateRuleSet([
+			{
+				...validRule,
+				conditions: [{ target: 'self', property: 'hp', operator: '<=', value: 2147483648 }]
+			}
+		]);
+		expect(result.valid).toBe(false);
+		expect(result.errors.some((e) => e.field.includes('value'))).toBe(true);
+	});
+
 	it('returns error for MutateProperty missing target_id', () => {
 		const result = validateRuleSet([
 			{
@@ -197,11 +219,54 @@ describe('validateRuleSet', () => {
 		expect(result.errors.some((e) => e.field.includes('target_id'))).toBe(true);
 	});
 
+	it('returns error for MutateProperty delta with decimal', () => {
+		const result = validateRuleSet([
+			{
+				...validRule,
+				actions: [{ MutateProperty: { target_id: 'self', property: 'hp', delta: 1.5 } }]
+			}
+		]);
+		expect(result.valid).toBe(false);
+		expect(result.errors.some((e) => e.field.includes('delta'))).toBe(true);
+	});
+
+	it('returns error for MutateProperty delta outside i32 range', () => {
+		const result = validateRuleSet([
+			{
+				...validRule,
+				actions: [{ MutateProperty: { target_id: 'self', property: 'hp', delta: -2147483649 } }]
+			}
+		]);
+		expect(result.valid).toBe(false);
+		expect(result.errors.some((e) => e.field.includes('delta'))).toBe(true);
+	});
+
 	it('returns error for MoveEntity with negative index', () => {
 		const result = validateRuleSet([
 			{
 				...validRule,
 				actions: [{ MoveEntity: { entity_id: 'e1', from_zone: 'h', to_zone: 'g', index: -1 } }]
+			}
+		]);
+		expect(result.valid).toBe(false);
+		expect(result.errors.some((e) => e.field.includes('index'))).toBe(true);
+	});
+
+	it('returns valid for MoveEntity with omitted index', () => {
+		const result = validateRuleSet([
+			{
+				...validRule,
+				actions: [{ MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'bf' } }]
+			}
+		]);
+		expect(result.valid).toBe(true);
+	});
+
+	it('returns error for MoveEntity with float index', () => {
+		const result = validateRuleSet([
+			{
+				...validRule,
+				actions: [{ MoveEntity: { entity_id: 'e1', from_zone: 'h', to_zone: 'g', index: 1.5 } }]
 			}
 		]);
 		expect(result.valid).toBe(false);
@@ -217,6 +282,22 @@ describe('validateRuleSet', () => {
 		]);
 		expect(result.valid).toBe(false);
 		expect(result.errors.some((e) => e.message.includes('Unknown action variant'))).toBe(true);
+	});
+
+	it('returns error for action with multiple keys', () => {
+		const result = validateRuleSet([
+			{
+				...validRule,
+				actions: [
+					{
+						MutateProperty: { target_id: 'self', property: 'hp', delta: 1 },
+						EndTurn: null
+					}
+				]
+			}
+		]);
+		expect(result.valid).toBe(false);
+		expect(result.errors.some((e) => e.message.includes('exactly one variant'))).toBe(true);
 	});
 
 	it('returns error for non-boolean cancels', () => {

@@ -60,10 +60,13 @@
 				class="w-full rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm font-medium text-slate-100 placeholder-slate-500 transition outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
 			/>
 			{#if hasErrors}
+				{@const tooltipId = `rule-${ruleIndex}-errors`}
 				<div class="group relative flex-shrink-0">
 					<span
 						class="flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20 text-red-400"
-						title={`${errors.length} error${errors.length > 1 ? 's' : ''}`}
+						role="img"
+						aria-label={`${errors.length} validation error${errors.length > 1 ? 's' : ''}`}
+						aria-describedby={tooltipId}
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -80,7 +83,8 @@
 						</svg>
 					</span>
 					<div
-						class="absolute top-full right-0 z-10 mt-1 hidden w-64 rounded-lg border border-red-900/50 bg-red-950/95 p-2 text-xs text-red-300 shadow-lg group-hover:block"
+						id={tooltipId}
+						class="absolute top-full right-0 z-10 mt-1 hidden w-64 rounded-lg border border-red-900/50 bg-red-950/95 p-2 text-xs text-red-300 shadow-lg group-focus-within:block group-hover:block"
 					>
 						<ul class="space-y-1">
 							{#each errors as error (error.field)}
