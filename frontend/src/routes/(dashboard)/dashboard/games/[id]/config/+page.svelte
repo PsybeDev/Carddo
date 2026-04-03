@@ -340,7 +340,7 @@
 		gameConfig={config}
 		bind:rules={config.win_conditions}
 		title="Win Conditions"
-		description="Define how the game is won. These rules are evaluated alongside engine rules."
+		description="Define win/loss conditions using the same ECA rule format."
 	/>
 
 	<div class="flex items-center justify-between">

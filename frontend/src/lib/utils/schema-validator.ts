@@ -256,17 +256,23 @@ function validateAction(
 	return errors;
 }
 
-function validateRule(rule: unknown): ValidationError[] {
+function validateRule(rule: unknown, index: number): ValidationError[] {
 	const errors: ValidationError[] = [];
+	const fallbackId = `?rule[${index}]`;
 
 	if (!isPlainObject(rule)) {
-		errors.push({ ruleId: '?', ruleName: '?', field: 'rule', message: 'Rule must be an object.' });
+		errors.push({
+			ruleId: fallbackId,
+			ruleName: '?',
+			field: 'rule',
+			message: 'Rule must be an object.'
+		});
 		return errors;
 	}
 
 	const r = rule as Record<string, unknown>;
 	const rawId = typeof r.id === 'string' ? r.id : '';
-	const id = rawId || `?${rawId}`;
+	const id = rawId || fallbackId;
 	const name = typeof r.name === 'string' ? r.name : '(unnamed)';
 
 	if (!rawId) {
@@ -353,7 +359,7 @@ function validateRule(rule: unknown): ValidationError[] {
 }
 
 export function validateRuleSet(rules: unknown[]): ValidationResult {
-	const errors = rules.flatMap((rule) => validateRule(rule));
+	const errors = rules.flatMap((rule, i) => validateRule(rule, i));
 	return { valid: errors.length === 0, errors };
 }
 
