@@ -1,8 +1,10 @@
 /**
- * Canonical ECA rule JSON schema — mirrors ditto_core::state::Ability.
+ * Frontend ECA rule schema used by the rule builder.
  *
- * This is the ground truth for what the engine accepts.
- * All rule builder validation must use this shape.
+ * Maintained manually to broadly mirror ditto_core::state::Ability.
+ * Some fields (e.g. SpawnEntity.entity) remain intentionally broad
+ * until CAR-58 generates types from the engine. All rule builder
+ * validation should use this shape.
  */
 
 export const TRIGGER_PHASES = ['on_before_', 'on_after_'] as const;

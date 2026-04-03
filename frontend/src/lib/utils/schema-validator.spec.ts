@@ -37,64 +37,29 @@ describe('validateRuleSet', () => {
 		expect(result.valid).toBe(true);
 	});
 
-	it('returns valid for SpawnEntity action', () => {
+	it('returns valid for SpawnEntity action with empty entity', () => {
 		const result = validateRuleSet([
 			{
 				...validRule,
 				trigger: 'on_after_spawn_entity',
 				conditions: [],
-				actions: [
-					{
-						SpawnEntity: {
-							entity: { id: 'e1', template_id: 'goblin', owner_id: 'player_1' },
-							zone_id: 'battlefield'
-						}
-					}
-				]
+				actions: [{ SpawnEntity: { entity: {}, zone_id: 'battlefield' } }]
 			}
 		]);
 		expect(result.valid).toBe(true);
 	});
 
-	it('returns error for SpawnEntity with missing entity.id', () => {
+	it('returns error for SpawnEntity with non-object entity', () => {
 		const result = validateRuleSet([
 			{
 				...validRule,
 				trigger: 'on_after_spawn_entity',
 				conditions: [],
-				actions: [
-					{ SpawnEntity: { entity: { template_id: 'goblin', owner_id: 'p1' }, zone_id: 'bf' } }
-				]
+				actions: [{ SpawnEntity: { entity: 'not-an-object', zone_id: 'bf' } }]
 			}
 		]);
 		expect(result.valid).toBe(false);
-		expect(result.errors.some((e) => e.field.includes('entity.id'))).toBe(true);
-	});
-
-	it('returns error for SpawnEntity with missing entity.template_id', () => {
-		const result = validateRuleSet([
-			{
-				...validRule,
-				trigger: 'on_after_spawn_entity',
-				conditions: [],
-				actions: [{ SpawnEntity: { entity: { id: 'e1', owner_id: 'p1' }, zone_id: 'bf' } }]
-			}
-		]);
-		expect(result.valid).toBe(false);
-		expect(result.errors.some((e) => e.field.includes('entity.template_id'))).toBe(true);
-	});
-
-	it('returns error for SpawnEntity with missing entity.owner_id', () => {
-		const result = validateRuleSet([
-			{
-				...validRule,
-				trigger: 'on_after_spawn_entity',
-				conditions: [],
-				actions: [{ SpawnEntity: { entity: { id: 'e1', template_id: 'goblin' }, zone_id: 'bf' } }]
-			}
-		]);
-		expect(result.valid).toBe(false);
-		expect(result.errors.some((e) => e.field.includes('entity.owner_id'))).toBe(true);
+		expect(result.errors.some((e) => e.field.includes('entity'))).toBe(true);
 	});
 
 	it('returns valid for rule with all condition operators', () => {
