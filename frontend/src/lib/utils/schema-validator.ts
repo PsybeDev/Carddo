@@ -1,5 +1,5 @@
 import type { SchemaRule, ConditionOperator } from '$lib/types/rules';
-import { CONDITION_OPERATORS } from '$lib/types/rules';
+import { CONDITION_OPERATORS, isValidTrigger } from '$lib/types/rules';
 
 export type ValidationError = {
 	ruleId: string;
@@ -300,11 +300,7 @@ function validateRule(rule: unknown, index: number): ValidationError[] {
 			field: 'trigger',
 			message: 'Rule must have a trigger string.'
 		});
-	} else if (
-		!/^on_(?:before|after)_(?:mutate_property|move_entity|spawn_entity|end_turn|any)(?::self)?$/.test(
-			r.trigger
-		)
-	) {
+	} else if (!isValidTrigger(r.trigger)) {
 		errors.push({
 			ruleId: id,
 			ruleName: name,
