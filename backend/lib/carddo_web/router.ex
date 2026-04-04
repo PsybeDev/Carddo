@@ -23,7 +23,7 @@ defmodule CarddoWeb.Router do
     get "/users/me", UserController, :me
 
     resources "/games", GameController, except: [:new, :edit] do
-      resources "/cards", CardController, except: [:new, :edit, :show]
+      resources "/cards", CardController, except: [:new, :edit]
       resources "/decks", DeckController, except: [:new, :edit]
     end
   end

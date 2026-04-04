@@ -52,6 +52,19 @@ export type GameConfig = {
 	win_conditions: EcaRule[];
 };
 
+/** Shape returned by /api/games/:id/cards endpoints */
+export type Card = {
+	id: number;
+	game_id: number;
+	name: string;
+	card_type: string;
+	background_color: string | null;
+	properties: Record<string, number>;
+	abilities: EcaRule[];
+	inserted_at: string;
+	updated_at: string;
+};
+
 /** Shape returned by GET /api/games, GET /api/games/:id, POST /api/games, PATCH /api/games/:id */
 export type Game = {
 	id: number;
