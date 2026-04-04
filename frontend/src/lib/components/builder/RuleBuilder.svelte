@@ -228,12 +228,12 @@
 
 		{#if rules.length > 0}
 			<div class="space-y-4">
-				{#each rules as rule, i (rule.id)}
+				{#each rules as rule, i (rule.id || `?rule[${i}]`)}
 					<RuleBlock
 						{rule}
 						{gameConfig}
 						ruleIndex={i}
-						errors={ruleErrors.get(rule.id) ?? []}
+						errors={ruleErrors.get(rule.id || `?rule[${i}]`) ?? []}
 						onremove={() => removeRule(i)}
 					/>
 				{/each}
