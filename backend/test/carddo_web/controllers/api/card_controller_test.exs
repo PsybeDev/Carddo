@@ -63,6 +63,35 @@ defmodule CarddoWeb.Api.CardControllerTest do
     end
   end
 
+  describe "GET /api/games/:game_id/cards/:id" do
+    test "returns the card", %{conn: conn} do
+      %{conn: conn, game: game} = setup_game(conn)
+      card = create_card(game, %{background_color: "#aabbcc", properties: %{health: 10}})
+
+      conn = get(conn, "/api/games/#{game.id}/cards/#{card.id}")
+      assert %{"data" => data} = json_response(conn, 200)
+      assert data["id"] == card.id
+      assert data["name"] == "Dragon"
+      assert data["background_color"] == "#aabbcc"
+      assert data["properties"]["health"] == 10
+    end
+
+    test "returns 404 when card not found", %{conn: conn} do
+      %{conn: conn, game: game} = setup_game(conn)
+      conn = get(conn, "/api/games/#{game.id}/cards/0")
+      assert json_response(conn, 404)
+    end
+
+    test "returns 403 for another user's game", %{conn: conn} do
+      %{conn: conn} = register_and_login(conn)
+      %{game: other_game} = setup_game(build_conn())
+      other_card = create_card(other_game)
+
+      conn = get(conn, "/api/games/#{other_game.id}/cards/#{other_card.id}")
+      assert json_response(conn, 403)
+    end
+  end
+
   describe "POST /api/games/:game_id/cards" do
     test "creates a card with all fields and returns 201", %{conn: conn} do
       %{conn: conn, game: game} = setup_game(conn)
