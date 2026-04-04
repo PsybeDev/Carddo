@@ -78,7 +78,8 @@
 		try {
 			const created = await apiPost<Card>(`/api/games/${gameId}/cards`, {
 				name: newName.trim(),
-				card_type: newCardType.trim()
+				card_type: newCardType.trim(),
+				background_color: '#1e2235'
 			});
 			goto(`/dashboard/games/${gameId}/cards/${created.id}`);
 		} catch (err) {

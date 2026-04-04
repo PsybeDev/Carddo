@@ -219,13 +219,13 @@
 					<p class="mt-0.5 text-xs text-slate-500">Numeric stats defined by your game config.</p>
 				</div>
 				<div class="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3">
-					{#each gameConfig.properties as prop (prop.name)}
+					{#each gameConfig.properties as prop, i (prop.name)}
 						<div>
-							<label for="prop-{prop.name}" class="mb-1 block text-xs font-medium text-slate-400"
+							<label for="prop-{i}" class="mb-1 block text-xs font-medium text-slate-400"
 								>{prop.name}</label
 							>
 							<input
-								id="prop-{prop.name}"
+								id="prop-{i}"
 								type="number"
 								value={properties[prop.name] ?? prop.default}
 								oninput={(e) => setProperty(prop.name, (e.currentTarget as HTMLInputElement).value)}
