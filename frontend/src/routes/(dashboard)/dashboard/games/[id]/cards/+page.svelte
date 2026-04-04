@@ -14,30 +14,36 @@
 	let search = $state('');
 	let loading = $state(false);
 	let loadError = $state(false);
-	let cardsLoadedFor = $state<string | null>(null);
-
 	let createModalOpen = $state(false);
 	let newName = $state('');
 	let newCardType = $state('');
 	let creating = $state(false);
 
+	// Plain (non-reactive) variable — avoids triggering search effect when game loads
+	let loadedGameId: string | null = null;
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 	$effect(() => {
 		const id = page.params.id;
-		// Wait for game to load before fetching cards
-		if (game && String(game.id) === id && cardsLoadedFor !== id) {
-			cardsLoadedFor = id;
-			void loadCards(id, '');
-		}
-	});
-
-	$effect(() => {
-		const id = page.params.id;
 		const term = search;
-		if (cardsLoadedFor !== id) return;
+
+		if (!game || String(game.id) !== id) return;
+
+		if (loadedGameId !== id) {
+			// New game — fetch immediately, don't debounce
+			loadedGameId = id;
+			if (debounceTimer) clearTimeout(debounceTimer);
+			void loadCards(id, term);
+			return;
+		}
+
+		// Same game, search changed — debounce
 		if (debounceTimer) clearTimeout(debounceTimer);
 		debounceTimer = setTimeout(() => void loadCards(id, term), 300);
+
+		return () => {
+			if (debounceTimer) clearTimeout(debounceTimer);
+		};
 	});
 
 	async function loadCards(id: string, term: string) {
