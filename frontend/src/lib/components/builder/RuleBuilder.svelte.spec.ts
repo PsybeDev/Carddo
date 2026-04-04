@@ -279,7 +279,7 @@ describe('RuleBuilder', () => {
 		await expect.element(page.getByText('"on_after_mutate_property"')).toBeVisible();
 	});
 
-	it('shows copy error when clipboard write fails', async () => {
+	it('shows Copy button when preview is open', async () => {
 		render(RuleBuilder, {
 			gameConfig,
 			rules: []
