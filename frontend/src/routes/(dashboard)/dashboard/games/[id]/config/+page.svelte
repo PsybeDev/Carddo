@@ -5,6 +5,7 @@
 	import type { GameConfig, ZoneConfig, Game } from '$lib/types/api';
 	import RuleBuilder from '$lib/components/builder/RuleBuilder.svelte';
 	import { normalizeRule } from '$lib/components/builder/utils';
+	import { validateRuleSet } from '$lib/utils/schema-validator';
 	import { getContext } from 'svelte';
 
 	const getGame = getContext<() => Game | null>('game');
@@ -71,8 +72,14 @@
 		return new Set(names).size !== names.length;
 	});
 
+	let ruleValidation = $derived(validateRuleSet(config.rules));
+	let winConditionValidation = $derived(validateRuleSet(config.win_conditions));
+	let hasRuleErrors = $derived(
+		ruleValidation.errors.length > 0 || winConditionValidation.errors.length > 0
+	);
+
 	let canSave = $derived(
-		!hasEmptyName && !hasDuplicateZoneName() && config.zones.length > 0 && !saving
+		!hasEmptyName && !hasDuplicateZoneName() && config.zones.length > 0 && !hasRuleErrors && !saving
 	);
 
 	function addZone() {
@@ -329,6 +336,13 @@
 
 	<RuleBuilder gameConfig={config} bind:rules={config.rules} />
 
+	<RuleBuilder
+		gameConfig={config}
+		bind:rules={config.win_conditions}
+		title="Win Conditions"
+		description="Define win/loss conditions using the same ECA rule format."
+	/>
+
 	<div class="flex items-center justify-between">
 		<div class="space-y-1">
 			{#if config.zones.length === 0}
@@ -339,6 +353,9 @@
 			{/if}
 			{#if hasDuplicateZoneName()}
 				<p class="text-xs text-red-400">Zone names must be unique.</p>
+			{/if}
+			{#if hasRuleErrors}
+				<p class="text-xs text-red-400">Rule errors found — fix highlighted rules before saving.</p>
 			{/if}
 		</div>
 		<button

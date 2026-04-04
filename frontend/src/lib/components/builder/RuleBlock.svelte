@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { EcaRule, GameConfig } from '$lib/types/api';
+	import type { ValidationError } from '$lib/utils/schema-validator';
 	import TriggerBlock from './TriggerBlock.svelte';
 	import ConditionBlock from './ConditionBlock.svelte';
 	import ActionBlock from './ActionBlock.svelte';
@@ -8,13 +9,17 @@
 		rule = $bindable(),
 		gameConfig,
 		ruleIndex,
+		errors = [],
 		onremove
 	}: {
 		rule: EcaRule;
 		gameConfig: GameConfig;
 		ruleIndex: number;
+		errors?: ValidationError[];
 		onremove: () => void;
 	} = $props();
+
+	let hasErrors = $derived(errors.length > 0);
 
 	let propertyNames = $derived(gameConfig.properties.map((p) => p.name));
 	let zoneNames = $derived(gameConfig.zones.map((z) => z.name));
@@ -46,13 +51,54 @@
 
 <div class="space-y-4 rounded-xl border border-slate-700/50 bg-[#1a1d27] p-5">
 	<div class="space-y-2">
-		<input
-			type="text"
-			bind:value={rule.name}
-			placeholder="e.g. Thorns, Divine Shield"
-			aria-label={`Rule ${ruleIndex + 1} name`}
-			class="w-full rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm font-medium text-slate-100 placeholder-slate-500 transition outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
-		/>
+		<div class="flex items-center justify-between gap-3">
+			<input
+				type="text"
+				bind:value={rule.name}
+				placeholder="e.g. Thorns, Divine Shield"
+				aria-label={`Rule ${ruleIndex + 1} name`}
+				class="w-full rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm font-medium text-slate-100 placeholder-slate-500 transition outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
+			/>
+			{#if hasErrors}
+				{@const tooltipId = `rule-${rule.id}-errors`}
+				<div class="group relative flex-shrink-0">
+					<button
+						type="button"
+						class="flex h-6 w-6 cursor-default items-center justify-center rounded-full bg-red-500/20 text-red-400 focus:ring-2 focus:ring-red-500/50 focus:outline-none"
+						aria-label={`${errors.length} validation error${errors.length > 1 ? 's' : ''}`}
+						aria-describedby={tooltipId}
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-4 w-4"
+							viewBox="0 0 20 20"
+							fill="currentColor"
+							aria-hidden="true"
+						>
+							<path
+								fill-rule="evenodd"
+								d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+					</button>
+					<div
+						id={tooltipId}
+						class="absolute top-full right-0 z-10 mt-1 hidden w-64 rounded-lg border border-red-900/50 bg-red-950/95 p-2 text-xs text-red-300 shadow-lg group-focus-within:block group-hover:block group-focus:block"
+						role="tooltip"
+					>
+						<ul class="space-y-1">
+							{#each errors as error (error.field)}
+								<li class="flex gap-1">
+									<span class="font-mono text-red-400">{error.field}</span>
+									<span class="text-red-500/70">{error.message}</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				</div>
+			{/if}
+		</div>
 	</div>
 
 	<div class="flex items-center gap-4">
