@@ -13,7 +13,7 @@ export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'er
 /** Params sent when joining a game channel. */
 export type JoinParams = {
 	game_id: number;
-	deck_id: string;
+	deck_id: number;
 };
 
 /**

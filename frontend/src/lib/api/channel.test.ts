@@ -64,10 +64,10 @@ describe('parseGameState', () => {
 	});
 
 	it('throws Error for invalid JSON string', () => {
-		expect(() => parseGameState('not json')).toThrow();
+		expect(() => parseGameState('not json')).toThrow('Failed to parse game state');
 	});
 
 	it('throws Error for empty string', () => {
-		expect(() => parseGameState('')).toThrow();
+		expect(() => parseGameState('')).toThrow('Cannot parse empty state string');
 	});
 });

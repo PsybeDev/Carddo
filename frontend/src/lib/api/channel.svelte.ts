@@ -29,7 +29,12 @@ export function parseGameState(stateJson: string): GameState {
 	if (!stateJson) {
 		throw new Error('Cannot parse empty state string');
 	}
-	return JSON.parse(stateJson) as GameState;
+	try {
+		return JSON.parse(stateJson) as GameState;
+	} catch (err) {
+		const msg = err instanceof Error ? err.message : 'unknown error';
+		throw new Error(`Failed to parse game state: ${msg}`);
+	}
 }
 
 /**
@@ -75,19 +80,32 @@ export class GameChannel {
 			this.lastRejection = payload;
 		});
 
-		this.channel
-			.join()
-			.receive('ok', (response: JoinResponse) => {
-				this.gameState = parseGameState(response.state);
-				this.connectionStatus = 'connected';
-			})
-			.receive('error', (reason: { errors: ChannelError[] }) => {
-				this.errors = reason.errors;
-				this.connectionStatus = 'error';
-			})
-			.receive('timeout', () => {
-				this.connectionStatus = 'error';
-			});
+		await new Promise<void>((resolve, reject) => {
+			this.channel!.join()
+				.receive('ok', (response: JoinResponse) => {
+					this.gameState = parseGameState(response.state);
+					this.connectionStatus = 'connected';
+					resolve();
+				})
+				.receive('error', (reason: { errors: ChannelError[] }) => {
+					this.errors = reason.errors;
+					this.connectionStatus = 'error';
+					this.channel?.leave();
+					this.socket?.disconnect();
+					this.channel = null;
+					this.socket = null;
+					reject(new Error('Failed to join channel'));
+				})
+				.receive('timeout', () => {
+					this.errors = [{ message: 'Channel join timed out', code: 'timeout' }];
+					this.connectionStatus = 'error';
+					this.channel?.leave();
+					this.socket?.disconnect();
+					this.channel = null;
+					this.socket = null;
+					reject(new Error('Channel join timed out'));
+				});
+		});
 	}
 
 	submitAction(action: Action): void {

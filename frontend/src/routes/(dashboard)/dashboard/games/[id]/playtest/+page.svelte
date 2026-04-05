@@ -14,7 +14,7 @@
 	let game = $derived(getGame());
 
 	let decks = $state<DeckSummary[]>([]);
-	let selectedDeckId = $state<string | null>(null);
+	let selectedDeckId = $state<number | null>(null);
 	let loadingDecks = $state(false);
 	let channel = $state<GameChannel | null>(null);
 
@@ -35,7 +35,7 @@
 			const result = await apiGet<DeckSummary[]>(`/api/games/${id}/decks`);
 			decks = result;
 			if (result.length === 1) {
-				selectedDeckId = String(result[0].id);
+				selectedDeckId = result[0].id;
 			}
 		} catch {
 			toastStore.show('Failed to load decks.');
@@ -45,7 +45,7 @@
 	}
 
 	async function startPlaytest() {
-		if (!game || !selectedDeckId || !authStore.token || !authStore.currentUser) return;
+		if (!game || selectedDeckId === null || !authStore.token || !authStore.currentUser) return;
 
 		const wsUrl = buildWsUrl(PUBLIC_API_URL);
 		const roomId = `solo_${authStore.currentUser.id}_${game.id}`;
@@ -58,6 +58,8 @@
 				deck_id: selectedDeckId
 			});
 		} catch {
+			ch.disconnect();
+			channel = null;
 			toastStore.show('Failed to connect to game channel.');
 		}
 	}
@@ -150,7 +152,7 @@
 					>
 						<option value={null}>Select a deck…</option>
 						{#each decks as deck (deck.id)}
-							<option value={String(deck.id)}>{deck.name}</option>
+							<option value={deck.id}>{deck.name}</option>
 						{/each}
 					</select>
 				</div>
