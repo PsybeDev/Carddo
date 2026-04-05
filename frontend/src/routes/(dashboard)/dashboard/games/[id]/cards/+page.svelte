@@ -46,6 +46,10 @@
 
 		return () => {
 			if (debounceTimer) clearTimeout(debounceTimer);
+			if (abortController) {
+				abortController.abort();
+				abortController = null;
+			}
 		};
 	});
 
@@ -196,14 +200,48 @@
 
 <!-- Create card modal -->
 {#if createModalOpen}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+		onkeydown={(e) => {
+			if (e.key === 'Escape' && !creating) closeCreateModal();
+		}}
+	>
+		<div
+			class="fixed inset-0"
+			aria-hidden="true"
+			onclick={() => {
+				if (!creating) closeCreateModal();
+			}}
+		></div>
 		<div
 			role="dialog"
 			aria-modal="true"
-			aria-label="New Card"
-			class="w-full max-w-sm rounded-xl border border-slate-700 bg-[#1a1d27] p-6 shadow-2xl"
+			aria-labelledby="new-card-modal-title"
+			class="relative w-full max-w-sm rounded-xl border border-slate-700 bg-[#1a1d27] p-6 shadow-2xl"
 		>
-			<h3 class="mb-4 text-sm font-semibold text-slate-100">New Card</h3>
+			<div class="mb-4 flex items-center justify-between">
+				<h3 id="new-card-modal-title" class="text-sm font-semibold text-slate-100">New Card</h3>
+				<button
+					type="button"
+					onclick={closeCreateModal}
+					class="rounded-md p-1 text-slate-500 transition hover:bg-slate-700/60 hover:text-slate-300 disabled:pointer-events-none disabled:opacity-30"
+					aria-label="Close"
+					disabled={creating}
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-5 w-5"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+						aria-hidden="true"
+					>
+						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
 
 			<div class="space-y-3">
 				<div>

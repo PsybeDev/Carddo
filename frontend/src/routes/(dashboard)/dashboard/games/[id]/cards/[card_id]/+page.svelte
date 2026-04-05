@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { ApiError, apiDelete, apiGet, apiPatch } from '$lib/api/client';
 	import RuleBuilder from '$lib/components/builder/RuleBuilder.svelte';
-	import { normalizeRule } from '$lib/components/builder/utils';
+	import { normalizeRule, parseI32 } from '$lib/components/builder/utils';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import type { Card, Game } from '$lib/types/api';
 	import { normalizeConfig } from '$lib/utils/game-config';
@@ -114,8 +114,7 @@
 	}
 
 	function setProperty(name: string, raw: string) {
-		const parsed = Number(raw);
-		properties = { ...properties, [name]: raw === '' || !Number.isFinite(parsed) ? 0 : parsed };
+		properties = { ...properties, [name]: parseI32(raw) ?? 0 };
 	}
 </script>
 
@@ -197,6 +196,7 @@
 							<input
 								id="prop-{i}"
 								type="number"
+								step="1"
 								value={properties[prop.name] ?? prop.default}
 								oninput={(e) => setProperty(prop.name, (e.currentTarget as HTMLInputElement).value)}
 								class="w-full rounded-lg border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 transition outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
