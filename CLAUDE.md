@@ -103,6 +103,12 @@ The engine is intentionally data-driven — no hardcoded game concepts like heal
 ### Elixir Integration
 `backend/lib/carddo/native.ex` exposes the NIF as `Carddo.Native.process_move/3`.
 
+## Git Workflow
+
+- **Always create a feature branch** — never commit directly to `main`. Use descriptive branch names (e.g., `car-41-build-deck-builder-ui`, `fix/prettier-deck-entry-card-type`).
+- **Always raise a PR** — even for small or trivial changes. Every change goes through a pull request, no exceptions.
+- Push the branch with `git push -u origin <branch>` and create a PR via `gh pr create`.
+
 ## Pre-commit Requirements
 
 - **Backend**: Always run `mix precommit` — it compiles with `--warnings-as-errors`, checks unused deps, verifies formatting, and runs tests.

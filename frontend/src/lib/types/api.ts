@@ -78,7 +78,10 @@ export type Game = {
 };
 
 /** Partial card shape nested inside deck entries (backend omits game_id, inserted_at, updated_at) */
-export type DeckEntryCard = Pick<Card, 'id' | 'name' | 'card_type' | 'background_color' | 'properties' | 'abilities'>;
+export type DeckEntryCard = Pick<
+	Card,
+	'id' | 'name' | 'card_type' | 'background_color' | 'properties' | 'abilities'
+>;
 
 /** Deck list item — returned by GET /api/games/:id/decks (no entries) */
 export type DeckSummary = {
