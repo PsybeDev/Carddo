@@ -139,10 +139,10 @@
 	}
 
 	async function saveDeck() {
-		if (!deck || saving) return;
+		if (!deck || !game || saving) return;
 		saving = true;
 		try {
-			const updated = await apiPatch<Deck>(`/api/games/${game!.id}/decks/${deck.id}`, {
+			const updated = await apiPatch<Deck>(`/api/games/${game.id}/decks/${deck.id}`, {
 				entries: entries.map((e) => ({ card_id: e.card_id, quantity: e.quantity }))
 			});
 			entries = updated.entries ? [...updated.entries] : [];
