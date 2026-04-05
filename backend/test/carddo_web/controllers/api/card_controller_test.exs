@@ -43,12 +43,12 @@ defmodule CarddoWeb.Api.CardControllerTest do
       assert %{"data" => []} = json_response(conn, 200)
     end
 
-    test "filters by ?search= against properties", %{conn: conn} do
+    test "filters by ?search= against name", %{conn: conn} do
       %{conn: conn, game: game} = setup_game(conn)
       _matching = create_card(game, %{name: "Dragon", properties: %{element: "fire"}})
       _non_matching = create_card(game, %{name: "Goblin", properties: %{element: "earth"}})
 
-      conn = get(conn, "/api/games/#{game.id}/cards?search=fire")
+      conn = get(conn, "/api/games/#{game.id}/cards?search=drag")
       assert %{"data" => cards} = json_response(conn, 200)
       assert length(cards) == 1
       assert hd(cards)["name"] == "Dragon"
