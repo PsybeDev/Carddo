@@ -72,7 +72,7 @@
 	}
 
 	async function createCard() {
-		if (!game || !newName.trim() || !newCardType.trim()) return;
+		if (creating || !game || !newName.trim() || !newCardType.trim()) return;
 		const gameId = game.id;
 		creating = true;
 		try {

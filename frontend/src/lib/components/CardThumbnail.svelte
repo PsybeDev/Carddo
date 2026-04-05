@@ -9,7 +9,7 @@
 
 <div
 	class="relative flex aspect-[2/3] w-full flex-col overflow-hidden rounded-xl border border-white/10 shadow-md"
-	style="background-color: {bg};"
+	style:background-color={bg}
 >
 	<!-- Property chips -->
 	{#if propertyEntries.length > 0}
