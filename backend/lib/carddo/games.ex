@@ -65,7 +65,7 @@ defmodule Carddo.Games do
     Repo.all(
       from(c in Card,
         where: c.game_id == ^game_id,
-        where: fragment("?::text ILIKE ?", c.properties, ^"%#{search}%"),
+        where: ilike(c.name, ^"%#{search}%"),
         order_by: [asc: c.inserted_at]
       )
     )

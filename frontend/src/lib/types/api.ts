@@ -76,3 +76,27 @@ export type Game = {
 	inserted_at: string;
 	updated_at: string;
 };
+
+/** Partial card shape nested inside deck entries (backend omits game_id, inserted_at, updated_at) */
+export type DeckEntryCard = Pick<Card, 'id' | 'name' | 'card_type' | 'background_color' | 'properties' | 'abilities'>;
+
+/** Deck list item — returned by GET /api/games/:id/decks (no entries) */
+export type DeckSummary = {
+	id: number;
+	game_id: number;
+	name: string;
+	inserted_at: string;
+	updated_at: string;
+};
+
+/** Entry in a deck — card with quantity */
+export type DeckEntry = {
+	card_id: number;
+	quantity: number;
+	card: DeckEntryCard;
+};
+
+/** Full deck with entries — returned by GET/PATCH /api/games/:id/decks/:id */
+export type Deck = DeckSummary & {
+	entries: DeckEntry[];
+};
