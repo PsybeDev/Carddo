@@ -147,6 +147,13 @@
 	{:else if decks.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-center">
 			<p class="text-sm text-slate-400">No decks yet. Create your first deck to start building.</p>
+			<button
+				type="button"
+				onclick={openCreateModal}
+				class="mt-4 flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-500 focus:ring-2 focus:ring-indigo-500/50 focus:outline-none"
+			>
+				New Deck
+			</button>
 		</div>
 	{:else}
 		<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">

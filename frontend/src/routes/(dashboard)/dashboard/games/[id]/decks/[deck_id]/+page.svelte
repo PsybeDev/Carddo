@@ -134,6 +134,10 @@
 		}
 	}
 
+	function removeEntry(entry: DeckEntry) {
+		entries = entries.filter((e) => e.card_id !== entry.card_id);
+	}
+
 	async function saveDeck() {
 		if (!deck || saving) return;
 		saving = true;
@@ -289,6 +293,13 @@
 										class="flex h-6 w-6 items-center justify-center rounded bg-slate-700 text-sm text-slate-300 transition hover:bg-slate-600"
 										aria-label="Increase quantity">+</button
 									>
+									<button
+										onclick={() => removeEntry(entry)}
+										class="ml-1 flex h-6 w-6 items-center justify-center rounded bg-slate-700 text-sm text-slate-400 transition hover:bg-red-900/60 hover:text-red-400"
+										aria-label="Remove {entry.card.name} from deck"
+									>
+										&times;
+									</button>
 								</div>
 							</div>
 						{/each}
