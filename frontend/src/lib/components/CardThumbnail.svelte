@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { Card } from '$lib/types/api';
+	import type { DeckEntryCard } from '$lib/types/api';
 
-	let { card }: { card: Card } = $props();
+	let { card }: { card: DeckEntryCard } = $props();
 
 	let bg = $derived(card.background_color ?? '#1e2235');
 	let propertyEntries = $derived(Object.entries(card.properties));
