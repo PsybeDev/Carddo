@@ -173,7 +173,6 @@
 	<title>{deckName || 'Deck'} — Deck Builder — Carddo</title>
 </svelte:head>
 
-<!-- Back link -->
 <div class="mb-4">
 	<a
 		href="/dashboard/games/{page.params.id}/decks"
@@ -184,7 +183,6 @@
 </div>
 
 {#if deckError}
-	<!-- Deck error state -->
 	<div class="flex flex-col items-center justify-center py-16 text-center">
 		<p class="text-sm text-slate-400">Failed to load deck.</p>
 		<button
@@ -198,9 +196,7 @@
 		>
 	</div>
 {:else}
-	<!-- Split-screen layout: side-by-side on lg+, stacked on smaller -->
 	<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-		<!-- LEFT PANE: Card Library -->
 		<div class="space-y-4">
 			<h2 class="text-sm font-semibold text-slate-100">Card Library</h2>
 			<input
@@ -240,9 +236,7 @@
 			{/if}
 		</div>
 
-		<!-- RIGHT PANE: Active Deck -->
 		<div class="space-y-4">
-			<!-- Deck name (editable, blur-save) -->
 			{#if deckLoading}
 				<div class="h-8 w-48 animate-pulse rounded bg-slate-800"></div>
 			{:else if deck}
@@ -266,7 +260,6 @@
 					>
 				</div>
 
-				<!-- Entry list -->
 				{#if entries.length === 0}
 					<p class="py-8 text-center text-sm text-slate-500">
 						No cards in deck. Click cards in the library to add them.
@@ -277,16 +270,13 @@
 							<div
 								class="flex items-center gap-3 rounded-lg border border-slate-700/50 bg-[#1a1d27] p-2"
 							>
-								<!-- Small thumbnail -->
 								<div class="w-10 shrink-0">
 									<CardThumbnail card={entry.card} />
 								</div>
-								<!-- Card name -->
 								<div class="min-w-0 flex-1">
 									<p class="truncate text-sm text-slate-100">{entry.card.name}</p>
 									<p class="text-xs text-slate-500">{entry.card.card_type}</p>
 								</div>
-								<!-- Quantity controls -->
 								<div class="flex shrink-0 items-center gap-1">
 									<button
 										onclick={() => decrement(entry)}
@@ -305,7 +295,6 @@
 					</div>
 				{/if}
 
-				<!-- Save button -->
 				<div class="flex justify-end pt-2">
 					<button
 						onclick={() => void saveDeck()}
@@ -338,7 +327,6 @@
 					</button>
 				</div>
 			{:else}
-				<!-- Deck still loading skeleton -->
 				<div class="animate-pulse space-y-3">
 					<div class="h-8 w-48 rounded bg-slate-800"></div>
 					<div class="h-16 rounded-lg bg-slate-800"></div>
