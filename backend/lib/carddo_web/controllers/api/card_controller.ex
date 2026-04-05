@@ -17,6 +17,24 @@ defmodule CarddoWeb.Api.CardController do
     end
   end
 
+  def show(conn, %{"game_id" => game_id, "id" => id}) do
+    case authorize_game(game_id, conn.assigns.current_user) do
+      {:ok, game} ->
+        with {:ok, card_id} <- parse_id(id),
+             card when not is_nil(card) <- Games.get_card(game.id, card_id) do
+          json(conn, %{data: render_card(card)})
+        else
+          _ -> not_found(conn)
+        end
+
+      {:error, :not_found} ->
+        not_found(conn)
+
+      {:error, :forbidden} ->
+        forbidden(conn)
+    end
+  end
+
   def create(conn, %{"game_id" => game_id} = params) do
     case authorize_game(game_id, conn.assigns.current_user) do
       {:ok, game} ->

@@ -2,9 +2,10 @@
 	import { page } from '$app/state';
 	import { apiPatch } from '$lib/api/client';
 	import { toastStore } from '$lib/stores/toast.svelte';
-	import type { GameConfig, ZoneConfig, Game } from '$lib/types/api';
+	import type { GameConfig, Game } from '$lib/types/api';
 	import RuleBuilder from '$lib/components/builder/RuleBuilder.svelte';
 	import { normalizeRule } from '$lib/components/builder/utils';
+	import { normalizeZones, normalizeProperties } from '$lib/utils/game-config';
 	import { validateRuleSet } from '$lib/utils/schema-validator';
 	import { getContext } from 'svelte';
 
@@ -18,34 +19,6 @@
 	let zoneKeys = $state<number[]>([]);
 	let propKeys = $state<number[]>([]);
 	let _nextKey = 0;
-
-	function normalizeZones(value: unknown): GameConfig['zones'] {
-		if (!Array.isArray(value)) return [];
-		return value.map((z) => {
-			const obj = z && typeof z === 'object' ? (z as Record<string, unknown>) : {};
-			const name = typeof obj.name === 'string' ? obj.name : '';
-			const vis = typeof obj.visibility === 'string' ? obj.visibility : 'Public';
-			const visibility = (
-				vis === 'Public' || vis === 'OwnerOnly' || vis === 'Hidden' ? vis : 'Public'
-			) as ZoneConfig['visibility'];
-			const capacityRaw = obj.capacity;
-			const capacity =
-				typeof capacityRaw === 'number' && Number.isFinite(capacityRaw) ? capacityRaw : null;
-			return { name, visibility, capacity };
-		});
-	}
-
-	function normalizeProperties(value: unknown): GameConfig['properties'] {
-		if (!Array.isArray(value)) return [];
-		return value.map((p) => {
-			const obj = p && typeof p === 'object' ? (p as Record<string, unknown>) : {};
-			const name = typeof obj.name === 'string' ? obj.name : '';
-			const defaultRaw = obj.default;
-			const defaultValue =
-				typeof defaultRaw === 'number' && Number.isFinite(defaultRaw) ? defaultRaw : 0;
-			return { name, default: defaultValue };
-		});
-	}
 
 	$effect(() => {
 		const id = page.params.id;
