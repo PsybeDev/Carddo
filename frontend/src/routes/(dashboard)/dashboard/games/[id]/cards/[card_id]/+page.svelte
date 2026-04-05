@@ -86,6 +86,11 @@
 			});
 			if (page.params.card_id !== String(id)) return;
 			card = updated;
+			name = updated.name;
+			cardType = updated.card_type;
+			bgColor = updated.background_color ?? '#1e2235';
+			properties = { ...(updated.properties ?? {}) };
+			abilities = [...(updated.abilities ?? [])].map(normalizeRule);
 			toastStore.show('Card saved.', 'success');
 		} catch {
 			if (page.params.card_id !== String(id)) return;

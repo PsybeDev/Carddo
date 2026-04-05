@@ -22,6 +22,9 @@
 	// Plain (non-reactive) variable — avoids triggering search effect when game loads
 	let loadedGameId: string | null = null;
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+	let abortController: AbortController | null = null;
+	// Track the latest request params to prevent stale results
+	let latestRequestKey: string | null = null;
 
 	$effect(() => {
 		const id = page.params.id;
@@ -47,17 +50,40 @@
 	});
 
 	async function loadCards(id: string, term: string) {
+		// Cancel any in-flight request
+		if (abortController) {
+			abortController.abort();
+		}
+		abortController = new AbortController();
+
+		const requestKey = `${id}:${term}`;
+		latestRequestKey = requestKey;
+
 		loading = true;
 		loadError = false;
 		try {
 			const path = term.trim()
 				? `/api/games/${id}/cards?search=${encodeURIComponent(term.trim())}`
 				: `/api/games/${id}/cards`;
-			cards = await apiGet<Card[]>(path);
-		} catch {
-			loadError = true;
+			const result = await apiGet<Card[]>(path, abortController.signal);
+			// Only update state if this is still the latest request
+			if (latestRequestKey === requestKey) {
+				cards = result;
+			}
+		} catch (err) {
+			// Don't show error for aborted requests
+			if (err instanceof Error && err.name === 'AbortError') {
+				return;
+			}
+			// Only update error state if this is still the latest request
+			if (latestRequestKey === requestKey) {
+				loadError = true;
+			}
 		} finally {
-			loading = false;
+			// Only clear loading if this is still the latest request
+			if (latestRequestKey === requestKey) {
+				loading = false;
+			}
 		}
 	}
 

@@ -32,6 +32,7 @@ defmodule CarddoWeb.GameChannel do
         Carddo.Multiplayer
     end
   end
+
   @impl true
   def join("room:" <> room_id, %{"game_id" => game_id, "deck_id" => deck_id}, socket) do
     current_user = socket.assigns.current_user
