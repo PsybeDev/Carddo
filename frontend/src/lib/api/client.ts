@@ -25,7 +25,12 @@ function buildUrl(path: string): string {
 	return new URL(path, PUBLIC_API_URL).toString();
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function request<T>(
+	method: string,
+	path: string,
+	body?: unknown,
+	signal?: AbortSignal
+): Promise<T> {
 	const token = _getToken();
 	const headers: Record<string, string> = { Accept: 'application/json' };
 	if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -34,7 +39,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 	const res = await fetch(buildUrl(path), {
 		method,
 		headers,
-		body: body !== undefined ? JSON.stringify(body) : undefined
+		body: body !== undefined ? JSON.stringify(body) : undefined,
+		signal
 	});
 
 	if (res.status === 204 || res.status === 205) {
@@ -66,8 +72,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 	return (json as { data: T }).data;
 }
 
-export function apiGet<T>(path: string): Promise<T> {
-	return request<T>('GET', path);
+export function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> {
+	return request<T>('GET', path, undefined, signal);
 }
 
 export function apiPost<T>(path: string, body: unknown): Promise<T> {
@@ -76,4 +82,8 @@ export function apiPost<T>(path: string, body: unknown): Promise<T> {
 
 export function apiPatch<T>(path: string, body: unknown): Promise<T> {
 	return request<T>('PATCH', path, body);
+}
+
+export function apiDelete(path: string): Promise<void> {
+	return request<void>('DELETE', path);
 }
