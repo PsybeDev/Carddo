@@ -92,3 +92,9 @@ Thumbs.db
 # Generated TypeScript types (re-generate with: make generate-types)
 # ============================================================
 frontend/src/lib/types/ditto.generated.ts
+
+# ============================================================
+# AI agent working directories
+# ============================================================
+.sisyphus/
+.playwright-mcp/

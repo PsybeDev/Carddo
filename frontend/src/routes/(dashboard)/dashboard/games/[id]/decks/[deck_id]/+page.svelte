@@ -166,6 +166,7 @@
 		try {
 			await apiPatch(`/api/games/${game.id}/decks/${deck.id}`, { name: trimmed });
 			deck = { ...deck, name: trimmed };
+			deckName = trimmed;
 		} catch (err) {
 			if (err instanceof ApiError) toastStore.show(err.messages[0]);
 			deckName = deck.name;
