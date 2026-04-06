@@ -92,7 +92,11 @@
 	data-testid="card-{entity.id}"
 	class="relative h-28 w-20 transform touch-none rounded-lg border border-slate-600 bg-slate-700 select-none {dragging
 		? 'dragging z-50 scale-105 cursor-grabbing shadow-lg shadow-black/30'
-		: 'cursor-grab'}"
+		: disabled
+			? 'cursor-not-allowed'
+			: isDraggable
+				? 'cursor-grab'
+				: 'cursor-default'}"
 	style="--tw-translate-x: {pos.current.x}px; --tw-translate-y: {pos.current
 		.y}px; --tw-rotate: {isTapped ? '90deg' : '0deg'};"
 	onpointerdown={handlePointerDown}

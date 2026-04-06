@@ -181,4 +181,28 @@ describe('Zone', () => {
 		await expect.element(page.getByTestId('card-entity_a')).toBeInTheDocument();
 		await expect.element(page.getByTestId('card-missing_entity_id')).not.toBeInTheDocument();
 	});
+
+	it('disabled zone does not highlight as drop target and does not call onDrop', async () => {
+		const onDrop = vi.fn();
+		render(Zone, {
+			zone: mockZones.zone_a_p1,
+			entities: mockEntities,
+			currentPlayerId: PLAYER_1_ID,
+			validDropTargets: ['zone_a_p1'],
+			onDrop,
+			disabled: true
+		});
+
+		const zoneEl = page.getByTestId('zone-zone_a_p1').element();
+		expect(zoneEl.classList.contains('ring-2')).toBe(false);
+		expect(zoneEl.classList.contains('bg-indigo-500/10')).toBe(false);
+
+		const dropEvent = new Event('drop', { bubbles: true, cancelable: true });
+		Object.defineProperty(dropEvent, 'dataTransfer', {
+			value: { getData: () => 'entity_a' }
+		});
+		zoneEl.dispatchEvent(dropEvent);
+
+		expect(onDrop).not.toHaveBeenCalled();
+	});
 });
