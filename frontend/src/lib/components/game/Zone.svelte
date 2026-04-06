@@ -64,7 +64,14 @@
 		{/if}
 	{:else if showEntities}
 		{#each resolvedEntities as entity (entity.id)}
-			<Card {entity} {isOwner} {disabled} {validDropTargets} onDropAttempt={onDrop} />
+			{@const isEntityOwner = entity.owner_id === currentPlayerId}
+			<Card
+				{entity}
+				isDraggable={isEntityOwner}
+				{disabled}
+				{validDropTargets}
+				onDropAttempt={onDrop}
+			/>
 		{/each}
 	{:else if showCardBacks}
 		{#each resolvedEntities as entity (entity.id)}

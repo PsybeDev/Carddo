@@ -5,13 +5,13 @@
 
 	let {
 		entity,
-		isOwner,
+		isDraggable,
 		disabled = false,
 		validDropTargets = [],
 		onDropAttempt
 	}: {
 		entity: Entity;
-		isOwner: boolean;
+		isDraggable: boolean;
 		disabled?: boolean;
 		validDropTargets?: string[];
 		onDropAttempt: (entityId: string, toZone: string) => void;
@@ -29,7 +29,7 @@
 	}
 
 	function handlePointerDown(e: PointerEvent) {
-		if (disabled || !isOwner || e.button !== 0) return;
+		if (disabled || !isDraggable || e.button !== 0) return;
 		activePointerId = e.pointerId;
 		dragStart = { x: e.clientX - pos.current.x, y: e.clientY - pos.current.y };
 		flushSync(() => {
@@ -86,7 +86,7 @@
 <div
 	bind:this={cardElement}
 	data-testid="card-{entity.id}"
-	class="relative h-28 w-20 transform rounded-lg border border-slate-600 bg-slate-700 select-none {dragging
+	class="relative h-28 w-20 transform touch-none rounded-lg border border-slate-600 bg-slate-700 select-none {dragging
 		? 'dragging z-50 scale-105 cursor-grabbing shadow-lg shadow-black/30'
 		: 'cursor-grab'}"
 	style="--tw-translate-x: {pos.current.x}px; --tw-translate-y: {pos.current

@@ -9,7 +9,7 @@ describe('Card', () => {
 		const entity = mockEntities.entity_a;
 		render(Card, {
 			entity,
-			isOwner: true,
+			isDraggable: true,
 			disabled: false,
 			onDropAttempt: vi.fn()
 		});
@@ -17,11 +17,11 @@ describe('Card', () => {
 		await expect.element(page.getByText(entity.template_id)).toBeInTheDocument();
 	});
 
-	it('isOwner false — card renders but drag does not fire onDropAttempt', async () => {
+	it('isDraggable false — card renders but drag does not fire onDropAttempt', async () => {
 		const onDropAttempt = vi.fn();
 		render(Card, {
 			entity: mockEntities.entity_a,
-			isOwner: false,
+			isDraggable: false,
 			disabled: false,
 			onDropAttempt
 		});
@@ -36,7 +36,7 @@ describe('Card', () => {
 	it('disabled true — pointerdown does not start dragging', async () => {
 		render(Card, {
 			entity: mockEntities.entity_a,
-			isOwner: true,
+			isDraggable: true,
 			disabled: true,
 			onDropAttempt: vi.fn()
 		});
@@ -50,7 +50,7 @@ describe('Card', () => {
 	it('tapped entity (properties.tapped === 1) applies rotate(90deg) via CSS variable', async () => {
 		render(Card, {
 			entity: mockEntities.entity_tapped,
-			isOwner: true,
+			isDraggable: true,
 			disabled: false,
 			onDropAttempt: vi.fn()
 		});
@@ -63,7 +63,7 @@ describe('Card', () => {
 	it('non-tapped entity does not have 90deg rotation', async () => {
 		render(Card, {
 			entity: mockEntities.entity_a,
-			isOwner: true,
+			isDraggable: true,
 			disabled: false,
 			onDropAttempt: vi.fn()
 		});
@@ -75,7 +75,7 @@ describe('Card', () => {
 	it('snapBack() can be called on the component instance without error', async () => {
 		const { component } = render(Card, {
 			entity: mockEntities.entity_a,
-			isOwner: true,
+			isDraggable: true,
 			disabled: false,
 			onDropAttempt: vi.fn()
 		});
@@ -87,7 +87,7 @@ describe('Card', () => {
 		const onDropAttempt = vi.fn();
 		render(Card, {
 			entity: mockEntities.entity_a,
-			isOwner: true,
+			isDraggable: true,
 			disabled: false,
 			validDropTargets: ['target_zone', 'other_zone'],
 			onDropAttempt
@@ -117,7 +117,7 @@ describe('Card', () => {
 		const onDropAttempt = vi.fn();
 		render(Card, {
 			entity: mockEntities.entity_a,
-			isOwner: true,
+			isDraggable: true,
 			disabled: false,
 			validDropTargets: ['target_zone'],
 			onDropAttempt
@@ -145,7 +145,7 @@ describe('Card', () => {
 		const onDropAttempt = vi.fn();
 		render(Card, {
 			entity: mockEntities.entity_a,
-			isOwner: true,
+			isDraggable: true,
 			disabled: false,
 			validDropTargets: ['allowed_zone'],
 			onDropAttempt
@@ -181,7 +181,7 @@ describe('Card', () => {
 		};
 		render(Card, {
 			entity,
-			isOwner: true,
+			isDraggable: true,
 			disabled: false,
 			onDropAttempt: vi.fn()
 		});
