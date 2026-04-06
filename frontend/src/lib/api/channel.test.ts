@@ -11,8 +11,8 @@ describe('buildWsUrl', () => {
 		expect(buildWsUrl('https://example.com')).toBe('wss://example.com/socket');
 	});
 
-	it('preserves path and appends /socket', () => {
-		expect(buildWsUrl('https://example.com/api')).toBe('wss://example.com/api/socket');
+	it('strips base path and appends /socket', () => {
+		expect(buildWsUrl('https://example.com/api')).toBe('wss://example.com/socket');
 	});
 
 	it('handles trailing slash', () => {

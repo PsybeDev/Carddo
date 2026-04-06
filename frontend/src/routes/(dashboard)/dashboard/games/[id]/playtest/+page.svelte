@@ -159,7 +159,7 @@
 				<button
 					type="button"
 					onclick={() => void startPlaytest()}
-					disabled={!selectedDeckId}
+					disabled={selectedDeckId === null}
 					class="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					Start Playtest

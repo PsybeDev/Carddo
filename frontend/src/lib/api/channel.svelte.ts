@@ -13,12 +13,15 @@ import type {
 /**
  * Derive WebSocket URL from an HTTP API URL.
  *
- * http://localhost:4000  → ws://localhost:4000/socket
- * https://example.com    → wss://example.com/socket
+ * http://localhost:4000      → ws://localhost:4000/socket
+ * https://example.com        → wss://example.com/socket
+ * https://example.com/api    → wss://example.com/socket
  */
 export function buildWsUrl(apiUrl: string): string {
-	const trimmed = apiUrl.replace(/\/+$/, '');
-	return trimmed.replace(/^http/, 'ws') + '/socket';
+	const [protocol, rest] = apiUrl.split('://');
+	const wsProtocol = protocol === 'https' ? 'wss' : 'ws';
+	const host = rest.split('/')[0];
+	return `${wsProtocol}://${host}/socket`;
 }
 
 /**
@@ -113,17 +116,13 @@ export class GameChannel {
 
 		this.sequenceId += 1;
 
-		this.channel
-			.push('submit_action', {
-				client_sequence_id: this.sequenceId,
-				action
-			})
-			.receive('error', (reason: { errors: ChannelError[] }) => {
-				this.errors = reason.errors;
-			})
-			.receive('timeout', () => {
-				this.errors = [{ message: 'Action timed out', code: 'timeout' }];
-			});
+		// Backend returns {:noreply, socket} for valid payloads — no phx_reply
+		// is sent. Outcomes arrive via 'state_resolved' and 'action_rejected'
+		// events which are already handled in connect().
+		this.channel.push('submit_action', {
+			client_sequence_id: this.sequenceId,
+			action
+		});
 	}
 
 	disconnect(): void {
