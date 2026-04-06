@@ -31,6 +31,7 @@
 	function handlePointerDown(e: PointerEvent) {
 		if (disabled || !isDraggable || e.button !== 0 || dragging || activePointerId !== null) return;
 		activePointerId = e.pointerId;
+		pos.target = { x: pos.current.x, y: pos.current.y };
 		dragStart = { x: e.clientX - pos.current.x, y: e.clientY - pos.current.y };
 		flushSync(() => {
 			dragging = true;
