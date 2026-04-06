@@ -1,19 +1,25 @@
 <script lang="ts">
 	import type { Zone, Entity } from '$lib/types/ditto.generated';
+	import type { GameConfig } from '$lib/types/api';
 	import CardBack from './CardBack.svelte';
+	import Card from './Card.svelte';
 
 	let {
 		zone,
 		entities,
 		currentPlayerId,
 		validDropTargets,
-		onDrop
+		onDrop,
+		disabled = false,
+		gameConfig
 	}: {
 		zone: Zone;
 		entities: Record<string, Entity>;
 		currentPlayerId: string;
 		validDropTargets: string[];
 		onDrop: (entityId: string, toZone: string) => void;
+		disabled?: boolean;
+		gameConfig?: GameConfig;
 	} = $props();
 
 	const isDropTarget = $derived(validDropTargets.includes(zone.id));
@@ -60,15 +66,7 @@
 		{/if}
 	{:else if showEntities}
 		{#each resolvedEntities as entity (entity.id)}
-			<div
-				data-testid="entity-{entity.id}"
-				class="mb-1 rounded border border-slate-600 bg-slate-700 p-2"
-			>
-				<p class="font-mono text-xs text-slate-300">{entity.template_id}</p>
-				{#each Object.entries(entity.properties) as [key, value] (key)}
-					<span class="mr-1 text-xs text-slate-500">{key}: {value}</span>
-				{/each}
-			</div>
+			<Card {entity} {gameConfig} {isOwner} {disabled} onDropAttempt={onDrop} />
 		{/each}
 	{:else if showCardBacks}
 		{#each resolvedEntities as entity (entity.id)}
