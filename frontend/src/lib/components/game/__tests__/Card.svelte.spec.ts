@@ -97,7 +97,7 @@ describe('Card', () => {
 		});
 
 		const fakeZoneEl = document.createElement('div');
-		fakeZoneEl.setAttribute('data-testid', 'zone-target_zone');
+		fakeZoneEl.setAttribute('data-zone-id', 'target_zone');
 		vi.spyOn(document, 'elementFromPoint').mockReturnValue(fakeZoneEl);
 
 		const cardEl = page.getByTestId('card-entity_a').element();
@@ -151,7 +151,7 @@ describe('Card', () => {
 		});
 
 		const fakeZoneEl = document.createElement('div');
-		fakeZoneEl.setAttribute('data-testid', 'zone-forbidden_zone');
+		fakeZoneEl.setAttribute('data-zone-id', 'forbidden_zone');
 		vi.spyOn(document, 'elementFromPoint').mockReturnValue(fakeZoneEl);
 
 		const cardEl = page.getByTestId('card-entity_a').element();

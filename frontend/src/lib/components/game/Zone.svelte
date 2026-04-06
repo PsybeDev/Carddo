@@ -38,6 +38,7 @@
 	role="region"
 	aria-label={zone.id}
 	data-testid="zone-{zone.id}"
+	data-zone-id={zone.id}
 	class="min-h-[100px] rounded-lg border border-slate-700/50 bg-slate-800/40 p-3 {isDropTarget &&
 	!disabled
 		? 'bg-indigo-500/10 ring-2 ring-indigo-500/70'

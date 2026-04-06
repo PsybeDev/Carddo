@@ -55,8 +55,8 @@
 			if (cardElement) {
 				cardElement.style.pointerEvents = '';
 			}
-			const zone = el?.closest('[data-testid^="zone-"]');
-			const zoneId = zone?.getAttribute('data-testid')?.replace('zone-', '');
+			const zone = el?.closest('[data-zone-id]');
+			const zoneId = zone?.getAttribute('data-zone-id');
 
 			// Always reset state before calling callback to ensure cleanup runs even if onDropAttempt throws
 			pos.target = { x: 0, y: 0 };
