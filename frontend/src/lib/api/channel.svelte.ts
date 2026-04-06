@@ -79,6 +79,7 @@ export class GameChannel {
 		this.channel.on('state_resolved', (payload: StateResolvedPayload) => {
 			try {
 				this.gameState = parseGameState(payload.state);
+				this.lastRejection = null;
 			} catch (err) {
 				const msg = err instanceof Error ? err.message : 'Failed to parse game state';
 				this.errors = [{ message: msg, code: 'parse_error' }];
@@ -133,6 +134,7 @@ export class GameChannel {
 	submitAction(action: Action): void {
 		if (!this.channel) return;
 
+		this.lastRejection = null;
 		this.sequenceId += 1;
 
 		// Backend returns {:noreply, socket} for valid payloads — no phx_reply
