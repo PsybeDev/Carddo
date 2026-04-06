@@ -16,8 +16,8 @@ describe('Zone', () => {
 			onDrop: vi.fn()
 		});
 		await expect.element(page.getByTestId('zone-zone_a_p1')).toBeInTheDocument();
-		await expect.element(page.getByTestId('entity-entity_a')).toBeInTheDocument();
-		await expect.element(page.getByTestId('entity-entity_b')).toBeInTheDocument();
+		await expect.element(page.getByTestId('card-entity_a')).toBeInTheDocument();
+		await expect.element(page.getByTestId('card-entity_b')).toBeInTheDocument();
 		await expect.element(page.getByText('card_template_a')).toBeInTheDocument();
 		await expect.element(page.getByText('card_template_b')).toBeInTheDocument();
 	});
@@ -32,7 +32,7 @@ describe('Zone', () => {
 			onDrop: vi.fn()
 		});
 		await expect.element(page.getByTestId('zone-zone_b_p1')).toBeInTheDocument();
-		await expect.element(page.getByTestId('entity-entity_c')).toBeInTheDocument();
+		await expect.element(page.getByTestId('card-entity_c')).toBeInTheDocument();
 		await expect.element(page.getByText('card_template_c')).toBeInTheDocument();
 	});
 
@@ -46,7 +46,7 @@ describe('Zone', () => {
 			onDrop: vi.fn()
 		});
 		await expect.element(page.getByTestId('zone-zone_b_p1')).toBeInTheDocument();
-		await expect.element(page.getByTestId('entity-entity_c')).not.toBeInTheDocument();
+		await expect.element(page.getByTestId('card-entity_c')).not.toBeInTheDocument();
 		const cardBacks = page.getByTestId('card-back');
 		await expect(cardBacks.elements()).toHaveLength(2);
 	});
@@ -176,7 +176,7 @@ describe('Zone', () => {
 			onDrop: vi.fn()
 		});
 		await expect.element(page.getByTestId('zone-zone_a_p1')).toBeInTheDocument();
-		await expect.element(page.getByTestId('entity-entity_a')).toBeInTheDocument();
-		await expect.element(page.getByTestId('entity-missing_entity_id')).not.toBeInTheDocument();
+		await expect.element(page.getByTestId('card-entity_a')).toBeInTheDocument();
+		await expect.element(page.getByTestId('card-missing_entity_id')).not.toBeInTheDocument();
 	});
 });
