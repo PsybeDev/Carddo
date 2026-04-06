@@ -18,8 +18,10 @@ describe('Zone', () => {
 		await expect.element(page.getByTestId('zone-zone_a_p1')).toBeInTheDocument();
 		await expect.element(page.getByTestId('card-entity_a')).toBeInTheDocument();
 		await expect.element(page.getByTestId('card-entity_b')).toBeInTheDocument();
+		await expect.element(page.getByTestId('card-entity_tapped')).toBeInTheDocument();
 		await expect.element(page.getByText('card_template_a')).toBeInTheDocument();
 		await expect.element(page.getByText('card_template_b')).toBeInTheDocument();
+		await expect.element(page.getByText('card_template_tapped')).toBeInTheDocument();
 	});
 
 	// Test 2: OwnerOnly zone — owner sees entities
