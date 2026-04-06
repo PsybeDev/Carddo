@@ -1,15 +1,4 @@
-import type {
-	GameState,
-	Entity,
-	Zone,
-	Visibility,
-	StackOrder,
-	StateCheck,
-	Action,
-	Ability,
-	Animation,
-	Event
-} from '$lib/types/ditto.generated';
+import type { GameState, Entity, Zone } from '$lib/types/ditto.generated';
 
 // Player identifiers
 export const PLAYER_1_ID = 'player-1-uuid';

@@ -2,7 +2,7 @@ import { page } from 'vitest/browser';
 import { describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import Zone from '../Zone.svelte';
-import { mockGameState, mockEntities, mockZones, PLAYER_1_ID, PLAYER_2_ID } from './mock-game-state';
+import { mockEntities, mockZones, PLAYER_1_ID, PLAYER_2_ID } from './mock-game-state';
 import type { Zone as ZoneType } from '$lib/types/ditto.generated';
 
 describe('Zone', () => {
@@ -126,7 +126,7 @@ describe('Zone', () => {
 			validDropTargets: ['zone_a_p1'],
 			onDrop: onDropMock
 		});
-		
+
 		const zoneEl = page.getByTestId('zone-zone_a_p1').element();
 		const dropEvent = new Event('drop');
 		Object.defineProperty(dropEvent, 'dataTransfer', {
@@ -135,7 +135,7 @@ describe('Zone', () => {
 			}
 		});
 		zoneEl.dispatchEvent(dropEvent);
-		
+
 		expect(onDropMock).toHaveBeenCalledWith('entity_x', 'zone_a_p1');
 	});
 

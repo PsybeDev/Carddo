@@ -5,7 +5,7 @@
 {#if visible}
 	<div
 		data-testid="winner-screen"
-		class="absolute inset-0 z-50 bg-black/70 flex items-center justify-center pointer-events-auto"
+		class="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/70"
 	>
 		<div class="text-center">
 			<h2 class="text-3xl font-bold text-white">Game Over</h2>
