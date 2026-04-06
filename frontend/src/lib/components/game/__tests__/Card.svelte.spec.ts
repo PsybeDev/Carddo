@@ -97,9 +97,15 @@ describe('Card', () => {
 		vi.spyOn(document, 'elementFromPoint').mockReturnValue(fakeZoneEl);
 
 		const cardEl = page.getByTestId('card-entity_a').element();
-		cardEl.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 100 }));
-		document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 150, clientY: 150 }));
-		document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 150, clientY: 150 }));
+		cardEl.dispatchEvent(
+			new PointerEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 100 })
+		);
+		document.dispatchEvent(
+			new PointerEvent('pointermove', { bubbles: true, clientX: 150, clientY: 150 })
+		);
+		document.dispatchEvent(
+			new PointerEvent('pointerup', { bubbles: true, clientX: 150, clientY: 150 })
+		);
 
 		expect(onDropAttempt).toHaveBeenCalledWith('entity_a', 'target_zone');
 
@@ -118,9 +124,15 @@ describe('Card', () => {
 		vi.spyOn(document, 'elementFromPoint').mockReturnValue(null);
 
 		const cardEl = page.getByTestId('card-entity_a').element();
-		cardEl.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 100 }));
-		document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 200, clientY: 200 }));
-		document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 200, clientY: 200 }));
+		cardEl.dispatchEvent(
+			new PointerEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 100 })
+		);
+		document.dispatchEvent(
+			new PointerEvent('pointermove', { bubbles: true, clientX: 200, clientY: 200 })
+		);
+		document.dispatchEvent(
+			new PointerEvent('pointerup', { bubbles: true, clientX: 200, clientY: 200 })
+		);
 
 		expect(onDropAttempt).not.toHaveBeenCalled();
 
