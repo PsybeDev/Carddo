@@ -1,10 +1,13 @@
 import { page } from 'vitest/browser';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import Card from '../Card.svelte';
 import { mockEntities, PLAYER_1_ID } from './mock-game-state';
 
 describe('Card', () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
 	it('renders entity placeholder with data-testid and template_id text', async () => {
 		const entity = mockEntities.entity_a;
 		render(Card, {
@@ -109,8 +112,6 @@ describe('Card', () => {
 		);
 
 		expect(onDropAttempt).toHaveBeenCalledWith('entity_a', 'target_zone');
-
-		vi.restoreAllMocks();
 	});
 
 	it('drop on non-zone does NOT call onDropAttempt', async () => {
@@ -137,8 +138,6 @@ describe('Card', () => {
 		);
 
 		expect(onDropAttempt).not.toHaveBeenCalled();
-
-		vi.restoreAllMocks();
 	});
 
 	it('drop on invalid zone (not in validDropTargets) does NOT call onDropAttempt', async () => {
@@ -167,8 +166,6 @@ describe('Card', () => {
 		);
 
 		expect(onDropAttempt).not.toHaveBeenCalled();
-
-		vi.restoreAllMocks();
 	});
 
 	it('renders template_id only — does not render property keys or values', async () => {
