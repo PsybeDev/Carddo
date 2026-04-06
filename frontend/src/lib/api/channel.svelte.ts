@@ -7,7 +7,8 @@ import type {
 	JoinResponse,
 	ActionRejectedPayload,
 	StateResolvedPayload,
-	ChannelError
+	ChannelError,
+	ChannelErrorEnvelope
 } from '$lib/types/channel';
 
 /**
@@ -90,7 +91,7 @@ export class GameChannel {
 					this.connectionStatus = 'connected';
 					resolve();
 				})
-				.receive('error', (reason: { errors: ChannelError[] }) => {
+				.receive('error', (reason: ChannelErrorEnvelope) => {
 					this.errors = reason.errors;
 					this.connectionStatus = 'error';
 					this.channel?.leave();

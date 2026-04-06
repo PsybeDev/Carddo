@@ -47,18 +47,20 @@
 	async function startPlaytest() {
 		if (!game || selectedDeckId === null || !authStore.token || !authStore.currentUser) return;
 
-		const wsUrl = buildWsUrl(PUBLIC_API_URL);
 		const roomId = `solo_${authStore.currentUser.id}_${game.id}`;
-		const ch = new GameChannel(authStore.token, wsUrl);
-		channel = ch;
+		let ch: GameChannel | null = null;
 
 		try {
+			const wsUrl = buildWsUrl(PUBLIC_API_URL);
+			ch = new GameChannel(authStore.token, wsUrl);
+			channel = ch;
+
 			await ch.connect(roomId, {
 				game_id: game.id,
 				deck_id: selectedDeckId
 			});
 		} catch {
-			ch.disconnect();
+			ch?.disconnect();
 			channel = null;
 			toastStore.show('Failed to connect to game channel.');
 		}
