@@ -4,11 +4,14 @@
 
 {#if visible}
 	<div
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="winner-screen-title"
 		data-testid="winner-screen"
 		class="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/70"
 	>
 		<div class="text-center">
-			<h2 class="text-3xl font-bold text-white">Game Over</h2>
+			<h2 id="winner-screen-title" class="text-3xl font-bold text-white">Game Over</h2>
 			{#if winnerId}
 				<p class="mt-2 text-lg text-slate-300">Winner: {winnerId}</p>
 			{/if}

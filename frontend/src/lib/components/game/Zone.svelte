@@ -33,6 +33,7 @@
 
 <div
 	role="region"
+	aria-label={zone.id}
 	data-testid="zone-{zone.id}"
 	class="min-h-[100px] rounded-lg border border-slate-700/50 bg-slate-800/40 p-3 {isDropTarget
 		? 'bg-indigo-500/10 ring-2 ring-indigo-500/70'
@@ -41,6 +42,9 @@
 		if (isDropTarget) e.preventDefault();
 	}}
 	ondrop={(e) => {
+		if (!isDropTarget) return;
+		e.preventDefault();
+		e.stopPropagation();
 		const entityId = e.dataTransfer?.getData('text/entity-id');
 		if (entityId) onDrop(entityId, zone.id);
 	}}
@@ -57,10 +61,8 @@
 	{:else if showEntities}
 		{#each resolvedEntities as entity (entity.id)}
 			<div
-				role="button"
-				tabindex="0"
 				data-testid="entity-{entity.id}"
-				class="mb-1 cursor-grab rounded border border-slate-600 bg-slate-700 p-2 active:cursor-grabbing"
+				class="mb-1 rounded border border-slate-600 bg-slate-700 p-2"
 			>
 				<p class="font-mono text-xs text-slate-300">{entity.template_id}</p>
 				{#each Object.entries(entity.properties) as [key, value] (key)}

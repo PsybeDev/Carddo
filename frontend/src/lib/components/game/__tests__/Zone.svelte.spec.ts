@@ -139,7 +139,30 @@ describe('Zone', () => {
 		expect(onDropMock).toHaveBeenCalledWith('entity_x', 'zone_a_p1');
 	});
 
-	// Test 10: Missing entity IDs are skipped
+	// Test 10: onDrop does NOT fire on non-target zone
+	it('does not call onDrop when zone is not a valid drop target', async () => {
+		const onDropMock = vi.fn();
+		render(Zone, {
+			zone: mockZones.zone_a_p1,
+			entities: mockEntities,
+			currentPlayerId: PLAYER_1_ID,
+			validDropTargets: [],
+			onDrop: onDropMock
+		});
+
+		const zoneEl = page.getByTestId('zone-zone_a_p1').element();
+		const dropEvent = new Event('drop');
+		Object.defineProperty(dropEvent, 'dataTransfer', {
+			value: {
+				getData: vi.fn().mockReturnValue('entity_x')
+			}
+		});
+		zoneEl.dispatchEvent(dropEvent);
+
+		expect(onDropMock).not.toHaveBeenCalled();
+	});
+
+	// Test 11: Missing entity IDs are skipped
 	it('skips missing entity IDs without crashing', async () => {
 		const zoneWithMissingEntity: ZoneType = {
 			...mockZones.zone_a_p1,
