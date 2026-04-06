@@ -7,7 +7,7 @@
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import type { DeckSummary, Game } from '$lib/types/api';
 	import type { ConnectionStatus } from '$lib/types/channel';
-	import type { Entity, Zone } from '$lib/types/ditto.generated';
+	import GameBoard from '$lib/components/game/GameBoard.svelte';
 	import { getContext } from 'svelte';
 
 	const getGame = getContext<() => Game | null>('game');
@@ -17,6 +17,9 @@
 	let selectedDeckId = $state<number | null>(null);
 	let loadingDecks = $state(false);
 	let channel = $state<GameChannel | null>(null);
+
+	let validDropTargets = $state<string[]>([]);
+	let gameOver = $state<{ winner_id?: string } | null>(null);
 
 	let loadedGameId: string | null = null;
 
@@ -75,6 +78,10 @@
 		channel = null;
 	}
 
+	function handleDrop(_entityId: string, _toZone: string) {
+		/* TODO(CAR-43): wire to channel.submitAction(MoveEntity) */
+	}
+
 	$effect(() => {
 		const ch = channel;
 		return () => {
@@ -87,11 +94,7 @@
 	let lastRejection = $derived(channel?.lastRejection ?? null);
 	let errors = $derived(channel?.errors ?? []);
 
-	let zones = $derived<[string, Zone][]>(gameState ? Object.entries(gameState.zones) : []);
-
-	function getEntity(entityId: string): Entity | undefined {
-		return gameState?.entities[entityId];
-	}
+	const currentPlayerId = $derived(authStore.currentUser?.id ?? '');
 
 	function statusColor(status: ConnectionStatus): string {
 		switch (status) {
@@ -199,41 +202,7 @@
 		{/if}
 
 		{#if gameState}
-			<div class="space-y-4">
-				{#each zones as [zoneId, zone] (zoneId)}
-					<section class="rounded-lg border border-slate-700/50 bg-[#1a1d27] p-4">
-						<h3 class="mb-2 text-xs font-semibold text-slate-300">
-							{zoneId}
-							<span class="ml-1 font-normal text-slate-500">
-								({typeof zone.visibility === 'string'
-									? zone.visibility
-									: `Hidden(${zone.visibility.Hidden})`})
-							</span>
-						</h3>
-						{#if zone.entities.length === 0}
-							<p class="text-xs text-slate-600">Empty</p>
-						{:else}
-							<div class="flex flex-wrap gap-2">
-								{#each zone.entities as entityId (entityId)}
-									{@const entity = getEntity(entityId)}
-									{#if entity}
-										<div class="rounded-lg border border-slate-600/50 bg-slate-800/60 px-3 py-2">
-											<p class="text-xs font-medium text-slate-200">
-												{entity.template_id}
-											</p>
-											{#each Object.entries(entity.properties) as [key, value] (key)}
-												<span class="mr-2 text-xs text-slate-400">
-													{key}: {value}
-												</span>
-											{/each}
-										</div>
-									{/if}
-								{/each}
-							</div>
-						{/if}
-					</section>
-				{/each}
-			</div>
+			<GameBoard {gameState} {currentPlayerId} {validDropTargets} {gameOver} onDrop={handleDrop} />
 
 			<div class="flex gap-2 pt-2">
 				<button
