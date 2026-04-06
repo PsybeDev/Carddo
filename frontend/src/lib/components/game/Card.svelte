@@ -20,6 +20,7 @@
 	const pos = new Spring({ x: 0, y: 0 }, { stiffness: 0.2, damping: 0.6 });
 	let dragging = $state(false);
 	let dragStart = $state({ x: 0, y: 0 });
+	let activePointerId = $state<number | null>(null);
 	let cardElement: HTMLDivElement;
 	const isTapped = $derived(entity.properties?.tapped === 1);
 
@@ -29,6 +30,7 @@
 
 	function handlePointerDown(e: PointerEvent) {
 		if (disabled || !isOwner || e.button !== 0) return;
+		activePointerId = e.pointerId;
 		dragStart = { x: e.clientX - pos.current.x, y: e.clientY - pos.current.y };
 		flushSync(() => {
 			dragging = true;
@@ -39,10 +41,12 @@
 		if (!dragging) return;
 
 		const handleMove = (e: PointerEvent) => {
+			if (e.pointerId !== activePointerId) return;
 			pos.target = { x: e.clientX - dragStart.x, y: e.clientY - dragStart.y };
 		};
 
 		const handleUp = (e: PointerEvent) => {
+			if (e.pointerId !== activePointerId) return;
 			if (cardElement) {
 				cardElement.style.pointerEvents = 'none';
 			}
@@ -57,14 +61,24 @@
 			}
 			pos.target = { x: 0, y: 0 };
 			dragging = false;
+			activePointerId = null;
+		};
+
+		const handleCancel = (e: PointerEvent) => {
+			if (e.pointerId !== activePointerId) return;
+			pos.target = { x: 0, y: 0 };
+			dragging = false;
+			activePointerId = null;
 		};
 
 		document.addEventListener('pointermove', handleMove);
 		document.addEventListener('pointerup', handleUp);
+		document.addEventListener('pointercancel', handleCancel);
 
 		return () => {
 			document.removeEventListener('pointermove', handleMove);
 			document.removeEventListener('pointerup', handleUp);
+			document.removeEventListener('pointercancel', handleCancel);
 		};
 	});
 </script>

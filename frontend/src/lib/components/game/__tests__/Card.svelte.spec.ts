@@ -60,7 +60,7 @@ describe('Card', () => {
 		expect(cardEl.getAttribute('style') ?? '').toContain('--tw-rotate: 90deg');
 	});
 
-	it('non-tapped entity does NOT have rotate in CSS variable', async () => {
+	it('non-tapped entity does not have 90deg rotation', async () => {
 		render(Card, {
 			entity: mockEntities.entity_a,
 			isOwner: true,
