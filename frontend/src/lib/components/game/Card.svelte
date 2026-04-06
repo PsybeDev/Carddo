@@ -2,19 +2,18 @@
 	import { Spring } from 'svelte/motion';
 	import { flushSync } from 'svelte';
 	import type { Entity } from '$lib/types/ditto.generated';
-	import type { GameConfig } from '$lib/types/api';
 
 	let {
 		entity,
-		gameConfig: _gameConfig,
 		isOwner,
 		disabled = false,
+		validDropTargets = [],
 		onDropAttempt
 	}: {
 		entity: Entity;
-		gameConfig?: GameConfig;
 		isOwner: boolean;
 		disabled?: boolean;
+		validDropTargets?: string[];
 		onDropAttempt: (entityId: string, toZone: string) => void;
 	} = $props();
 
@@ -53,7 +52,9 @@
 			}
 			const zone = el?.closest('[data-testid^="zone-"]');
 			const zoneId = zone?.getAttribute('data-testid')?.replace('zone-', '');
-			if (zoneId) onDropAttempt(entity.id, zoneId);
+			if (zoneId && validDropTargets.includes(zoneId)) {
+				onDropAttempt(entity.id, zoneId);
+			}
 			pos.target = { x: 0, y: 0 };
 			dragging = false;
 		};
@@ -71,14 +72,11 @@
 <div
 	bind:this={cardElement}
 	data-testid="card-{entity.id}"
-	role="button"
-	tabindex="0"
-	class="relative h-28 w-20 rounded-lg border border-slate-600 bg-slate-700 select-none {dragging
+	class="relative h-28 w-20 transform rounded-lg border border-slate-600 bg-slate-700 select-none {dragging
 		? 'dragging z-50 scale-105 cursor-grabbing shadow-lg shadow-black/30'
 		: 'cursor-grab'}"
-	style="transform: translate({pos.current.x}px, {pos.current.y}px){isTapped
-		? ' rotate(90deg)'
-		: ''}"
+	style="--tw-translate-x: {pos.current.x}px; --tw-translate-y: {pos.current
+		.y}px; --tw-rotate: {isTapped ? '90deg' : '0deg'};"
 	onpointerdown={handlePointerDown}
 >
 	<p class="p-2 font-mono text-xs text-slate-300">{entity.template_id}</p>

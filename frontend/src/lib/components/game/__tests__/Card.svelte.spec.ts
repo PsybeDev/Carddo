@@ -47,7 +47,7 @@ describe('Card', () => {
 		expect(cardEl.classList.contains('dragging')).toBe(false);
 	});
 
-	it('tapped entity (properties.tapped === 1) applies rotate(90deg) style', async () => {
+	it('tapped entity (properties.tapped === 1) applies rotate(90deg) via CSS variable', async () => {
 		render(Card, {
 			entity: mockEntities.entity_tapped,
 			isOwner: true,
@@ -57,10 +57,10 @@ describe('Card', () => {
 
 		const cardEl = page.getByTestId('card-entity_tapped').element();
 		await expect.element(page.getByTestId('card-entity_tapped')).toBeInTheDocument();
-		expect(cardEl.getAttribute('style') ?? '').toContain('rotate(90deg)');
+		expect(cardEl.getAttribute('style') ?? '').toContain('--tw-rotate: 90deg');
 	});
 
-	it('non-tapped entity does NOT have rotate(90deg) style', async () => {
+	it('non-tapped entity does NOT have rotate in CSS variable', async () => {
 		render(Card, {
 			entity: mockEntities.entity_a,
 			isOwner: true,
@@ -69,7 +69,7 @@ describe('Card', () => {
 		});
 
 		const cardEl = page.getByTestId('card-entity_a').element();
-		expect(cardEl.getAttribute('style') ?? '').not.toContain('rotate(90deg)');
+		expect(cardEl.getAttribute('style') ?? '').not.toContain('--tw-rotate: 90deg');
 	});
 
 	it('snapBack() can be called on the component instance without error', async () => {
@@ -83,12 +83,13 @@ describe('Card', () => {
 		expect(() => (component as unknown as { snapBack: () => void }).snapBack()).not.toThrow();
 	});
 
-	it('drag lifecycle calls onDropAttempt(entityId, zoneId) when dropped on a zone', async () => {
+	it('drag lifecycle calls onDropAttempt(entityId, zoneId) when dropped on a valid zone', async () => {
 		const onDropAttempt = vi.fn();
 		render(Card, {
 			entity: mockEntities.entity_a,
 			isOwner: true,
 			disabled: false,
+			validDropTargets: ['target_zone', 'other_zone'],
 			onDropAttempt
 		});
 
@@ -118,10 +119,41 @@ describe('Card', () => {
 			entity: mockEntities.entity_a,
 			isOwner: true,
 			disabled: false,
+			validDropTargets: ['target_zone'],
 			onDropAttempt
 		});
 
 		vi.spyOn(document, 'elementFromPoint').mockReturnValue(null);
+
+		const cardEl = page.getByTestId('card-entity_a').element();
+		cardEl.dispatchEvent(
+			new PointerEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 100 })
+		);
+		document.dispatchEvent(
+			new PointerEvent('pointermove', { bubbles: true, clientX: 200, clientY: 200 })
+		);
+		document.dispatchEvent(
+			new PointerEvent('pointerup', { bubbles: true, clientX: 200, clientY: 200 })
+		);
+
+		expect(onDropAttempt).not.toHaveBeenCalled();
+
+		vi.restoreAllMocks();
+	});
+
+	it('drop on invalid zone (not in validDropTargets) does NOT call onDropAttempt', async () => {
+		const onDropAttempt = vi.fn();
+		render(Card, {
+			entity: mockEntities.entity_a,
+			isOwner: true,
+			disabled: false,
+			validDropTargets: ['allowed_zone'],
+			onDropAttempt
+		});
+
+		const fakeZoneEl = document.createElement('div');
+		fakeZoneEl.setAttribute('data-testid', 'zone-forbidden_zone');
+		vi.spyOn(document, 'elementFromPoint').mockReturnValue(fakeZoneEl);
 
 		const cardEl = page.getByTestId('card-entity_a').element();
 		cardEl.dispatchEvent(

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Zone, Entity } from '$lib/types/ditto.generated';
-	import type { GameConfig } from '$lib/types/api';
 	import CardBack from './CardBack.svelte';
 	import Card from './Card.svelte';
 
@@ -10,8 +9,7 @@
 		currentPlayerId,
 		validDropTargets,
 		onDrop,
-		disabled = false,
-		gameConfig
+		disabled = false
 	}: {
 		zone: Zone;
 		entities: Record<string, Entity>;
@@ -19,7 +17,6 @@
 		validDropTargets: string[];
 		onDrop: (entityId: string, toZone: string) => void;
 		disabled?: boolean;
-		gameConfig?: GameConfig;
 	} = $props();
 
 	const isDropTarget = $derived(validDropTargets.includes(zone.id));
@@ -66,7 +63,7 @@
 		{/if}
 	{:else if showEntities}
 		{#each resolvedEntities as entity (entity.id)}
-			<Card {entity} {gameConfig} {isOwner} {disabled} onDropAttempt={onDrop} />
+			<Card {entity} {isOwner} {disabled} {validDropTargets} onDropAttempt={onDrop} />
 		{/each}
 	{:else if showCardBacks}
 		{#each resolvedEntities as entity (entity.id)}
