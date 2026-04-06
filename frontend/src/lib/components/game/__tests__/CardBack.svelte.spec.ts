@@ -16,11 +16,10 @@ describe('CardBack', () => {
 		await expect.element(page.getByLabelText('Hidden card')).toBeInTheDocument();
 	});
 
-	it('does not render a count badge when count is undefined', async () => {
+	it('renders only "Carddo" text when count is undefined', async () => {
 		render(CardBack, {});
 
-		const countBadge = page.locator('[class*="bg-slate-700"]');
-		await expect.element(countBadge.first()).not.toBeInTheDocument();
+		await expect.element(page.getByText('Carddo')).toBeInTheDocument();
 	});
 
 	it('renders count badge when count > 1', async () => {
@@ -29,10 +28,9 @@ describe('CardBack', () => {
 		await expect.element(page.getByText('5')).toBeInTheDocument();
 	});
 
-	it('does not render count badge when count is 1', async () => {
+	it('renders only "Carddo" text when count is 1', async () => {
 		render(CardBack, { count: 1 });
 
-		const countBadge = page.locator('[class*="bg-slate-700"]');
-		await expect.element(page.getByText('1')).not.toBeInTheDocument();
+		await expect.element(page.getByText('Carddo')).toBeInTheDocument();
 	});
 });
