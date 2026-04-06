@@ -77,7 +77,13 @@ export class GameChannel {
 		this.channel = this.socket.channel('room:' + roomId, params);
 
 		this.channel.on('state_resolved', (payload: StateResolvedPayload) => {
-			this.gameState = parseGameState(payload.state);
+			try {
+				this.gameState = parseGameState(payload.state);
+			} catch (err) {
+				const msg = err instanceof Error ? err.message : 'Failed to parse game state';
+				this.errors = [{ message: msg, code: 'parse_error' }];
+				this.connectionStatus = 'error';
+			}
 		});
 
 		this.channel.on('action_rejected', (payload: ActionRejectedPayload) => {
@@ -87,9 +93,21 @@ export class GameChannel {
 		await new Promise<void>((resolve, reject) => {
 			this.channel!.join()
 				.receive('ok', (response: JoinResponse) => {
-					this.gameState = parseGameState(response.state);
-					this.connectionStatus = 'connected';
-					resolve();
+					try {
+						this.gameState = parseGameState(response.state);
+						this.connectionStatus = 'connected';
+						resolve();
+					} catch (error) {
+						const parseError =
+							error instanceof Error ? error : new Error('Failed to parse game state');
+						this.errors = [{ message: parseError.message, code: 'parse_error' }];
+						this.connectionStatus = 'error';
+						this.channel?.leave();
+						this.socket?.disconnect();
+						this.channel = null;
+						this.socket = null;
+						reject(parseError);
+					}
 				})
 				.receive('error', (reason: ChannelErrorEnvelope) => {
 					this.errors = reason.errors;
