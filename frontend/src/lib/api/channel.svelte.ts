@@ -19,8 +19,19 @@ import type {
  * https://example.com/api    → wss://example.com/socket
  */
 export function buildWsUrl(apiUrl: string): string {
-	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- pure utility, not reactive context
-	const url = new URL(apiUrl);
+	if (!apiUrl.trim()) {
+		throw new Error('PUBLIC_API_URL is missing or empty; cannot derive WebSocket URL');
+	}
+
+	let url: URL;
+	try {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- pure utility, not reactive context
+		url = new URL(apiUrl);
+	} catch (err) {
+		const msg = err instanceof Error ? err.message : 'unknown error';
+		throw new Error(`PUBLIC_API_URL is invalid; cannot derive WebSocket URL: ${msg}`);
+	}
+
 	const wsProtocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
 	return `${wsProtocol}//${url.host}/socket`;
 }

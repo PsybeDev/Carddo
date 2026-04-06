@@ -18,6 +18,18 @@ describe('buildWsUrl', () => {
 	it('handles trailing slash', () => {
 		expect(buildWsUrl('http://localhost:4000/')).toBe('ws://localhost:4000/socket');
 	});
+
+	it('throws descriptive error for empty string', () => {
+		expect(() => buildWsUrl('')).toThrow('PUBLIC_API_URL is missing or empty');
+	});
+
+	it('throws descriptive error for whitespace-only string', () => {
+		expect(() => buildWsUrl('   ')).toThrow('PUBLIC_API_URL is missing or empty');
+	});
+
+	it('throws descriptive error for invalid URL', () => {
+		expect(() => buildWsUrl('not-a-url')).toThrow('PUBLIC_API_URL is invalid');
+	});
 });
 
 describe('parseGameState', () => {
