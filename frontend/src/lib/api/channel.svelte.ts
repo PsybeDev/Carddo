@@ -18,10 +18,10 @@ import type {
  * https://example.com/api    → wss://example.com/socket
  */
 export function buildWsUrl(apiUrl: string): string {
-	const [protocol, rest] = apiUrl.split('://');
-	const wsProtocol = protocol === 'https' ? 'wss' : 'ws';
-	const host = rest.split('/')[0];
-	return `${wsProtocol}://${host}/socket`;
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- pure utility, not reactive context
+	const url = new URL(apiUrl);
+	const wsProtocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+	return `${wsProtocol}//${url.host}/socket`;
 }
 
 /**

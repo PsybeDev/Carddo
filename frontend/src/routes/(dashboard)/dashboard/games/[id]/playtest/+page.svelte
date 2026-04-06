@@ -173,7 +173,7 @@
 	{:else if connectionStatus === 'error'}
 		<div class="flex flex-col items-center justify-center py-16 text-center">
 			<p class="text-sm text-red-400">Connection error.</p>
-			{#each errors as err (err.code)}
+			{#each errors as err, i (`${err.code}:${i}`)}
 				<p class="mt-1 text-xs text-slate-500">{err.message} ({err.code})</p>
 			{/each}
 			<button
@@ -189,7 +189,7 @@
 		{#if lastRejection}
 			<div class="rounded-lg border border-red-800/50 bg-red-950/30 px-4 py-3">
 				<p class="text-xs font-medium text-red-400">Action rejected</p>
-				{#each lastRejection.errors as err (err.code)}
+				{#each lastRejection.errors as err, i (`${err.code}:${i}`)}
 					<p class="mt-0.5 text-xs text-red-300/80">{err.message}</p>
 				{/each}
 			</div>
