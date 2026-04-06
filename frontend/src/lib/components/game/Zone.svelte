@@ -61,10 +61,6 @@
 				tabindex="0"
 				data-testid="entity-{entity.id}"
 				class="mb-1 cursor-grab rounded border border-slate-600 bg-slate-700 p-2 active:cursor-grabbing"
-				draggable="true"
-				ondragstart={(e) => {
-					e.dataTransfer?.setData('text/entity-id', entity.id);
-				}}
 			>
 				<p class="font-mono text-xs text-slate-300">{entity.template_id}</p>
 				{#each Object.entries(entity.properties) as [key, value] (key)}
