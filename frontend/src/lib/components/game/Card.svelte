@@ -28,7 +28,7 @@
 	}
 
 	function handlePointerDown(e: PointerEvent) {
-		if (disabled || !isOwner) return;
+		if (disabled || !isOwner || e.button !== 0) return;
 		dragStart = { x: e.clientX - pos.current.x, y: e.clientY - pos.current.y };
 		flushSync(() => {
 			dragging = true;

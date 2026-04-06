@@ -38,14 +38,15 @@
 	role="region"
 	aria-label={zone.id}
 	data-testid="zone-{zone.id}"
-	class="min-h-[100px] rounded-lg border border-slate-700/50 bg-slate-800/40 p-3 {isDropTarget
+	class="min-h-[100px] rounded-lg border border-slate-700/50 bg-slate-800/40 p-3 {isDropTarget &&
+	!disabled
 		? 'bg-indigo-500/10 ring-2 ring-indigo-500/70'
 		: ''}"
 	ondragover={(e) => {
-		if (isDropTarget) e.preventDefault();
+		if (!disabled && isDropTarget) e.preventDefault();
 	}}
 	ondrop={(e) => {
-		if (!isDropTarget) return;
+		if (disabled || !isDropTarget) return;
 		e.preventDefault();
 		e.stopPropagation();
 		const entityId = e.dataTransfer?.getData('text/entity-id');
