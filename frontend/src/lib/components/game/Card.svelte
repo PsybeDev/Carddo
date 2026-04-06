@@ -56,12 +56,16 @@
 			}
 			const zone = el?.closest('[data-testid^="zone-"]');
 			const zoneId = zone?.getAttribute('data-testid')?.replace('zone-', '');
-			if (zoneId && validDropTargets.includes(zoneId)) {
-				onDropAttempt(entity.id, zoneId);
-			}
+
+			// Always reset state before calling callback to ensure cleanup runs even if onDropAttempt throws
 			pos.target = { x: 0, y: 0 };
 			dragging = false;
 			activePointerId = null;
+
+			// Only invoke callback if not disabled and zone is valid
+			if (!disabled && zoneId && validDropTargets.includes(zoneId)) {
+				onDropAttempt(entity.id, zoneId);
+			}
 		};
 
 		const handleCancel = (e: PointerEvent) => {
