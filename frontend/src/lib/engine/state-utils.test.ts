@@ -10,7 +10,7 @@ function makeEntity(id: string, ownerId = 'p1') {
 		owner_id: ownerId,
 		template_id: 'card',
 		properties: { health: 10 },
-		abilities: [],
+		abilities: []
 	};
 }
 
@@ -21,7 +21,7 @@ function makeBaseState(): GameState {
 		event_queue: [],
 		pending_animations: [],
 		stack_order: 'Fifo',
-		state_checks: [],
+		state_checks: []
 	};
 }
 
@@ -31,11 +31,11 @@ describe('findEntityZone', () => {
 	it('returns zone id when entity is in "hand"', () => {
 		const state: GameState = {
 			...makeBaseState(),
-			entities: { 'e1': makeEntity('e1') },
+			entities: { e1: makeEntity('e1') },
 			zones: {
 				hand: { id: 'hand', owner_id: 'p1', visibility: 'OwnerOnly', entities: ['e1'] },
-				battlefield: { id: 'battlefield', owner_id: null, visibility: 'Public', entities: [] },
-			},
+				battlefield: { id: 'battlefield', owner_id: null, visibility: 'Public', entities: [] }
+			}
 		};
 
 		expect(findEntityZone(state, 'e1')).toBe('hand');
@@ -44,11 +44,11 @@ describe('findEntityZone', () => {
 	it('returns zone id when entity is in "battlefield"', () => {
 		const state: GameState = {
 			...makeBaseState(),
-			entities: { 'e2': makeEntity('e2') },
+			entities: { e2: makeEntity('e2') },
 			zones: {
 				hand: { id: 'hand', owner_id: 'p1', visibility: 'OwnerOnly', entities: [] },
-				battlefield: { id: 'battlefield', owner_id: null, visibility: 'Public', entities: ['e2'] },
-			},
+				battlefield: { id: 'battlefield', owner_id: null, visibility: 'Public', entities: ['e2'] }
+			}
 		};
 
 		expect(findEntityZone(state, 'e2')).toBe('battlefield');
@@ -58,8 +58,8 @@ describe('findEntityZone', () => {
 		const state: GameState = {
 			...makeBaseState(),
 			zones: {
-				hand: { id: 'hand', owner_id: 'p1', visibility: 'OwnerOnly', entities: ['e1'] },
-			},
+				hand: { id: 'hand', owner_id: 'p1', visibility: 'OwnerOnly', entities: ['e1'] }
+			}
 		};
 
 		expect(findEntityZone(state, 'unknown-entity')).toBeNull();
@@ -78,15 +78,15 @@ describe('stripPrivateState', () => {
 	it('Public zone retains all entities in the returned state', () => {
 		const state: GameState = {
 			...makeBaseState(),
-			entities: { 'e1': makeEntity('e1'), 'e2': makeEntity('e2') },
+			entities: { e1: makeEntity('e1'), e2: makeEntity('e2') },
 			zones: {
 				battlefield: {
 					id: 'battlefield',
 					owner_id: null,
 					visibility: 'Public',
-					entities: ['e1', 'e2'],
-				},
-			},
+					entities: ['e1', 'e2']
+				}
+			}
 		};
 
 		const result = stripPrivateState(state, 'p1');
@@ -99,15 +99,15 @@ describe('stripPrivateState', () => {
 	it('Hidden zone has entities array emptied and entity records removed', () => {
 		const state: GameState = {
 			...makeBaseState(),
-			entities: { 'e1': makeEntity('e1'), 'e2': makeEntity('e2') },
+			entities: { e1: makeEntity('e1'), e2: makeEntity('e2') },
 			zones: {
 				deck: {
 					id: 'deck',
 					owner_id: 'p2',
 					visibility: { Hidden: 30 },
-					entities: ['e1', 'e2'],
-				},
-			},
+					entities: ['e1', 'e2']
+				}
+			}
 		};
 
 		const result = stripPrivateState(state, 'p1');
@@ -120,15 +120,15 @@ describe('stripPrivateState', () => {
 	it('OwnerOnly zone owned by currentPlayerId retains all entities', () => {
 		const state: GameState = {
 			...makeBaseState(),
-			entities: { 'e1': makeEntity('e1', 'p1') },
+			entities: { e1: makeEntity('e1', 'p1') },
 			zones: {
 				hand: {
 					id: 'hand',
 					owner_id: 'p1',
 					visibility: 'OwnerOnly',
-					entities: ['e1'],
-				},
-			},
+					entities: ['e1']
+				}
+			}
 		};
 
 		const result = stripPrivateState(state, 'p1');
@@ -140,15 +140,15 @@ describe('stripPrivateState', () => {
 	it('OwnerOnly zone owned by another player has entities emptied and records removed', () => {
 		const state: GameState = {
 			...makeBaseState(),
-			entities: { 'e1': makeEntity('e1', 'p2') },
+			entities: { e1: makeEntity('e1', 'p2') },
 			zones: {
 				opponent_hand: {
 					id: 'opponent_hand',
 					owner_id: 'p2',
 					visibility: 'OwnerOnly',
-					entities: ['e1'],
-				},
-			},
+					entities: ['e1']
+				}
+			}
 		};
 
 		const result = stripPrivateState(state, 'p1');
@@ -161,38 +161,38 @@ describe('stripPrivateState', () => {
 		const state: GameState = {
 			...makeBaseState(),
 			entities: {
-				'pub1': makeEntity('pub1'),
-				'pub2': makeEntity('pub2'),
-				'hidden1': makeEntity('hidden1', 'p2'),
-				'mine1': makeEntity('mine1', 'p1'),
-				'opp1': makeEntity('opp1', 'p2'),
+				pub1: makeEntity('pub1'),
+				pub2: makeEntity('pub2'),
+				hidden1: makeEntity('hidden1', 'p2'),
+				mine1: makeEntity('mine1', 'p1'),
+				opp1: makeEntity('opp1', 'p2')
 			},
 			zones: {
 				battlefield: {
 					id: 'battlefield',
 					owner_id: null,
 					visibility: 'Public',
-					entities: ['pub1', 'pub2'],
+					entities: ['pub1', 'pub2']
 				},
 				p2_deck: {
 					id: 'p2_deck',
 					owner_id: 'p2',
 					visibility: { Hidden: 20 },
-					entities: ['hidden1'],
+					entities: ['hidden1']
 				},
 				p1_hand: {
 					id: 'p1_hand',
 					owner_id: 'p1',
 					visibility: 'OwnerOnly',
-					entities: ['mine1'],
+					entities: ['mine1']
 				},
 				p2_hand: {
 					id: 'p2_hand',
 					owner_id: 'p2',
 					visibility: 'OwnerOnly',
-					entities: ['opp1'],
-				},
-			},
+					entities: ['opp1']
+				}
+			}
 		};
 
 		const result = stripPrivateState(state, 'p1');
@@ -218,15 +218,15 @@ describe('stripPrivateState', () => {
 	it('does NOT mutate the original gameState', () => {
 		const state: GameState = {
 			...makeBaseState(),
-			entities: { 'e1': makeEntity('e1', 'p2') },
+			entities: { e1: makeEntity('e1', 'p2') },
 			zones: {
 				opponent_hand: {
 					id: 'opponent_hand',
 					owner_id: 'p2',
 					visibility: 'OwnerOnly',
-					entities: ['e1'],
-				},
-			},
+					entities: ['e1']
+				}
+			}
 		};
 
 		// Deep snapshot before
