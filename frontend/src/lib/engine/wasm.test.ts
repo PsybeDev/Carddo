@@ -80,5 +80,12 @@ describe('wasm loader', () => {
 		it('throws "Wasm not initialised" when called before initWasm()', () => {
 			expect(() => validateMove(mockState, mockAction)).toThrow('Wasm not initialised');
 		});
+
+		it('passes JS objects directly to client_validate_move (not JSON strings)', async () => {
+			mockClientValidateMove.mockReturnValue(undefined);
+			await initWasm();
+			validateMove(mockState, mockAction);
+			expect(mockClientValidateMove).toHaveBeenCalledWith(mockState, mockAction);
+		});
 	});
 });
