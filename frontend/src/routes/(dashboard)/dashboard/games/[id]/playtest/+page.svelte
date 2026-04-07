@@ -81,7 +81,7 @@
 		channel = null;
 	}
 
-	function handleDrop(entityId: string, toZone: string) {
+	async function handleDrop(entityId: string, toZone: string) {
 		if (!gameState || !channel) return;
 
 		const fromZone = findEntityZone(gameState, entityId);
@@ -96,15 +96,19 @@
 			}
 		};
 
-		const publicState = stripPrivateState(gameState, currentPlayerId);
-		const result = validateMove(publicState, action);
+		try {
+			const publicState = stripPrivateState(gameState, currentPlayerId);
+			const result = await validateMove(publicState, action);
 
-		if (!result.ok) {
-			toastStore.show(result.message);
-			return;
+			if (!result.ok) {
+				toastStore.show(result.message);
+				return;
+			}
+
+			channel.submitAction(action);
+		} catch {
+			toastStore.show('Validation failed. Please try again.');
 		}
-
-		channel.submitAction(action);
 	}
 
 	$effect(() => {
