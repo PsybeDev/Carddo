@@ -1,19 +1,22 @@
 <script lang="ts">
 	import type { Zone, Entity } from '$lib/types/ditto.generated';
 	import CardBack from './CardBack.svelte';
+	import Card from './Card.svelte';
 
 	let {
 		zone,
 		entities,
 		currentPlayerId,
 		validDropTargets,
-		onDrop
+		onDrop,
+		disabled = false
 	}: {
 		zone: Zone;
 		entities: Record<string, Entity>;
 		currentPlayerId: string;
 		validDropTargets: string[];
 		onDrop: (entityId: string, toZone: string) => void;
+		disabled?: boolean;
 	} = $props();
 
 	const isDropTarget = $derived(validDropTargets.includes(zone.id));
@@ -35,14 +38,16 @@
 	role="region"
 	aria-label={zone.id}
 	data-testid="zone-{zone.id}"
-	class="min-h-[100px] rounded-lg border border-slate-700/50 bg-slate-800/40 p-3 {isDropTarget
+	data-zone-id={zone.id}
+	class="min-h-[100px] rounded-lg border border-slate-700/50 bg-slate-800/40 p-3 {isDropTarget &&
+	!disabled
 		? 'bg-indigo-500/10 ring-2 ring-indigo-500/70'
 		: ''}"
 	ondragover={(e) => {
-		if (isDropTarget) e.preventDefault();
+		if (!disabled && isDropTarget) e.preventDefault();
 	}}
 	ondrop={(e) => {
-		if (!isDropTarget) return;
+		if (disabled || !isDropTarget) return;
 		e.preventDefault();
 		e.stopPropagation();
 		const entityId = e.dataTransfer?.getData('text/entity-id');
@@ -60,15 +65,14 @@
 		{/if}
 	{:else if showEntities}
 		{#each resolvedEntities as entity (entity.id)}
-			<div
-				data-testid="entity-{entity.id}"
-				class="mb-1 rounded border border-slate-600 bg-slate-700 p-2"
-			>
-				<p class="font-mono text-xs text-slate-300">{entity.template_id}</p>
-				{#each Object.entries(entity.properties) as [key, value] (key)}
-					<span class="mr-1 text-xs text-slate-500">{key}: {value}</span>
-				{/each}
-			</div>
+			{@const isEntityOwner = entity.owner_id === currentPlayerId}
+			<Card
+				{entity}
+				isDraggable={isEntityOwner}
+				{disabled}
+				{validDropTargets}
+				onDropAttempt={onDrop}
+			/>
 		{/each}
 	{:else if showCardBacks}
 		{#each resolvedEntities as entity (entity.id)}

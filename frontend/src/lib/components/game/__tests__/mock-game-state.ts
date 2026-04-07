@@ -40,6 +40,13 @@ export const mockEntities: Record<string, Entity> = {
 		template_id: 'card_template_e',
 		properties: { str: 4, def: 6 },
 		abilities: []
+	},
+	entity_tapped: {
+		id: 'entity_tapped',
+		owner_id: PLAYER_1_ID,
+		template_id: 'card_template_tapped',
+		properties: { str: 3, tapped: 1 },
+		abilities: []
 	}
 };
 
@@ -49,7 +56,7 @@ export const mockZones: Record<string, Zone> = {
 		id: 'zone_a_p1',
 		owner_id: PLAYER_1_ID,
 		visibility: 'Public',
-		entities: ['entity_a', 'entity_b']
+		entities: ['entity_a', 'entity_b', 'entity_tapped']
 	},
 	zone_b_p1: {
 		id: 'zone_b_p1',
