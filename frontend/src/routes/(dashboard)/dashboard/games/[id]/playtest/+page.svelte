@@ -161,6 +161,8 @@
 	$effect(() => {
 		if (gameState) {
 			validDropTargets = Object.keys(gameState.zones);
+		} else {
+			validDropTargets = [];
 		}
 	});
 
