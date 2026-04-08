@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
-import { findEntityZone, stripPrivateState } from '../engine/state-utils';
-import type { GameState } from '../types/ditto.generated';
+import { findEntityZone, stripPrivateState } from '$lib/engine/state-utils';
+import type { GameState } from '$lib/types/ditto.generated';
 
 // Minimal fixture helpers
 function makeEntity(id: string, ownerId = 'p1') {

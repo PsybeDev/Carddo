@@ -1,5 +1,5 @@
-import type { GameState, Action } from '../types/ditto.generated';
-import type { ValidationResult } from '../engine/wasm';
+import type { GameState, Action } from '$lib/types/ditto.generated';
+import type { ValidationResult } from '$lib/engine/wasm';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -27,7 +27,7 @@ describe('wasm loader', () => {
 			client_validate_move: mockClientValidateMove
 		}));
 
-		const mod = await import('../engine/wasm');
+		const mod = await import('$lib/engine/wasm');
 		initWasm = mod.initWasm;
 		isWasmReady = mod.isWasmReady;
 		validateMove = mod.validateMove;
