@@ -117,6 +117,22 @@ describe('wasm loader', () => {
 			expect(mockClientValidateMove).toHaveBeenCalledWith(mockState, mockAction);
 		});
 
+		it('validates a MoveEntity action object with externally-tagged shape', async () => {
+			mockClientValidateMove.mockReturnValue(undefined);
+			await initWasm();
+			const moveAction: Action = {
+				MoveEntity: {
+					entity_id: 'card_1',
+					from_zone: 'hand_p1',
+					to_zone: 'board',
+					index: null
+				}
+			};
+			const result = await validateMove(mockState, moveAction);
+			expect(result).toEqual({ ok: true });
+			expect(mockClientValidateMove).toHaveBeenCalledWith(mockState, moveAction);
+		});
+
 		it('reuses initialized WASM on subsequent calls', async () => {
 			mockClientValidateMove.mockReturnValue(undefined);
 			await initWasm();
