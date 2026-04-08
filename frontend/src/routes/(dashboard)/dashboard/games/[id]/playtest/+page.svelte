@@ -12,6 +12,7 @@
 	import type { Action } from '$lib/types/ditto.generated';
 	import GameBoard from '$lib/components/game/GameBoard.svelte';
 	import { getContext, onMount } from 'svelte';
+	import { gameStore } from '$lib/stores/game.svelte';
 
 	const getGame = getContext<() => Game | null>('game');
 	let game = $derived(getGame());
@@ -22,7 +23,7 @@
 	let channel = $state<GameChannel | null>(null);
 
 	let validDropTargets = $state<string[]>([]);
-	let gameOver = $state<{ winner_id?: string } | null>(null);
+	let gameOver = $derived(gameStore.gameOver);
 
 	let loadedGameId: string | null = null;
 
@@ -65,6 +66,7 @@
 				game_id: game.id,
 				deck_id: selectedDeckId
 			});
+			gameStore.initGame(ch.gameState!, authStore.currentUser!.id);
 		} catch {
 			ch?.disconnect();
 			channel = null;
@@ -73,12 +75,13 @@
 	}
 
 	function endTurn() {
-		channel?.submitAction('EndTurn');
+		if (channel) gameStore.attemptMove('EndTurn', channel);
 	}
 
 	function disconnectChannel() {
 		channel?.disconnect();
 		channel = null;
+		gameStore.reset();
 	}
 
 	async function handleDrop(entityId: string, toZone: string) {
@@ -105,7 +108,7 @@
 				return;
 			}
 
-			channel.submitAction(action);
+			gameStore.attemptMove(action, channel!);
 		} catch {
 			toastStore.show('Validation failed. Please try again.');
 		}
@@ -118,8 +121,20 @@
 		};
 	});
 
+	$effect(() => {
+		const ch = channel;
+		if (!ch?.gameState) return;
+		gameStore.receiveResolution(ch.gameState);
+	});
+
+	$effect(() => {
+		const rejection = channel?.lastRejection;
+		if (!rejection) return;
+		gameStore.receiveRejection(rejection);
+	});
+
 	let connectionStatus = $derived<ConnectionStatus>(channel?.connectionStatus ?? 'disconnected');
-	let gameState = $derived(channel?.gameState ?? null);
+	let gameState = $derived(gameStore.optimisticState);
 	let lastRejection = $derived(channel?.lastRejection ?? null);
 	let errors = $derived(channel?.errors ?? []);
 
