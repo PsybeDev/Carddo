@@ -13,17 +13,17 @@ export async function initWasm(): Promise<void> {
 	}
 
 	initPromise = (async () => {
-		const mod = await import('ditto_wasm');
-		await mod.default();
-		wasmModule = mod;
+		try {
+			const mod = await import('ditto_wasm');
+			await mod.default();
+			wasmModule = mod;
+		} catch {
+			initPromise = null;
+			throw new Error('Failed to initialize WASM module');
+		}
 	})();
 
-	try {
-		await initPromise;
-	} catch {
-		initPromise = null;
-		throw new Error('Failed to initialize WASM module');
-	}
+	await initPromise;
 }
 
 export function isWasmReady(): boolean {
