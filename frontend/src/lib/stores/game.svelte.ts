@@ -20,7 +20,9 @@ export function applyActionOptimistically(state: GameState, action: Action): Gam
 
 	const cloned = structuredClone(state);
 
-	cloned.zones[from_zone].entities = cloned.zones[from_zone].entities.filter((id) => id !== entity_id);
+	cloned.zones[from_zone].entities = cloned.zones[from_zone].entities.filter(
+		(id) => id !== entity_id
+	);
 
 	if (index !== null && index !== undefined) {
 		cloned.zones[to_zone].entities.splice(index, 0, entity_id);

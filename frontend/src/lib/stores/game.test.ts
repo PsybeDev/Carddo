@@ -322,8 +322,11 @@ describe('attemptMove', () => {
 	beforeEach(() => {
 		gameStore.reset();
 		vi.clearAllMocks();
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(mockChannel as any).currentSequenceId = 0;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(mockChannel.submitAction as any).mockImplementation(() => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(mockChannel as any).currentSequenceId += 1;
 		});
 	});
