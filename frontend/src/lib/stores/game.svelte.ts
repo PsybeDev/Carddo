@@ -37,7 +37,7 @@ export function applyActionOptimistically(state: GameState, action: Action): Gam
 let serverState = $state<GameState | null>(null);
 let optimisticState = $state<GameState | null>(null);
 let pendingAction = $state<{ sequenceId: number; action: Action } | null>(null);
-let gameOver = $state<{ winner_id: string; finalState: GameState } | null>(null);
+let gameOver = $state<{ winner_id?: string; finalState: GameState } | null>(null);
 
 // Non-reactive — set once on init, does not need reactivity
 let currentPlayerId = '';
@@ -55,7 +55,7 @@ export const gameStore = {
 	get currentPlayerId(): string {
 		return currentPlayerId;
 	},
-	get gameOver(): { winner_id: string; finalState: GameState } | null {
+	get gameOver(): { winner_id?: string; finalState: GameState } | null {
 		return gameOver;
 	},
 
@@ -106,7 +106,7 @@ export const gameStore = {
 		toastStore.show(payload.errors[0]?.message ?? 'Action rejected', 'error');
 	},
 
-	receiveGameOver(payload: { winner_id: string; final_state: GameState }): void {
+	receiveGameOver(payload: { winner_id?: string; final_state: GameState }): void {
 		serverState = structuredClone(payload.final_state);
 		optimisticState = structuredClone(payload.final_state);
 		gameOver = { winner_id: payload.winner_id, finalState: payload.final_state };
