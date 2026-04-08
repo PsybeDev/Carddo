@@ -1,6 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+vi.mock('$lib/stores/toast.svelte', () => ({
+	toastStore: { show: vi.fn() }
+}));
 
 import { applyActionOptimistically, gameStore } from '$lib/stores/game.svelte';
+import { toastStore } from '$lib/stores/toast.svelte';
+import type { GameChannel } from '$lib/api/channel.svelte';
 import type { Action, Entity, GameState, Zone } from '$lib/types/ditto.generated';
 
 function makeEntity(id: string, ownerId = 'p1'): Entity {
@@ -308,30 +314,280 @@ describe('reset', () => {
 });
 
 describe('attemptMove', () => {
-	it.todo('applies optimistic MoveEntity to optimisticState');
-	it.todo('does not modify serverState');
-	it.todo('sets pendingAction with correct sequenceId');
-	it.todo('calls channel.submitAction with the action');
+	const mockChannel = {
+		submitAction: vi.fn(),
+		currentSequenceId: 0
+	} as unknown as GameChannel;
+
+	beforeEach(() => {
+		gameStore.reset();
+		vi.clearAllMocks();
+		(mockChannel as any).currentSequenceId = 0;
+		(mockChannel.submitAction as any).mockImplementation(() => {
+			(mockChannel as any).currentSequenceId += 1;
+		});
+	});
+
+	it('applies optimistic MoveEntity to optimisticState', () => {
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
+
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
+
+		gameStore.initGame(state, 'p1');
+		gameStore.attemptMove(action, mockChannel);
+
+		expect(gameStore.optimisticState?.zones['battlefield'].entities).toContain('e1');
+		expect(gameStore.optimisticState?.zones['hand'].entities).not.toContain('e1');
+	});
+
+	it('does not modify serverState', () => {
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
+
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
+
+		gameStore.initGame(state, 'p1');
+		gameStore.attemptMove(action, mockChannel);
+
+		expect(gameStore.serverState?.zones['hand'].entities).toContain('e1');
+	});
+
+	it('sets pendingAction with correct sequenceId', () => {
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
+
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
+
+		gameStore.initGame(state, 'p1');
+		gameStore.attemptMove(action, mockChannel);
+
+		expect(gameStore.pendingAction).not.toBeNull();
+		expect(gameStore.pendingAction?.sequenceId).toBe(1);
+		expect(gameStore.pendingAction?.action).toEqual(action);
+	});
+
+	it('calls channel.submitAction with the action', () => {
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
+
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
+
+		gameStore.initGame(state, 'p1');
+		gameStore.attemptMove(action, mockChannel);
+
+		expect(mockChannel.submitAction).toHaveBeenCalledTimes(1);
+		expect(mockChannel.submitAction).toHaveBeenCalledWith(action);
+	});
+
 	it.todo('no-ops when gameOver is set');
-	it.todo('no-ops when optimisticState is null (not initialized)');
-	it.todo('handles non-MoveEntity actions (applies optimistically but returns unchanged state)');
+
+	it('no-ops when optimisticState is null (not initialized)', () => {
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
+
+		gameStore.attemptMove(action, mockChannel);
+
+		expect(mockChannel.submitAction).not.toHaveBeenCalled();
+		expect(gameStore.optimisticState).toBeNull();
+	});
+
+	it('handles non-MoveEntity actions (applies optimistically but returns unchanged state)', () => {
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: { hand: makeZone('hand', ['e1'], 'p1') }
+		};
+
+		gameStore.initGame(state, 'p1');
+		gameStore.attemptMove('EndTurn', mockChannel);
+
+		expect(mockChannel.submitAction).toHaveBeenCalledWith('EndTurn');
+		expect(gameStore.optimisticState).toEqual(gameStore.serverState);
+		expect(gameStore.pendingAction).not.toBeNull();
+		expect(gameStore.pendingAction?.sequenceId).toBe(1);
+		expect(gameStore.pendingAction?.action).toEqual('EndTurn');
+	});
 });
 
 describe('receiveResolution', () => {
-	it.todo('replaces both serverState and optimisticState with server payload');
-	it.todo('clears pendingAction');
-	it.todo('works even when no pendingAction exists');
+	beforeEach(() => {
+		gameStore.reset();
+	});
+
+	it('replaces both serverState and optimisticState with server payload', () => {
+		const stateA: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: { hand: makeZone('hand', ['e1'], 'p1') }
+		};
+
+		const stateB: GameState = {
+			...makeBaseState(),
+			entities: { e2: makeEntity('e2') },
+			zones: { battlefield: makeZone('battlefield', ['e2'], null) }
+		};
+
+		gameStore.initGame(stateA, 'p1');
+		gameStore.receiveResolution(stateB);
+
+		expect(gameStore.serverState).toEqual(stateB);
+		expect(gameStore.optimisticState).toEqual(stateB);
+	});
+
+	it('clears pendingAction', () => {
+		const state = makeBaseState();
+
+		gameStore.initGame(state, 'p1');
+		gameStore.receiveResolution(state);
+
+		expect(gameStore.pendingAction).toBeNull();
+	});
+
+	it('works even when no pendingAction exists', () => {
+		const state = makeBaseState();
+
+		gameStore.initGame(state, 'p1');
+
+		expect(() => gameStore.receiveResolution(state)).not.toThrow();
+		expect(gameStore.optimisticState).toEqual(state);
+	});
 });
 
 describe('receiveRejection', () => {
-	it.todo('rolls optimisticState back to serverState');
-	it.todo('clears pendingAction');
-	it.todo('calls toastStore.show with first error message');
-	it.todo('handles empty errors array gracefully');
+	beforeEach(() => {
+		gameStore.reset();
+		vi.clearAllMocks();
+	});
+
+	it('rolls optimisticState back to serverState', () => {
+		const stateA: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: { hand: makeZone('hand', ['e1'], 'p1') }
+		};
+
+		gameStore.initGame(stateA, 'p1');
+		gameStore.receiveRejection({
+			client_sequence_id: 1,
+			errors: [{ message: 'Invalid move', code: 'invalid_move' }]
+		});
+
+		expect(gameStore.optimisticState).toEqual(gameStore.serverState);
+	});
+
+	it('clears pendingAction', () => {
+		const state = makeBaseState();
+
+		gameStore.initGame(state, 'p1');
+		gameStore.receiveRejection({
+			client_sequence_id: 1,
+			errors: [{ message: 'Invalid move', code: 'invalid_move' }]
+		});
+
+		expect(gameStore.pendingAction).toBeNull();
+	});
+
+	it('calls toastStore.show with first error message', () => {
+		const state = makeBaseState();
+
+		gameStore.initGame(state, 'p1');
+		gameStore.receiveRejection({
+			client_sequence_id: 1,
+			errors: [{ message: 'Invalid move', code: 'invalid_move' }]
+		});
+
+		expect(toastStore.show).toHaveBeenCalledWith('Invalid move', 'error');
+	});
+
+	it('handles empty errors array gracefully', () => {
+		expect(() =>
+			gameStore.receiveRejection({
+				client_sequence_id: 1,
+				errors: []
+			})
+		).not.toThrow();
+
+		expect(toastStore.show).toHaveBeenCalledWith('Action rejected', 'error');
+	});
 });
 
 describe('receiveGameOver', () => {
-	it.todo('sets gameOver with winner_id and finalState');
-	it.todo('updates both serverState and optimisticState');
-	it.todo('clears pendingAction');
+	beforeEach(() => {
+		gameStore.reset();
+	});
+
+	it('sets gameOver with winner_id and finalState', () => {
+		const initial = makeBaseState();
+		const finalState: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: { graveyard: makeZone('graveyard', ['e1'], null) }
+		};
+
+		gameStore.initGame(initial, 'p1');
+		gameStore.receiveGameOver({ winner_id: 'p1', final_state: finalState });
+
+		expect(gameStore.gameOver).not.toBeNull();
+		expect(gameStore.gameOver?.winner_id).toBe('p1');
+		expect(gameStore.gameOver?.finalState).toEqual(finalState);
+	});
+
+	it('updates both serverState and optimisticState', () => {
+		const initial = makeBaseState();
+		const finalState: GameState = {
+			...makeBaseState(),
+			entities: { e2: makeEntity('e2') },
+			zones: { battlefield: makeZone('battlefield', ['e2'], null) }
+		};
+
+		gameStore.initGame(initial, 'p1');
+		gameStore.receiveGameOver({ winner_id: 'p2', final_state: finalState });
+
+		expect(gameStore.serverState).toEqual(finalState);
+		expect(gameStore.optimisticState).toEqual(finalState);
+	});
+
+	it('clears pendingAction', () => {
+		const initial = makeBaseState();
+		const finalState = makeBaseState();
+
+		gameStore.initGame(initial, 'p1');
+		gameStore.receiveGameOver({ winner_id: 'p1', final_state: finalState });
+
+		expect(gameStore.pendingAction).toBeNull();
+	});
 });

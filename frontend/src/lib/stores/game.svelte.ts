@@ -1,4 +1,7 @@
 import type { Action, GameState } from '$lib/types/ditto.generated';
+import type { GameChannel } from '$lib/api/channel.svelte';
+import { toastStore } from '$lib/stores/toast.svelte';
+import type { ActionRejectedPayload } from '$lib/types/channel';
 
 export function applyActionOptimistically(state: GameState, action: Action): GameState {
 	if (action === 'EndTurn' || !('MoveEntity' in action)) {
@@ -68,5 +71,35 @@ export const gameStore = {
 		pendingAction = null;
 		gameOver = null;
 		currentPlayerId = '';
+	},
+
+	attemptMove(action: Action, channel: GameChannel): void {
+		if (gameOver !== null) return;
+		if (optimisticState === null) return;
+
+		optimisticState = applyActionOptimistically(optimisticState, action);
+
+		channel.submitAction(action);
+
+		pendingAction = { sequenceId: channel.currentSequenceId, action };
+	},
+
+	receiveResolution(serverPayload: GameState): void {
+		serverState = structuredClone(serverPayload);
+		optimisticState = structuredClone(serverPayload);
+		pendingAction = null;
+	},
+
+	receiveRejection(payload: ActionRejectedPayload): void {
+		pendingAction = null;
+		optimisticState = serverState ? structuredClone(serverState) : null;
+		toastStore.show(payload.errors[0]?.message ?? 'Action rejected', 'error');
+	},
+
+	receiveGameOver(payload: { winner_id: string; final_state: GameState }): void {
+		serverState = structuredClone(payload.final_state);
+		optimisticState = structuredClone(payload.final_state);
+		gameOver = { winner_id: payload.winner_id, finalState: payload.final_state };
+		pendingAction = null;
 	}
 };
