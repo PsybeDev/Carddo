@@ -27,3 +27,46 @@ export function applyActionOptimistically(state: GameState, action: Action): Gam
 
 	return cloned;
 }
+
+// Module-level reactive state
+let serverState = $state<GameState | null>(null);
+let optimisticState = $state<GameState | null>(null);
+let pendingAction = $state<{ sequenceId: number; action: Action } | null>(null);
+let gameOver = $state<{ winner_id: string; finalState: GameState } | null>(null);
+
+// Non-reactive — set once on init, does not need reactivity
+let currentPlayerId = '';
+
+export const gameStore = {
+	get serverState(): GameState | null {
+		return serverState;
+	},
+	get optimisticState(): GameState | null {
+		return optimisticState;
+	},
+	get pendingAction(): { sequenceId: number; action: Action } | null {
+		return pendingAction;
+	},
+	get currentPlayerId(): string {
+		return currentPlayerId;
+	},
+	get gameOver(): { winner_id: string; finalState: GameState } | null {
+		return gameOver;
+	},
+
+	initGame(initialState: GameState, playerId: string): void {
+		serverState = structuredClone(initialState);
+		optimisticState = structuredClone(initialState);
+		currentPlayerId = playerId;
+		pendingAction = null;
+		gameOver = null;
+	},
+
+	reset(): void {
+		serverState = null;
+		optimisticState = null;
+		pendingAction = null;
+		gameOver = null;
+		currentPlayerId = '';
+	}
+};

@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-import { applyActionOptimistically } from '$lib/stores/game.svelte';
+import { applyActionOptimistically, gameStore } from '$lib/stores/game.svelte';
 import type { Action, Entity, GameState, Zone } from '$lib/types/ditto.generated';
 
 function makeEntity(id: string, ownerId = 'p1'): Entity {
@@ -214,18 +214,97 @@ describe('applyActionOptimistically', () => {
 });
 
 describe('initGame', () => {
-	it.todo('sets serverState and optimisticState from provided state');
-	it.todo('sets currentPlayerId');
-	it.todo('clears pendingAction and gameOver');
-	it.todo('called twice overwrites cleanly');
+	beforeEach(() => {
+		gameStore.reset();
+	});
+
+	it('sets serverState and optimisticState from provided state', () => {
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: { hand: makeZone('hand', ['e1'], 'p1') }
+		};
+
+		gameStore.initGame(state, 'p1');
+
+		expect(gameStore.serverState).toEqual(state);
+		expect(gameStore.serverState).not.toBe(state);
+		expect(gameStore.optimisticState).toEqual(state);
+		expect(gameStore.optimisticState).not.toBe(state);
+	});
+
+	it('sets currentPlayerId', () => {
+		const state = makeBaseState();
+		gameStore.initGame(state, 'player-123');
+
+		expect(gameStore.currentPlayerId).toBe('player-123');
+	});
+
+	it('clears pendingAction and gameOver', () => {
+		const state = makeBaseState();
+		gameStore.initGame(state, 'p1');
+
+		expect(gameStore.pendingAction).toBeNull();
+		expect(gameStore.gameOver).toBeNull();
+	});
+
+	it('called twice overwrites cleanly', () => {
+		const stateA: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: { hand: makeZone('hand', ['e1'], 'p1') }
+		};
+
+		const stateB: GameState = {
+			...makeBaseState(),
+			entities: { e2: makeEntity('e2') },
+			zones: { battlefield: makeZone('battlefield', ['e2'], null) }
+		};
+
+		gameStore.initGame(stateA, 'p1');
+		gameStore.initGame(stateB, 'p2');
+
+		expect(gameStore.serverState).toEqual(stateB);
+		expect(gameStore.optimisticState).toEqual(stateB);
+		expect(gameStore.currentPlayerId).toBe('p2');
+	});
 });
 
 describe('gameStore getters', () => {
-	it.todo('return null before init');
+	beforeEach(() => {
+		gameStore.reset();
+	});
+
+	it('return null before init', () => {
+		expect(gameStore.serverState).toBeNull();
+		expect(gameStore.optimisticState).toBeNull();
+		expect(gameStore.pendingAction).toBeNull();
+		expect(gameStore.gameOver).toBeNull();
+		expect(gameStore.currentPlayerId).toBe('');
+	});
 });
 
 describe('reset', () => {
-	it.todo('clears all state');
+	beforeEach(() => {
+		gameStore.reset();
+	});
+
+	it('clears all state', () => {
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: { hand: makeZone('hand', ['e1'], 'p1') }
+		};
+
+		gameStore.initGame(state, 'p1');
+		gameStore.reset();
+
+		expect(gameStore.serverState).toBeNull();
+		expect(gameStore.optimisticState).toBeNull();
+		expect(gameStore.pendingAction).toBeNull();
+		expect(gameStore.gameOver).toBeNull();
+		expect(gameStore.currentPlayerId).toBe('');
+	});
 });
 
 describe('attemptMove', () => {
