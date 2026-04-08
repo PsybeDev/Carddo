@@ -87,7 +87,11 @@
 	async function handleDrop(entityId: string, toZone: string) {
 		if (!gameState || !channel) return;
 
-		const fromZone = findEntityZone(gameState, entityId);
+		const capturedState = gameState;
+		const capturedChannel = channel;
+		const capturedPlayerId = currentPlayerId;
+
+		const fromZone = findEntityZone(capturedState, entityId);
 		if (!fromZone) return;
 
 		const action: Action = {
@@ -100,15 +104,22 @@
 		};
 
 		try {
-			const publicState = stripPrivateState(gameState, currentPlayerId);
+			const publicState = stripPrivateState(capturedState, capturedPlayerId);
 			const result = await validateMove(publicState, action);
+
+			const stateChanged = gameState !== capturedState || channel !== capturedChannel;
+			const entityMoved = findEntityZone(gameState ?? capturedState, entityId) !== fromZone;
+			if (stateChanged || entityMoved) {
+				toastStore.show('Game state changed during validation. Please try again.');
+				return;
+			}
 
 			if (!result.ok) {
 				toastStore.show(result.message);
 				return;
 			}
 
-			gameStore.attemptMove(action, channel!);
+			gameStore.attemptMove(action, capturedChannel);
 		} catch {
 			toastStore.show('Validation failed. Please try again.');
 		}
@@ -118,6 +129,7 @@
 		const ch = channel;
 		return () => {
 			ch?.disconnect();
+			gameStore.reset();
 		};
 	});
 

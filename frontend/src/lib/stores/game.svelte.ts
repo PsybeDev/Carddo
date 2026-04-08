@@ -78,12 +78,16 @@ export const gameStore = {
 	attemptMove(action: Action, channel: GameChannel): void {
 		if (gameOver !== null) return;
 		if (optimisticState === null) return;
+		if (pendingAction !== null) {
+			toastStore.show('Action already pending - please wait', 'info');
+			return;
+		}
+
+		const sequenceId = channel.submitAction(action);
+		if (sequenceId === null) return;
 
 		optimisticState = applyActionOptimistically(optimisticState, action);
-
-		channel.submitAction(action);
-
-		pendingAction = { sequenceId: channel.currentSequenceId, action };
+		pendingAction = { sequenceId, action };
 	},
 
 	receiveResolution(serverPayload: GameState): void {
@@ -93,6 +97,10 @@ export const gameStore = {
 	},
 
 	receiveRejection(payload: ActionRejectedPayload): void {
+		const isStaleRejection =
+			pendingAction === null || pendingAction.sequenceId !== payload.client_sequence_id;
+		if (isStaleRejection) return;
+
 		pendingAction = null;
 		optimisticState = serverState ? structuredClone(serverState) : null;
 		toastStore.show(payload.errors[0]?.message ?? 'Action rejected', 'error');

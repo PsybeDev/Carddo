@@ -328,6 +328,8 @@ describe('attemptMove', () => {
 		(mockChannel.submitAction as any).mockImplementation(() => {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(mockChannel as any).currentSequenceId += 1;
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			return (mockChannel as any).currentSequenceId;
 		});
 	});
 
@@ -444,6 +446,59 @@ describe('attemptMove', () => {
 		expect(gameStore.pendingAction?.sequenceId).toBe(1);
 		expect(gameStore.pendingAction?.action).toEqual('EndTurn');
 	});
+
+	it('no-ops when pendingAction already exists (blocks concurrent moves)', () => {
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
+
+		const action1: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
+		const action2: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'battlefield', to_zone: 'hand', index: null }
+		};
+
+		gameStore.initGame(state, 'p1');
+		gameStore.attemptMove(action1, mockChannel);
+		const firstPending = gameStore.pendingAction;
+
+		gameStore.attemptMove(action2, mockChannel);
+
+		expect(gameStore.pendingAction).toEqual(firstPending);
+		expect(gameStore.pendingAction?.action).toEqual(action1);
+		expect(mockChannel.submitAction).toHaveBeenCalledTimes(1);
+		expect(toastStore.show).toHaveBeenCalledWith('Action already pending - please wait', 'info');
+	});
+
+	it('no-ops when submitAction returns null (channel not available)', () => {
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(mockChannel.submitAction as any).mockReturnValue(null);
+
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
+
+		gameStore.initGame(state, 'p1');
+		gameStore.attemptMove(action, mockChannel);
+
+		expect(gameStore.optimisticState).toEqual(state);
+		expect(gameStore.pendingAction).toBeNull();
+	});
 });
 
 describe('receiveResolution', () => {
@@ -525,9 +580,26 @@ describe('receiveRejection', () => {
 	});
 
 	it('calls toastStore.show with first error message', () => {
-		const state = makeBaseState();
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
 
 		gameStore.initGame(state, 'p1');
+
+		const mockChannel = {
+			submitAction: vi.fn().mockReturnValue(1),
+			currentSequenceId: 1
+		} as unknown as GameChannel;
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
+		gameStore.attemptMove(action, mockChannel);
+
 		gameStore.receiveRejection({
 			client_sequence_id: 1,
 			errors: [{ message: 'Invalid move', code: 'invalid_move' }]
@@ -537,14 +609,79 @@ describe('receiveRejection', () => {
 	});
 
 	it('handles empty errors array gracefully', () => {
-		expect(() =>
-			gameStore.receiveRejection({
-				client_sequence_id: 1,
-				errors: []
-			})
-		).not.toThrow();
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
+		gameStore.initGame(state, 'p1');
+
+		const mockChannel = {
+			submitAction: vi.fn().mockReturnValue(1),
+			currentSequenceId: 1
+		} as unknown as GameChannel;
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
+		gameStore.attemptMove(action, mockChannel);
+
+		gameStore.receiveRejection({
+			client_sequence_id: 1,
+			errors: []
+		});
 
 		expect(toastStore.show).toHaveBeenCalledWith('Action rejected', 'error');
+	});
+
+	it('ignores rejection with mismatched sequenceId (stale rejection)', () => {
+		const stateA: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
+
+		const staleSequenceId = 2;
+
+		gameStore.initGame(stateA, 'p1');
+
+		const mockChannel = {
+			submitAction: vi.fn().mockReturnValue(5),
+			currentSequenceId: 5
+		} as unknown as GameChannel;
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
+		gameStore.attemptMove(action, mockChannel);
+
+		const expectedPending = gameStore.pendingAction;
+		const expectedOptimistic = gameStore.optimisticState;
+
+		gameStore.receiveRejection({
+			client_sequence_id: staleSequenceId,
+			errors: [{ message: 'Old action failed', code: 'old_error' }]
+		});
+
+		expect(gameStore.pendingAction).toEqual(expectedPending);
+		expect(gameStore.optimisticState).toEqual(expectedOptimistic);
+		expect(toastStore.show).not.toHaveBeenCalled();
+	});
+
+	it('ignores rejection when no pendingAction exists', () => {
+		const state = makeBaseState();
+		gameStore.initGame(state, 'p1');
+
+		gameStore.receiveRejection({
+			client_sequence_id: 1,
+			errors: [{ message: 'Unexpected rejection', code: 'unexpected' }]
+		});
+
+		expect(toastStore.show).not.toHaveBeenCalled();
 	});
 });
 

@@ -142,8 +142,8 @@ export class GameChannel {
 		});
 	}
 
-	submitAction(action: Action): void {
-		if (!this.channel) return;
+	submitAction(action: Action): number | null {
+		if (!this.channel) return null;
 
 		this.lastRejection = null;
 		this.sequenceId += 1;
@@ -155,6 +155,8 @@ export class GameChannel {
 			client_sequence_id: this.sequenceId,
 			action
 		});
+
+		return this.sequenceId;
 	}
 
 	disconnect(): void {
