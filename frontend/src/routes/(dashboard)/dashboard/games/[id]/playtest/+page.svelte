@@ -5,10 +5,13 @@
 	import { GameChannel, buildWsUrl } from '$lib/api/channel.svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
+	import { initWasm, validateMove } from '$lib/engine/wasm';
+	import { findEntityZone, stripPrivateState } from '$lib/engine/state-utils';
 	import type { DeckSummary, Game } from '$lib/types/api';
 	import type { ConnectionStatus } from '$lib/types/channel';
+	import type { Action } from '$lib/types/ditto.generated';
 	import GameBoard from '$lib/components/game/GameBoard.svelte';
-	import { getContext } from 'svelte';
+	import { getContext, onMount } from 'svelte';
 
 	const getGame = getContext<() => Game | null>('game');
 	let game = $derived(getGame());
@@ -78,8 +81,34 @@
 		channel = null;
 	}
 
-	function handleDrop(_entityId: string, _toZone: string) {
-		/* TODO(CAR-43): wire to channel.submitAction(MoveEntity) */
+	async function handleDrop(entityId: string, toZone: string) {
+		if (!gameState || !channel) return;
+
+		const fromZone = findEntityZone(gameState, entityId);
+		if (!fromZone) return;
+
+		const action: Action = {
+			MoveEntity: {
+				entity_id: entityId,
+				from_zone: fromZone,
+				to_zone: toZone,
+				index: null
+			}
+		};
+
+		try {
+			const publicState = stripPrivateState(gameState, currentPlayerId);
+			const result = await validateMove(publicState, action);
+
+			if (!result.ok) {
+				toastStore.show(result.message);
+				return;
+			}
+
+			channel.submitAction(action);
+		} catch {
+			toastStore.show('Validation failed. Please try again.');
+		}
 	}
 
 	$effect(() => {
@@ -95,6 +124,18 @@
 	let errors = $derived(channel?.errors ?? []);
 
 	const currentPlayerId = $derived(authStore.currentUser?.id ?? '');
+
+	onMount(() => {
+		void initWasm().catch(() => {
+			toastStore.show('Failed to load game engine.');
+		});
+	});
+
+	$effect(() => {
+		if (gameState) {
+			validDropTargets = Object.keys(gameState.zones);
+		}
+	});
 
 	function statusColor(status: ConnectionStatus): string {
 		switch (status) {
