@@ -54,7 +54,10 @@
 	async function startPlaytest() {
 		if (!game || selectedDeckId === null || !authStore.token || !authStore.currentUser) return;
 
-		const roomId = `solo_${authStore.currentUser.id}_${game.id}`;
+		const localUser = authStore.currentUser;
+		const localGame = game;
+		const localDeckId = selectedDeckId;
+		const roomId = `solo_${localUser.id}_${localGame.id}`;
 		let ch: GameChannel | null = null;
 
 		try {
@@ -63,13 +66,20 @@
 			channel = ch;
 
 			await ch.connect(roomId, {
-				game_id: game.id,
-				deck_id: selectedDeckId
+				game_id: localGame.id,
+				deck_id: localDeckId
 			});
-			gameStore.initGame(ch.gameState!, authStore.currentUser!.id);
+
+			if (channel !== ch || !ch.gameState || !authStore.currentUser) {
+				ch.disconnect();
+				if (channel === ch) channel = null;
+				return;
+			}
+
+			gameStore.initGame(ch.gameState, localUser.id);
 		} catch {
 			ch?.disconnect();
-			channel = null;
+			if (channel === ch) channel = null;
 			toastStore.show('Failed to connect to game channel.');
 		}
 	}
