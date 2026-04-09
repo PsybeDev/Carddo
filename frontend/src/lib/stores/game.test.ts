@@ -699,7 +699,7 @@ describe('receiveGameOver', () => {
 		};
 
 		gameStore.initGame(initial, 'p1');
-		gameStore.receiveGameOver({ winner_id: 'p1', final_state: finalState });
+		gameStore.receiveGameOver({ winner_id: 'p1', final_state: JSON.stringify(finalState) });
 
 		expect(gameStore.gameOver).not.toBeNull();
 		expect(gameStore.gameOver?.winner_id).toBe('p1');
@@ -715,7 +715,7 @@ describe('receiveGameOver', () => {
 		};
 
 		gameStore.initGame(initial, 'p1');
-		gameStore.receiveGameOver({ winner_id: 'p2', final_state: finalState });
+		gameStore.receiveGameOver({ winner_id: 'p2', final_state: JSON.stringify(finalState) });
 
 		expect(gameStore.serverState).toEqual(finalState);
 		expect(gameStore.optimisticState).toEqual(finalState);
@@ -726,7 +726,7 @@ describe('receiveGameOver', () => {
 		const finalState = makeBaseState();
 
 		gameStore.initGame(initial, 'p1');
-		gameStore.receiveGameOver({ winner_id: 'p1', final_state: finalState });
+		gameStore.receiveGameOver({ winner_id: 'p1', final_state: JSON.stringify(finalState) });
 
 		expect(gameStore.pendingAction).toBeNull();
 	});

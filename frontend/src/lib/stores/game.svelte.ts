@@ -1,7 +1,7 @@
 import type { Action, GameState } from '$lib/types/ditto.generated';
 import type { GameChannel } from '$lib/api/channel.svelte';
 import { toastStore } from '$lib/stores/toast.svelte';
-import type { ActionRejectedPayload } from '$lib/types/channel';
+import type { ActionRejectedPayload, GameOverPayload } from '$lib/types/channel';
 
 /**
  * Applies an action optimistically to a game state for immediate UI feedback.
@@ -34,7 +34,9 @@ export function applyActionOptimistically(state: GameState, action: Action): Gam
 	);
 
 	if (index !== null && index !== undefined) {
-		cloned.zones[to_zone].entities.splice(index, 0, entity_id);
+		const maxIndex = cloned.zones[to_zone].entities.length;
+		const safeIndex = Math.max(0, Math.min(index, maxIndex));
+		cloned.zones[to_zone].entities.splice(safeIndex, 0, entity_id);
 	} else {
 		cloned.zones[to_zone].entities.push(entity_id);
 	}
@@ -126,12 +128,13 @@ export const gameStore = {
 	 *
 	 * @param payload - Contains winner_id (optional for ties/aborts) and final_state
 	 */
-	receiveGameOver(payload: { winner_id?: string; final_state: GameState }): void {
-		serverState = structuredClone(payload.final_state);
-		optimisticState = structuredClone(payload.final_state);
+	receiveGameOver(payload: GameOverPayload): void {
+		const finalState = JSON.parse(payload.final_state) as GameState;
+		serverState = structuredClone(finalState);
+		optimisticState = structuredClone(finalState);
 		gameOver = {
 			winner_id: payload.winner_id,
-			finalState: structuredClone(payload.final_state)
+			finalState: structuredClone(finalState)
 		};
 		pendingAction = null;
 	}

@@ -96,7 +96,10 @@
 
 	async function handleDrop(entityId: string, toZone: string) {
 		if (!gameState || !channel) return;
-		if (gameStore.pendingAction !== null) return;
+		if (gameStore.pendingAction !== null) {
+			toastStore.show('Action pending - please wait', 'info');
+			return;
+		}
 
 		const capturedState = gameState;
 		const capturedChannel = channel;
@@ -147,8 +150,8 @@
 	$effect(() => {
 		const ch = channel;
 		if (!ch?.gameState) return;
-		// Skip if this is the initial state (already handled by initGame)
-		if (gameStore.serverState === null) return;
+		// Skip if state hasn't changed (already handled by initGame)
+		if (gameStore.serverState !== null) return;
 		gameStore.receiveResolution(ch.gameState);
 	});
 
