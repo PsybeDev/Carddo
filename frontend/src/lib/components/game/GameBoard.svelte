@@ -8,13 +8,15 @@
 		currentPlayerId,
 		validDropTargets,
 		gameOver,
-		onDrop
+		onDrop,
+		onReturnToDashboard
 	}: {
 		gameState: GameState;
 		currentPlayerId: string;
 		validDropTargets: string[];
 		gameOver?: { winner_id?: string } | null;
 		onDrop: (entityId: string, toZone: string) => void;
+		onReturnToDashboard?: () => void;
 	} = $props();
 
 	const zones = $derived(Object.values(gameState.zones));
@@ -78,7 +80,7 @@
 		</div>
 
 		{#if isGameOver}
-			<WinnerScreen visible={true} winnerId={gameOver?.winner_id} />
+			<WinnerScreen visible={true} winnerId={gameOver?.winner_id} {onReturnToDashboard} />
 		{/if}
 	</div>
 {/if}

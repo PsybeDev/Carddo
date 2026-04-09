@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { apiGet } from '$lib/api/client';
 	import { GameChannel, buildWsUrl } from '$lib/api/channel.svelte';
@@ -79,6 +80,13 @@
 	function disconnectChannel() {
 		channel?.disconnect();
 		channel = null;
+	}
+
+	function handleReturnToDashboard() {
+		channel?.disconnect();
+		channel = null;
+		gameStore.reset();
+		goto('/dashboard');
 	}
 
 	async function handleDrop(entityId: string, toZone: string) {
@@ -243,7 +251,14 @@
 		{/if}
 
 		{#if gameState}
-			<GameBoard {gameState} {currentPlayerId} {validDropTargets} {gameOver} onDrop={handleDrop} />
+			<GameBoard
+				{gameState}
+				{currentPlayerId}
+				{validDropTargets}
+				{gameOver}
+				onDrop={handleDrop}
+				onReturnToDashboard={handleReturnToDashboard}
+			/>
 
 			<div class="flex gap-2 pt-2">
 				<button
