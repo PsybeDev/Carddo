@@ -3,6 +3,15 @@ import type { GameChannel } from '$lib/api/channel.svelte';
 import { toastStore } from '$lib/stores/toast.svelte';
 import type { ActionRejectedPayload } from '$lib/types/channel';
 
+/**
+ * Applies an action optimistically to a game state for immediate UI feedback.
+ * Returns a deep-cloned state that callers must treat as non-authoritative —
+ * it may be rolled back when the authoritative state arrives from the server.
+ *
+ * @param state - The current GameState to apply the action to
+ * @param action - The Action to apply (currently supports MoveEntity and EndTurn)
+ * @returns A new GameState with the action applied, or an unmodified clone if the action cannot be applied
+ */
 export function applyActionOptimistically(state: GameState, action: Action): GameState {
 	if (action === 'EndTurn' || !('MoveEntity' in action)) {
 		return structuredClone(state);
@@ -106,13 +115,24 @@ export const gameStore = {
 
 		pendingAction = null;
 		optimisticState = serverState ? structuredClone(serverState) : null;
-		toastStore.show(payload.errors[0]?.message ?? 'Action rejected', 'error');
+		const errorMessage =
+			payload.errors && payload.errors.length > 0 ? payload.errors[0].message : 'Action rejected';
+		toastStore.show(errorMessage, 'error');
 	},
 
+	/**
+	 * Handles the end-of-game signal from the server.
+	 * Deep-clones final_state to avoid shared mutable references.
+	 *
+	 * @param payload - Contains winner_id (optional for ties/aborts) and final_state
+	 */
 	receiveGameOver(payload: { winner_id?: string; final_state: GameState }): void {
 		serverState = structuredClone(payload.final_state);
 		optimisticState = structuredClone(payload.final_state);
-		gameOver = { winner_id: payload.winner_id, finalState: payload.final_state };
+		gameOver = {
+			winner_id: payload.winner_id,
+			finalState: structuredClone(payload.final_state)
+		};
 		pendingAction = null;
 	}
 };

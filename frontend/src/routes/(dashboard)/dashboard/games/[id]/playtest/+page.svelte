@@ -147,6 +147,8 @@
 	$effect(() => {
 		const ch = channel;
 		if (!ch?.gameState) return;
+		// Skip if this is the initial state (already handled by initGame)
+		if (gameStore.serverState === null) return;
 		gameStore.receiveResolution(ch.gameState);
 	});
 
