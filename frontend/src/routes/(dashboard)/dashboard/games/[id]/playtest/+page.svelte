@@ -96,6 +96,7 @@
 
 	async function handleDrop(entityId: string, toZone: string) {
 		if (!gameState || !channel) return;
+		if (gameStore.pendingAction !== null) return;
 
 		const capturedState = gameState;
 		const capturedChannel = channel;

@@ -84,7 +84,10 @@ export const gameStore = {
 		}
 
 		const sequenceId = channel.submitAction(action);
-		if (sequenceId === null) return;
+		if (sequenceId === null) {
+			toastStore.show('Unable to send action - connection lost', 'error');
+			return;
+		}
 
 		optimisticState = applyActionOptimistically(optimisticState, action);
 		pendingAction = { sequenceId, action };
