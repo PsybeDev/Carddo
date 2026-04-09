@@ -66,6 +66,12 @@ pub struct GameState {
     /// — including turns ended by card-effect abilities, not just player actions.
     #[serde(default)]
     pub turn_ended: bool,
+
+    /// Set when a `GameOver` action resolves. Unlike `turn_ended`, this field is
+    /// never reset between resolution passes — once the game is over, it stays over.
+    /// The Elixir layer inspects this field to detect and broadcast game-over events.
+    #[serde(default)]
+    pub game_over: Option<GameOverInfo>,
 }
 
 impl GameState {
@@ -78,6 +84,7 @@ impl GameState {
             stack_order: StackOrder::Fifo,
             state_checks: Vec::new(),
             turn_ended: false,
+            game_over: None,
         }
     }
 }
@@ -220,6 +227,16 @@ pub enum Action {
         zone_id: String,
     },
     EndTurn,
+    GameOver {
+        winner: String,
+    },
+}
+
+/// Information about the game-over result — set when a `GameOver` action resolves.
+#[cfg_attr(feature = "ts", derive(TS))]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GameOverInfo {
+    pub winner: String,
 }
 
 // ==========================================
@@ -264,6 +281,7 @@ mod tests {
         assert_serde::<StateCheck>();
         assert_serde::<Visibility>();
         assert_serde::<StackOrder>();
+        assert_serde::<GameOverInfo>();
     }
 
     fn make_entity(id: &str, props: Vec<(&str, i32)>) -> Entity {
