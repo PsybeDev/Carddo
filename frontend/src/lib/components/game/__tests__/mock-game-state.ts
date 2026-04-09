@@ -103,7 +103,9 @@ export const mockGameState: GameState = {
 	event_queue: [],
 	pending_animations: [],
 	stack_order: 'Fifo',
-	state_checks: []
+	state_checks: [],
+	turn_ended: false,
+	game_over: null
 };
 
 /**
