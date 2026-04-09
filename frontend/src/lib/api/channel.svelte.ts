@@ -11,7 +11,6 @@ import type {
 	ChannelErrorEnvelope,
 	GameOverPayload
 } from '$lib/types/channel';
-import { gameStore } from '$lib/stores/game.svelte';
 
 /**
  * Derive WebSocket URL from an HTTP API URL.
@@ -65,6 +64,7 @@ export class GameChannel {
 	gameState = $state<GameState | null>(null);
 	lastRejection = $state<ActionRejectedPayload | null>(null);
 	errors = $state<ChannelError[]>([]);
+	gameOver = $state<GameOverPayload | null>(null);
 
 	private socket: Socket | null = null;
 	private channel: Channel | null = null;
@@ -105,7 +105,7 @@ export class GameChannel {
 		});
 
 		this.channel.on('game_over', (payload: GameOverPayload) => {
-			gameStore.receiveGameOver(payload);
+			this.gameOver = payload;
 		});
 
 		await new Promise<void>((resolve, reject) => {
@@ -169,6 +169,7 @@ export class GameChannel {
 		this.connectionStatus = 'disconnected';
 		this.gameState = null;
 		this.lastRejection = null;
+		this.gameOver = null;
 		this.errors = [];
 		this.channel = null;
 		this.socket = null;

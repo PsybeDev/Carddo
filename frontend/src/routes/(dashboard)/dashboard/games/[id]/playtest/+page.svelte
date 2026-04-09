@@ -23,7 +23,6 @@
 	let channel = $state<GameChannel | null>(null);
 
 	let validDropTargets = $state<string[]>([]);
-	let gameOver = $state<{ winner_id?: string } | null>(null);
 
 	let loadedGameId: string | null = null;
 
@@ -85,7 +84,6 @@
 	function handleReturnToDashboard() {
 		channel?.disconnect();
 		channel = null;
-		gameStore.reset();
 		goto('/dashboard');
 	}
 
@@ -130,6 +128,7 @@
 	let gameState = $derived(channel?.gameState ?? null);
 	let lastRejection = $derived(channel?.lastRejection ?? null);
 	let errors = $derived(channel?.errors ?? []);
+	let gameOver = $derived(channel?.gameOver ?? null);
 
 	const currentPlayerId = $derived(authStore.currentUser?.id ?? '');
 

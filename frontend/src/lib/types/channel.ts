@@ -57,3 +57,8 @@ export type ChannelError = {
 export type ChannelErrorEnvelope = {
 	errors: ChannelError[];
 };
+
+/** Server broadcast received via `channel.on("game_over", ...)`. */
+export type GameOverPayload = {
+	winner_id: string;
+};
