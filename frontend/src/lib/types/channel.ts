@@ -57,3 +57,12 @@ export type ChannelError = {
 export type ChannelErrorEnvelope = {
 	errors: ChannelError[];
 };
+
+/**
+ * Server broadcast received via `channel.on("game_over", ...)`.
+ * `final_state` is a JSON **string** — call `JSON.parse()` to get a `GameState`.
+ */
+export type GameOverPayload = {
+	winner_id?: string;
+	final_state: string;
+};
