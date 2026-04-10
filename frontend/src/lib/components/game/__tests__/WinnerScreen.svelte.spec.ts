@@ -50,4 +50,20 @@ describe('WinnerScreen', () => {
 		await expect.element(page.getByTestId('winner-screen')).not.toBeInTheDocument();
 		await expect.element(page.getByText('Game Over')).not.toBeInTheDocument();
 	});
+
+	it('renders Return to Dashboard button and calls callback on click', async () => {
+		let clicked = false;
+		render(WinnerScreen, {
+			visible: true,
+			winnerId: 'player_1',
+			onReturnToDashboard: () => {
+				clicked = true;
+			}
+		});
+
+		const button = page.getByRole('button', { name: /return to dashboard/i });
+		await expect.element(button).toBeInTheDocument();
+		await button.click();
+		expect(clicked).toBe(true);
+	});
 });

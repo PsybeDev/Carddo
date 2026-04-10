@@ -8,7 +8,7 @@ defmodule Carddo.GameRoomTest do
   alias Carddo.{Game, GameRoom, Repo, User}
   alias Phoenix.PubSub
 
-  @empty_state ~s({"entities":{},"zones":{},"event_queue":[],"pending_animations":[],"stack_order":"Fifo","state_checks":[]})
+  @empty_state ~s({"entities":{},"zones":{},"event_queue":[],"pending_animations":[],"stack_order":"Fifo","state_checks":[],"turn_ended":false,"game_over":null})
 
   setup do
     {:ok, user} =
@@ -239,6 +239,41 @@ defmodule Carddo.GameRoomTest do
       Process.sleep(100)
       assert Process.alive?(pid)
       assert is_binary(GameRoom.get_state(room_id))
+    end
+  end
+
+  describe "game_over handling" do
+    test "GameOver action broadcasts game_over event with winner", %{game: game} do
+      {room_id, _pid} = start_room(game)
+      topic = "room:#{room_id}"
+      PubSub.subscribe(Carddo.PubSub, topic)
+
+      action = ~s({"GameOver":{"winner":"player_1"}})
+      result = GameRoom.make_move(room_id, "player_1", action)
+      assert result == :ok
+
+      assert_receive %Phoenix.Socket.Broadcast{
+        topic: ^topic,
+        event: "game_over",
+        payload: %{winner_id: "player_1", final_state: _}
+      }
+    end
+
+    test "GameOver action sets ended: true in GenServer state", %{game: game} do
+      {room_id, pid} = start_room(game)
+      action = ~s({"GameOver":{"winner":"player_1"}})
+      GameRoom.make_move(room_id, "player_1", action)
+      %{ended: ended} = :sys.get_state(pid)
+      assert ended == true
+    end
+
+    test "move after game_over returns game_over error", %{game: game} do
+      {room_id, _pid} = start_room(game)
+      action = ~s({"GameOver":{"winner":"player_1"}})
+      GameRoom.make_move(room_id, "player_1", action)
+
+      result = GameRoom.make_move(room_id, "player_1", ~s("EndTurn"))
+      assert {:error, %{type: "game_over", message: "Game has ended"}} = result
     end
   end
 

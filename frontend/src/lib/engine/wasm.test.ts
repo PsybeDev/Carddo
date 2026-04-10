@@ -84,7 +84,9 @@ describe('wasm loader', () => {
 			event_queue: [],
 			pending_animations: [],
 			stack_order: 'Fifo' as const,
-			state_checks: []
+			state_checks: [],
+			turn_ended: false,
+			game_over: null
 		};
 		const mockAction = 'EndTurn' as const;
 

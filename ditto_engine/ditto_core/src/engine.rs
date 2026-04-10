@@ -52,6 +52,7 @@ pub fn validate_action(state: &GameState, action: &Action) -> Result<(), String>
             Ok(())
         }
         Action::EndTurn => Ok(()),
+        Action::GameOver { .. } => Ok(()),
     }
 }
 
@@ -117,6 +118,9 @@ impl GameState {
             self.execute_action(&event);
             self.run_hooks(HookPhase::After, &event);
             self.run_state_checks();
+            if self.game_over.is_some() {
+                break;
+            }
         }
         Ok(())
     }
@@ -329,6 +333,12 @@ impl GameState {
             Action::EndTurn => {
                 self.turn_ended = true;
             }
+
+            Action::GameOver { winner } => {
+                self.game_over = Some(crate::state::GameOverInfo {
+                    winner: winner.clone(),
+                });
+            }
         }
     }
 
@@ -455,6 +465,7 @@ fn action_type_str(action: &Action) -> &'static str {
         Action::MoveEntity { .. } => "move_entity",
         Action::SpawnEntity { .. } => "spawn_entity",
         Action::EndTurn => "end_turn",
+        Action::GameOver { .. } => "game_over",
     }
 }
 
@@ -1504,6 +1515,79 @@ mod tests {
                 .entities
                 .contains(&"creature".to_string()),
             "literal zone refs must still work for shared zones"
+        );
+    }
+
+    #[test]
+    fn game_over_action_sets_game_over_field() {
+        let mut state = GameState::new();
+        state.event_queue.push_back(Event {
+            source_id: "engine".to_string(),
+            action: Action::GameOver {
+                winner: "player_1".to_string(),
+            },
+        });
+        state.resolve_queue();
+        assert!(
+            state.game_over.is_some(),
+            "game_over should be set after GameOver action"
+        );
+        assert_eq!(state.game_over.as_ref().unwrap().winner, "player_1");
+    }
+
+    #[test]
+    fn events_after_game_over_are_not_processed() {
+        let mut state = GameState::new();
+        state.entities.insert(
+            "hero".to_string(),
+            make_entity("hero", vec![("health", 20)], vec![]),
+        );
+        state.event_queue.push_back(Event {
+            source_id: "player_1".to_string(),
+            action: Action::MutateProperty {
+                target_id: "hero".to_string(),
+                property: "health".to_string(),
+                delta: -5,
+            },
+        });
+        state.event_queue.push_back(Event {
+            source_id: "engine".to_string(),
+            action: Action::GameOver {
+                winner: "player_1".to_string(),
+            },
+        });
+        state.event_queue.push_back(Event {
+            source_id: "player_1".to_string(),
+            action: Action::MutateProperty {
+                target_id: "hero".to_string(),
+                property: "health".to_string(),
+                delta: -999,
+            },
+        });
+        state.resolve_queue();
+        assert!(state.game_over.is_some());
+        assert_eq!(
+            state.entities["hero"].properties["health"], 15,
+            "damage after GameOver should not be applied"
+        );
+    }
+
+    #[test]
+    fn game_over_not_reset_between_passes() {
+        let mut state = GameState::new();
+        state.event_queue.push_back(Event {
+            source_id: "engine".to_string(),
+            action: Action::GameOver {
+                winner: "player_2".to_string(),
+            },
+        });
+        state.resolve_queue();
+        assert!(state.game_over.is_some());
+
+        state.resolve_queue();
+        assert!(
+            state.game_over.is_some(),
+            "game_over must not reset between resolution passes"
         );
     }
 }

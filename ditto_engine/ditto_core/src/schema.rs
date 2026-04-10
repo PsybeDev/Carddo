@@ -24,6 +24,7 @@ pub fn generate_typescript() -> String {
         StateCheck::decl(&cfg),
         Condition::decl(&cfg),
         Ability::decl(&cfg),
+        GameOverInfo::decl(&cfg),
         Action::decl(&cfg),
         Animation::decl(&cfg),
         Entity::decl(&cfg),

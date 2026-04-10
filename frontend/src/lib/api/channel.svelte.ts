@@ -8,7 +8,8 @@ import type {
 	ActionRejectedPayload,
 	StateResolvedPayload,
 	ChannelError,
-	ChannelErrorEnvelope
+	ChannelErrorEnvelope,
+	GameOverPayload
 } from '$lib/types/channel';
 
 /**
@@ -63,6 +64,7 @@ export class GameChannel {
 	gameState = $state<GameState | null>(null);
 	lastRejection = $state<ActionRejectedPayload | null>(null);
 	errors = $state<ChannelError[]>([]);
+	gameOver = $state<GameOverPayload | null>(null);
 
 	private socket: Socket | null = null;
 	private channel: Channel | null = null;
@@ -100,6 +102,10 @@ export class GameChannel {
 
 		this.channel.on('action_rejected', (payload: ActionRejectedPayload) => {
 			this.lastRejection = payload;
+		});
+
+		this.channel.on('game_over', (payload: GameOverPayload) => {
+			this.gameOver = payload;
 		});
 
 		await new Promise<void>((resolve, reject) => {
@@ -165,6 +171,7 @@ export class GameChannel {
 		this.connectionStatus = 'disconnected';
 		this.gameState = null;
 		this.lastRejection = null;
+		this.gameOver = null;
 		this.errors = [];
 		this.channel = null;
 		this.socket = null;
