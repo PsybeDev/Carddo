@@ -527,8 +527,23 @@ describe('attemptMove', () => {
 });
 
 describe('receiveResolution', () => {
+	const mockChannel = {
+		submitAction: vi.fn(),
+		currentSequenceId: 0
+	} as unknown as GameChannel;
+
 	beforeEach(() => {
 		gameStore.reset();
+		vi.clearAllMocks();
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(mockChannel as any).currentSequenceId = 0;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(mockChannel.submitAction as any).mockImplementation(() => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(mockChannel as any).currentSequenceId += 1;
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			return (mockChannel as any).currentSequenceId;
+		});
 	});
 
 	it('replaces both serverState and optimisticState with server payload', () => {
@@ -567,6 +582,75 @@ describe('receiveResolution', () => {
 
 		expect(() => gameStore.receiveResolution(state)).not.toThrow();
 		expect(gameStore.optimisticState).toEqual(state);
+	});
+
+	it('re-applies pending optimistic action on top of server snapshot when pending action exists', () => {
+		const stateA: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1'), e2: makeEntity('e2', 'p2') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
+
+		// Incoming snapshot does not yet reflect our pending move (simulating another player's action)
+		const stateB: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1'), e2: makeEntity('e2', 'p2') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', ['e2'], null)
+			}
+		};
+
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
+
+		gameStore.initGame(stateA, 'p1');
+		gameStore.attemptMove(action, mockChannel);
+		gameStore.receiveResolution(stateB);
+
+		// authoritative state reflects the incoming snapshot
+		expect(gameStore.serverState).toEqual(stateB);
+		// optimistic state re-applies our pending move on top of the snapshot
+		expect(gameStore.optimisticState?.zones['battlefield'].entities).toContain('e1');
+		expect(gameStore.optimisticState?.zones['hand'].entities).not.toContain('e1');
+		// pendingAction is still cleared
+		expect(gameStore.pendingAction).toBeNull();
+	});
+
+	it('clears pendingAction even when it was set before receiveResolution', () => {
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
+
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
+
+		const resolvedState: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: {
+				hand: makeZone('hand', [], 'p1'),
+				battlefield: makeZone('battlefield', ['e1'], null)
+			}
+		};
+
+		gameStore.initGame(state, 'p1');
+		gameStore.attemptMove(action, mockChannel);
+		expect(gameStore.pendingAction).not.toBeNull();
+
+		gameStore.receiveResolution(resolvedState);
+
+		expect(gameStore.pendingAction).toBeNull();
 	});
 });
 
@@ -713,6 +797,7 @@ describe('receiveRejection', () => {
 describe('receiveGameOver', () => {
 	beforeEach(() => {
 		gameStore.reset();
+		vi.clearAllMocks();
 	});
 
 	it('sets gameOver with winner_id and finalState', () => {
@@ -753,6 +838,26 @@ describe('receiveGameOver', () => {
 		gameStore.initGame(initial, 'p1');
 		gameStore.receiveGameOver({ winner_id: 'p1', final_state: JSON.stringify(finalState) });
 
+		expect(gameStore.pendingAction).toBeNull();
+	});
+
+	it('sets gameOver with serverState fallback when final_state JSON is malformed', () => {
+		const initial: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: { hand: makeZone('hand', ['e1'], 'p1') }
+		};
+
+		gameStore.initGame(initial, 'p1');
+		gameStore.receiveGameOver({ winner_id: 'p1', final_state: 'not valid json' });
+
+		expect(toastStore.show).toHaveBeenCalledWith(
+			expect.stringContaining('Failed to parse game over state'),
+			'error'
+		);
+		expect(gameStore.gameOver).not.toBeNull();
+		expect(gameStore.gameOver?.winner_id).toBe('p1');
+		expect(gameStore.gameOver?.finalState).toEqual(initial);
 		expect(gameStore.pendingAction).toBeNull();
 	});
 });

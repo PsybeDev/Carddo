@@ -106,7 +106,14 @@ export const gameStore = {
 
 	receiveResolution(serverPayload: GameState): void {
 		serverState = structuredClone(serverPayload);
-		optimisticState = structuredClone(serverPayload);
+		if (pendingAction !== null) {
+			// Re-apply the pending optimistic action on top of the new authoritative snapshot.
+			// state_resolved carries no client_sequence_id, so an unrelated broadcast
+			// (e.g. another player's action) must not wipe our in-flight optimistic state.
+			optimisticState = applyActionOptimistically(serverPayload, pendingAction.action);
+		} else {
+			optimisticState = structuredClone(serverPayload);
+		}
 		pendingAction = null;
 	},
 
@@ -135,6 +142,14 @@ export const gameStore = {
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : 'unknown error';
 			toastStore.show(`Failed to parse game over state: ${msg}`, 'error');
+			// Transition to non-interactive game-over state even on malformed payload,
+			// using the last known authoritative state as a fallback.
+			if (serverState !== null) {
+				gameOver = {
+					winner_id: payload.winner_id,
+					finalState: structuredClone(serverState)
+				};
+			}
 			pendingAction = null;
 			return;
 		}
