@@ -97,6 +97,7 @@
 	function handleReturnToDashboard() {
 		channel?.disconnect();
 		channel = null;
+		gameStore.reset();
 		goto('/dashboard');
 	}
 
@@ -156,8 +157,6 @@
 	$effect(() => {
 		const ch = channel;
 		if (!ch?.gameState) return;
-		// Skip if state hasn't changed (already handled by initGame)
-		if (gameStore.serverState !== null) return;
 		gameStore.receiveResolution(ch.gameState);
 	});
 
@@ -167,11 +166,17 @@
 		gameStore.receiveRejection(rejection);
 	});
 
+	$effect(() => {
+		const over = channel?.gameOver;
+		if (!over) return;
+		gameStore.receiveGameOver(over);
+	});
+
 	let connectionStatus = $derived<ConnectionStatus>(channel?.connectionStatus ?? 'disconnected');
 	let gameState = $derived(gameStore.optimisticState);
 	let lastRejection = $derived(channel?.lastRejection ?? null);
 	let errors = $derived(channel?.errors ?? []);
-	let gameOver = $derived(channel?.gameOver ?? null);
+	let gameOver = $derived(gameStore.gameOver);
 
 	const currentPlayerId = $derived(authStore.currentUser?.id ?? '');
 

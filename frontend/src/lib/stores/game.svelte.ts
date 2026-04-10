@@ -129,7 +129,15 @@ export const gameStore = {
 	 * @param payload - Contains winner_id (optional for ties/aborts) and final_state
 	 */
 	receiveGameOver(payload: GameOverPayload): void {
-		const finalState = JSON.parse(payload.final_state) as GameState;
+		let finalState: GameState;
+		try {
+			finalState = JSON.parse(payload.final_state) as GameState;
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : 'unknown error';
+			toastStore.show(`Failed to parse game over state: ${msg}`, 'error');
+			pendingAction = null;
+			return;
+		}
 		serverState = structuredClone(finalState);
 		optimisticState = structuredClone(finalState);
 		gameOver = {
