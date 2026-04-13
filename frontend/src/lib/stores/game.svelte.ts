@@ -44,6 +44,23 @@ export function applyActionOptimistically(state: GameState, action: Action): Gam
 	return cloned;
 }
 
+/**
+ * Returns true when the authoritative `state` already reflects the effect of `action`.
+ * For MoveEntity, checks that the entity has left `from_zone` and arrived in `to_zone`.
+ * For all other actions (EndTurn, etc.) the effect is not observable from state alone,
+ * so we conservatively assume it has been applied so that pendingAction is cleared.
+ */
+function isActionApplied(state: GameState, action: Action): boolean {
+	if (action === 'EndTurn' || !('MoveEntity' in action)) {
+		return true;
+	}
+	const { entity_id, from_zone, to_zone } = action.MoveEntity;
+	return (
+		!(state.zones[from_zone]?.entities.includes(entity_id) ?? false) &&
+		(state.zones[to_zone]?.entities.includes(entity_id) ?? false)
+	);
+}
+
 // Module-level reactive state
 let serverState = $state<GameState | null>(null);
 let optimisticState = $state<GameState | null>(null);
@@ -106,15 +123,18 @@ export const gameStore = {
 
 	receiveResolution(serverPayload: GameState): void {
 		serverState = structuredClone(serverPayload);
-		if (pendingAction !== null) {
-			// Re-apply the pending optimistic action on top of the new authoritative snapshot.
-			// state_resolved carries no client_sequence_id, so an unrelated broadcast
-			// (e.g. another player's action) must not wipe our in-flight optimistic state.
+		if (pendingAction !== null && !isActionApplied(serverPayload, pendingAction.action)) {
+			// Server snapshot does not yet include our in-flight action (unrelated broadcast,
+			// e.g. another player's move). Re-apply the pending action so the UI doesn't snap
+			// back, and keep pendingAction so that a later action_rejected can still roll it
+			// back with the correct sequence ID.
 			optimisticState = applyActionOptimistically(serverPayload, pendingAction.action);
 		} else {
+			// Either no pending action, or the snapshot already reflects it — accept the
+			// authoritative state and clear the guard.
 			optimisticState = structuredClone(serverPayload);
+			pendingAction = null;
 		}
-		pendingAction = null;
 	},
 
 	receiveRejection(payload: ActionRejectedPayload): void {
@@ -144,11 +164,12 @@ export const gameStore = {
 			toastStore.show(`Failed to parse game over state: ${msg}`, 'error');
 			// Transition to non-interactive game-over state even on malformed payload,
 			// using the last known authoritative state as a fallback.
+			// optimisticState must match so the UI (which renders from optimisticState
+			// only per ADR-006) shows the same snapshot as gameOver.finalState.
 			if (serverState !== null) {
-				gameOver = {
-					winner_id: payload.winner_id,
-					finalState: structuredClone(serverState)
-				};
+				const fallback = structuredClone(serverState);
+				gameOver = { winner_id: payload.winner_id, finalState: fallback };
+				optimisticState = structuredClone(fallback);
 			}
 			pendingAction = null;
 			return;

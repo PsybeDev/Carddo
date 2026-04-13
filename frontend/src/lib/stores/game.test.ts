@@ -617,8 +617,9 @@ describe('receiveResolution', () => {
 		// optimistic state re-applies our pending move on top of the snapshot
 		expect(gameStore.optimisticState?.zones['battlefield'].entities).toContain('e1');
 		expect(gameStore.optimisticState?.zones['hand'].entities).not.toContain('e1');
-		// pendingAction is still cleared
-		expect(gameStore.pendingAction).toBeNull();
+		// pendingAction is preserved — the snapshot didn't include our action, so a later
+		// action_rejected must still be able to roll it back with the correct sequence ID
+		expect(gameStore.pendingAction).not.toBeNull();
 	});
 
 	it('clears pendingAction even when it was set before receiveResolution', () => {
@@ -664,22 +665,60 @@ describe('receiveRejection', () => {
 		const stateA: GameState = {
 			...makeBaseState(),
 			entities: { e1: makeEntity('e1') },
-			zones: { hand: makeZone('hand', ['e1'], 'p1') }
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
+
+		const mockChannel = {
+			submitAction: vi.fn().mockReturnValue(1)
+		} as unknown as GameChannel;
+
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
 		};
 
 		gameStore.initGame(stateA, 'p1');
+		gameStore.attemptMove(action, mockChannel);
+
+		// optimisticState now has e1 in battlefield (diverged from serverState)
+		expect(gameStore.optimisticState?.zones['battlefield'].entities).toContain('e1');
+		expect(gameStore.serverState?.zones['hand'].entities).toContain('e1');
+
 		gameStore.receiveRejection({
 			client_sequence_id: 1,
 			errors: [{ message: 'Invalid move', code: 'invalid_move' }]
 		});
 
+		// rollback: optimisticState restored to serverState
 		expect(gameStore.optimisticState).toEqual(gameStore.serverState);
+		expect(gameStore.optimisticState?.zones['hand'].entities).toContain('e1');
+		expect(gameStore.optimisticState?.zones['battlefield'].entities).not.toContain('e1');
 	});
 
 	it('clears pendingAction', () => {
-		const state = makeBaseState();
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
+
+		const mockChannel = {
+			submitAction: vi.fn().mockReturnValue(1)
+		} as unknown as GameChannel;
+
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
 
 		gameStore.initGame(state, 'p1');
+		gameStore.attemptMove(action, mockChannel);
+		expect(gameStore.pendingAction).not.toBeNull();
+
 		gameStore.receiveRejection({
 			client_sequence_id: 1,
 			errors: [{ message: 'Invalid move', code: 'invalid_move' }]
@@ -858,6 +897,9 @@ describe('receiveGameOver', () => {
 		expect(gameStore.gameOver).not.toBeNull();
 		expect(gameStore.gameOver?.winner_id).toBe('p1');
 		expect(gameStore.gameOver?.finalState).toEqual(initial);
+		// optimisticState must match gameOver.finalState so the UI renders from
+		// optimisticState only (ADR-006) even in the error path
+		expect(gameStore.optimisticState).toEqual(initial);
 		expect(gameStore.pendingAction).toBeNull();
 	});
 });
