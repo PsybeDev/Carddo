@@ -13,6 +13,7 @@
 	import type { Action } from '$lib/types/ditto.generated';
 	import GameBoard from '$lib/components/game/GameBoard.svelte';
 	import { getContext, onMount } from 'svelte';
+	import { gameStore } from '$lib/stores/game.svelte';
 
 	const getGame = getContext<() => Game | null>('game');
 	let game = $derived(getGame());
@@ -23,6 +24,7 @@
 	let channel = $state<GameChannel | null>(null);
 
 	let validDropTargets = $state<string[]>([]);
+	let gameOver = $derived(gameStore.gameOver);
 
 	let loadedGameId: string | null = null;
 
@@ -53,7 +55,10 @@
 	async function startPlaytest() {
 		if (!game || selectedDeckId === null || !authStore.token || !authStore.currentUser) return;
 
-		const roomId = `solo_${authStore.currentUser.id}_${game.id}`;
+		const localUser = authStore.currentUser;
+		const localGame = game;
+		const localDeckId = selectedDeckId;
+		const roomId = `solo_${localUser.id}_${localGame.id}`;
 		let ch: GameChannel | null = null;
 
 		try {
@@ -62,23 +67,32 @@
 			channel = ch;
 
 			await ch.connect(roomId, {
-				game_id: game.id,
-				deck_id: selectedDeckId
+				game_id: localGame.id,
+				deck_id: localDeckId
 			});
+
+			if (channel !== ch || !ch.gameState || !authStore.currentUser) {
+				ch.disconnect();
+				if (channel === ch) channel = null;
+				return;
+			}
+
+			gameStore.initGame(ch.gameState, localUser.id);
 		} catch {
 			ch?.disconnect();
-			channel = null;
+			if (channel === ch) channel = null;
 			toastStore.show('Failed to connect to game channel.');
 		}
 	}
 
 	function endTurn() {
-		channel?.submitAction('EndTurn');
+		if (channel) gameStore.attemptMove('EndTurn', channel);
 	}
 
 	function disconnectChannel() {
 		channel?.disconnect();
 		channel = null;
+		gameStore.reset();
 	}
 
 	async function handleReturnToDashboard() {
@@ -93,8 +107,16 @@
 
 	async function handleDrop(entityId: string, toZone: string) {
 		if (!gameState || !channel) return;
+		if (gameStore.pendingAction !== null) {
+			toastStore.show('Action pending - please wait', 'info');
+			return;
+		}
 
-		const fromZone = findEntityZone(gameState, entityId);
+		const capturedState = gameState;
+		const capturedChannel = channel;
+		const capturedPlayerId = currentPlayerId;
+
+		const fromZone = findEntityZone(capturedState, entityId);
 		if (!fromZone) return;
 
 		const action: Action = {
@@ -107,15 +129,22 @@
 		};
 
 		try {
-			const publicState = stripPrivateState(gameState, currentPlayerId);
+			const publicState = stripPrivateState(capturedState, capturedPlayerId);
 			const result = await validateMove(publicState, action);
+
+			const stateChanged = gameState !== capturedState || channel !== capturedChannel;
+			const entityMoved = findEntityZone(gameState ?? capturedState, entityId) !== fromZone;
+			if (stateChanged || entityMoved) {
+				toastStore.show('Game state changed during validation. Please try again.');
+				return;
+			}
 
 			if (!result.ok) {
 				toastStore.show(result.message);
 				return;
 			}
 
-			channel.submitAction(action);
+			gameStore.attemptMove(action, capturedChannel);
 		} catch {
 			toastStore.show('Validation failed. Please try again.');
 		}
@@ -125,14 +154,34 @@
 		const ch = channel;
 		return () => {
 			ch?.disconnect();
+			gameStore.reset();
 		};
 	});
 
+	$effect(() => {
+		const ch = channel;
+		if (!ch?.gameState) return;
+		// Skip if state hasn't changed (already handled by initGame)
+		if (gameStore.serverState !== null) return;
+		gameStore.receiveResolution(ch.gameState);
+	});
+
+	$effect(() => {
+		const rejection = channel?.lastRejection;
+		if (!rejection) return;
+		gameStore.receiveRejection(rejection);
+	});
+
+	$effect(() => {
+		const payload = channel?.gameOver;
+		if (!payload) return;
+		gameStore.receiveGameOver(payload);
+	});
+
 	let connectionStatus = $derived<ConnectionStatus>(channel?.connectionStatus ?? 'disconnected');
-	let gameState = $derived(channel?.gameState ?? null);
+	let gameState = $derived(gameStore.optimisticState);
 	let lastRejection = $derived(channel?.lastRejection ?? null);
 	let errors = $derived(channel?.errors ?? []);
-	let gameOver = $derived(channel?.gameOver ?? null);
 
 	const currentPlayerId = $derived(authStore.currentUser?.id ?? '');
 
@@ -145,6 +194,8 @@
 	$effect(() => {
 		if (gameState) {
 			validDropTargets = Object.keys(gameState.zones);
+		} else {
+			validDropTargets = [];
 		}
 	});
 
