@@ -81,10 +81,14 @@
 		channel = null;
 	}
 
-	function handleReturnToDashboard() {
+	async function handleReturnToDashboard() {
 		channel?.disconnect();
 		channel = null;
-		goto('/dashboard');
+		try {
+			await goto('/dashboard');
+		} catch (err) {
+			console.error('Navigation to dashboard failed:', err);
+		}
 	}
 
 	async function handleDrop(entityId: string, toZone: string) {

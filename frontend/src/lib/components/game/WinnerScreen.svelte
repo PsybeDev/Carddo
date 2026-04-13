@@ -19,13 +19,15 @@
 			{#if winnerId}
 				<p class="mt-2 text-lg text-slate-300">Winner: {winnerId}</p>
 			{/if}
-			<button
-				type="button"
-				onclick={onReturnToDashboard}
-				class="mt-6 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500"
-			>
-				Return to Dashboard
-			</button>
+			{#if onReturnToDashboard}
+				<button
+					type="button"
+					onclick={onReturnToDashboard}
+					class="mt-6 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500"
+				>
+					Return to Dashboard
+				</button>
+			{/if}
 		</div>
 	</div>
 {/if}

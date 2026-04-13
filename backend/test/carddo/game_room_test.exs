@@ -275,6 +275,33 @@ defmodule Carddo.GameRoomTest do
       result = GameRoom.make_move(room_id, "player_1", ~s("EndTurn"))
       assert {:error, %{type: "game_over", message: "Game has ended"}} = result
     end
+
+    test "GameOver on a turn boundary checkpoints the final state", %{game: game} do
+      # State with an entity whose ability fires GameOver immediately after EndTurn.
+      # This ensures turn_ended? and game_over_info are both set in the same process_move call.
+      state_with_win_condition =
+        ~s({"entities":{"gc":{"id":"gc","owner_id":"system","template_id":"gc","properties":{},"abilities":[{"id":"win","name":"Win Condition","trigger":"on_after_end_turn","conditions":[],"actions":[{"GameOver":{"winner":"player_1"}}],"cancels":false}]}},"zones":{"void":{"id":"void","owner_id":null,"visibility":"Public","entities":["gc"]}},"event_queue":[],"pending_animations":[],"stack_order":"Fifo","state_checks":[],"turn_ended":false,"game_over":null})
+
+      {room_id, _pid} = start_room(game, %{initial_state_json: state_with_win_condition})
+      topic = "room:#{room_id}"
+      PubSub.subscribe(Carddo.PubSub, topic)
+
+      assert GameRoom.make_move(room_id, "player_1", ~s("EndTurn")) == :ok
+
+      assert_receive %Phoenix.Socket.Broadcast{
+        topic: ^topic,
+        event: "game_over",
+        payload: %{winner_id: "player_1"}
+      }
+
+      session =
+        wait_for(fn ->
+          s = Carddo.Multiplayer.GameSessions.get(room_id)
+          if s && s.turn_number == 1, do: s, else: nil
+        end)
+
+      assert session.turn_number == 1
+    end
   end
 
   describe "TTL expiry" do

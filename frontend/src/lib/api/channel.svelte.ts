@@ -106,6 +106,14 @@ export class GameChannel {
 
 		this.channel.on('game_over', (payload: GameOverPayload) => {
 			this.gameOver = payload;
+			if (payload.final_state) {
+				try {
+					this.gameState = parseGameState(payload.final_state);
+				} catch (err) {
+					const msg = err instanceof Error ? err.message : 'Failed to parse final game state';
+					this.errors = [{ message: msg, code: 'parse_error' }];
+				}
+			}
 		});
 
 		await new Promise<void>((resolve, reject) => {

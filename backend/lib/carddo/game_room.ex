@@ -109,6 +109,34 @@ defmodule Carddo.GameRoom do
             if game_over_info != nil do
               winner = game_over_info["winner"]
 
+              if turn_ended? do
+                new_turn = state.turn_number + 1
+
+                Task.start(fn ->
+                  try do
+                    case Carddo.Multiplayer.GameSessions.upsert(
+                           state.room_id,
+                           state.game_id,
+                           new_state_json,
+                           new_turn
+                         ) do
+                      {:ok, _} ->
+                        :ok
+
+                      {:error, reason} ->
+                        Logger.error(
+                          "GameSessions.upsert failed room=#{state.room_id}: #{inspect(reason)}"
+                        )
+                    end
+                  rescue
+                    e ->
+                      Logger.error(
+                        "GameSessions.upsert exception room=#{state.room_id}: #{Exception.message(e)}"
+                      )
+                  end
+                end)
+              end
+
               broadcast(state.room_id, "game_over", %{
                 winner_id: winner,
                 final_state: new_state_json
@@ -121,7 +149,8 @@ defmodule Carddo.GameRoom do
                 state
                 | rust_state_json: new_state_json,
                   ended: true,
-                  ttl_ref: new_ttl_ref
+                  ttl_ref: new_ttl_ref,
+                  turn_number: if(turn_ended?, do: state.turn_number + 1, else: state.turn_number)
               }
 
               {:reply, :ok, new_state}

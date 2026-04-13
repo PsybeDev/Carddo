@@ -119,6 +119,7 @@ impl GameState {
             self.run_hooks(HookPhase::After, &event);
             self.run_state_checks();
             if self.game_over.is_some() {
+                self.event_queue.clear();
                 break;
             }
         }

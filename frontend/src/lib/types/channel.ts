@@ -61,4 +61,6 @@ export type ChannelErrorEnvelope = {
 /** Server broadcast received via `channel.on("game_over", ...)`. */
 export type GameOverPayload = {
 	winner_id: string;
+	/** JSON-encoded final GameState snapshot. Apply immediately to avoid stale board if state_resolved is delayed. */
+	final_state?: string;
 };
