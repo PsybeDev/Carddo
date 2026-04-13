@@ -51,7 +51,8 @@ defmodule Carddo.GameRoom do
     # Absolute 24-hour lifetime TTL — not an idle timer. Active rooms will also be
     # stopped after 24h. Converting this to an idle-TTL (reset on each move) is
     # tracked as a follow-up issue.
-    ttl_ref = Process.send_after(self(), :ttl_expired, :timer.hours(24))
+    ttl_id = make_ref()
+    ttl_ref = Process.send_after(self(), {:ttl_expired, ttl_id}, :timer.hours(24))
 
     state = %{
       room_id: room_id,
@@ -60,7 +61,8 @@ defmodule Carddo.GameRoom do
       turn_number: 0,
       solo_mode: solo_mode,
       ended: false,
-      ttl_ref: ttl_ref
+      ttl_ref: ttl_ref,
+      ttl_id: ttl_id
     }
 
     {:ok, state, {:continue, :initial_checkpoint}}
@@ -108,34 +110,31 @@ defmodule Carddo.GameRoom do
 
             if game_over_info != nil do
               winner = game_over_info["winner"]
+              new_turn = if turn_ended?, do: state.turn_number + 1, else: state.turn_number
 
-              if turn_ended? do
-                new_turn = state.turn_number + 1
+              Task.start(fn ->
+                try do
+                  case Carddo.Multiplayer.GameSessions.upsert(
+                         state.room_id,
+                         state.game_id,
+                         new_state_json,
+                         new_turn
+                       ) do
+                    {:ok, _} ->
+                      :ok
 
-                Task.start(fn ->
-                  try do
-                    case Carddo.Multiplayer.GameSessions.upsert(
-                           state.room_id,
-                           state.game_id,
-                           new_state_json,
-                           new_turn
-                         ) do
-                      {:ok, _} ->
-                        :ok
-
-                      {:error, reason} ->
-                        Logger.error(
-                          "GameSessions.upsert failed room=#{state.room_id}: #{inspect(reason)}"
-                        )
-                    end
-                  rescue
-                    e ->
+                    {:error, reason} ->
                       Logger.error(
-                        "GameSessions.upsert exception room=#{state.room_id}: #{Exception.message(e)}"
+                        "GameSessions.upsert failed room=#{state.room_id}: #{inspect(reason)}"
                       )
                   end
-                end)
-              end
+                rescue
+                  e ->
+                    Logger.error(
+                      "GameSessions.upsert exception room=#{state.room_id}: #{Exception.message(e)}"
+                    )
+                end
+              end)
 
               broadcast(state.room_id, "game_over", %{
                 winner_id: winner,
@@ -143,14 +142,18 @@ defmodule Carddo.GameRoom do
               })
 
               Process.cancel_timer(state.ttl_ref)
-              new_ttl_ref = Process.send_after(self(), :ttl_expired, :timer.minutes(5))
+              new_ttl_id = make_ref()
+
+              new_ttl_ref =
+                Process.send_after(self(), {:ttl_expired, new_ttl_id}, :timer.minutes(5))
 
               new_state = %{
                 state
                 | rust_state_json: new_state_json,
                   ended: true,
                   ttl_ref: new_ttl_ref,
-                  turn_number: if(turn_ended?, do: state.turn_number + 1, else: state.turn_number)
+                  ttl_id: new_ttl_id,
+                  turn_number: new_turn
               }
 
               {:reply, :ok, new_state}
@@ -222,7 +225,7 @@ defmodule Carddo.GameRoom do
   end
 
   @impl true
-  def handle_info(:ttl_expired, state) do
+  def handle_info({:ttl_expired, id}, state) when id == state.ttl_id do
     Logger.info("GameRoom TTL expired for room=#{state.room_id}, cleaning up abandoned session")
 
     try do
@@ -235,6 +238,10 @@ defmodule Carddo.GameRoom do
     end
 
     {:stop, :normal, state}
+  end
+
+  def handle_info({:ttl_expired, _stale_id}, state) do
+    {:noreply, state}
   end
 
   defp broadcast(room_id, event, payload) do

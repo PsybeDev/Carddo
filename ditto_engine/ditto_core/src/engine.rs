@@ -52,7 +52,7 @@ pub fn validate_action(state: &GameState, action: &Action) -> Result<(), String>
             Ok(())
         }
         Action::EndTurn => Ok(()),
-        Action::GameOver { .. } => Ok(()),
+        Action::GameOver { .. } => Err("GameOver cannot be submitted by a client".to_string()),
     }
 }
 
@@ -92,6 +92,10 @@ impl GameState {
     }
 
     fn resolve_queue_impl(&mut self, max_steps: Option<usize>) -> Result<(), String> {
+        if self.game_over.is_some() {
+            self.event_queue.clear();
+            return Ok(());
+        }
         self.turn_ended = false;
         let order = self.stack_order;
         let mut steps = 0;

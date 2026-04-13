@@ -242,14 +242,17 @@ defmodule Carddo.GameRoomTest do
     end
   end
 
+  # State with an entity whose on_after_end_turn hook fires GameOver.
+  # GameOver is engine-internal: clients cannot submit it directly.
+  @win_condition_state ~s({"entities":{"gc":{"id":"gc","owner_id":"system","template_id":"gc","properties":{},"abilities":[{"id":"win","name":"Win Condition","trigger":"on_after_end_turn","conditions":[],"actions":[{"GameOver":{"winner":"player_1"}}],"cancels":false}]}},"zones":{"void":{"id":"void","owner_id":null,"visibility":"Public","entities":["gc"]}},"event_queue":[],"pending_animations":[],"stack_order":"Fifo","state_checks":[],"turn_ended":false,"game_over":null})
+
   describe "game_over handling" do
     test "GameOver action broadcasts game_over event with winner", %{game: game} do
-      {room_id, _pid} = start_room(game)
+      {room_id, _pid} = start_room(game, %{initial_state_json: @win_condition_state})
       topic = "room:#{room_id}"
       PubSub.subscribe(Carddo.PubSub, topic)
 
-      action = ~s({"GameOver":{"winner":"player_1"}})
-      result = GameRoom.make_move(room_id, "player_1", action)
+      result = GameRoom.make_move(room_id, "player_1", ~s("EndTurn"))
       assert result == :ok
 
       assert_receive %Phoenix.Socket.Broadcast{
@@ -260,17 +263,15 @@ defmodule Carddo.GameRoomTest do
     end
 
     test "GameOver action sets ended: true in GenServer state", %{game: game} do
-      {room_id, pid} = start_room(game)
-      action = ~s({"GameOver":{"winner":"player_1"}})
-      GameRoom.make_move(room_id, "player_1", action)
+      {room_id, pid} = start_room(game, %{initial_state_json: @win_condition_state})
+      GameRoom.make_move(room_id, "player_1", ~s("EndTurn"))
       %{ended: ended} = :sys.get_state(pid)
       assert ended == true
     end
 
     test "move after game_over returns game_over error", %{game: game} do
-      {room_id, _pid} = start_room(game)
-      action = ~s({"GameOver":{"winner":"player_1"}})
-      GameRoom.make_move(room_id, "player_1", action)
+      {room_id, _pid} = start_room(game, %{initial_state_json: @win_condition_state})
+      GameRoom.make_move(room_id, "player_1", ~s("EndTurn"))
 
       result = GameRoom.make_move(room_id, "player_1", ~s("EndTurn"))
       assert {:error, %{type: "game_over", message: "Game has ended"}} = result
@@ -310,8 +311,9 @@ defmodule Carddo.GameRoomTest do
 
       wait_for(fn -> Carddo.Multiplayer.GameSessions.get(room_id) end)
 
+      %{ttl_id: ttl_id} = :sys.get_state(pid)
       ref = Process.monitor(pid)
-      send(pid, :ttl_expired)
+      send(pid, {:ttl_expired, ttl_id})
 
       assert_receive {:DOWN, ^ref, :process, ^pid, :normal}, 5000
 

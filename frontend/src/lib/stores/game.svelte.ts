@@ -75,7 +75,9 @@ export const gameStore = {
 		optimisticState = structuredClone(initialState);
 		currentPlayerId = playerId;
 		pendingAction = null;
-		gameOver = null;
+		gameOver = initialState.game_over
+			? { winner_id: initialState.game_over.winner, finalState: structuredClone(initialState) }
+			: null;
 	},
 
 	reset(): void {
