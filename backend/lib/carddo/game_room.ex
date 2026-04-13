@@ -110,7 +110,10 @@ defmodule Carddo.GameRoom do
 
             if game_over_info != nil do
               winner = game_over_info["winner"]
-              new_turn = if turn_ended?, do: state.turn_number + 1, else: state.turn_number
+              # Always increment for the final checkpoint — the upsert guard is
+              # `turn_number < ^new_turn`, so equal values are silently skipped.
+              # Turn semantics are irrelevant once the game is over.
+              new_turn = state.turn_number + 1
 
               Task.start(fn ->
                 try do

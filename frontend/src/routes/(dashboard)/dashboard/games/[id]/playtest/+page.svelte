@@ -100,8 +100,8 @@
 		channel = null;
 		try {
 			await goto('/dashboard');
-		} catch (err) {
-			console.error('Navigation to dashboard failed:', err);
+		} catch {
+			toastStore.show('Failed to return to dashboard. Please try again.', 'error');
 		}
 	}
 
