@@ -126,17 +126,23 @@ export const gameStore = {
 
 	/**
 	 * Handles the end-of-game signal from the server.
+	 * Deep-clones final_state to avoid shared mutable references.
 	 *
 	 * @param payload - Contains winner_id (optional for ties/aborts) and final_state
 	 */
 	receiveGameOver(payload: GameOverPayload): void {
-		const finalState = parseGameState(payload.final_state);
-		serverState = finalState;
-		optimisticState = finalState;
-		gameOver = {
-			winner_id: payload.winner_id,
-			finalState
-		};
-		pendingAction = null;
+		try {
+			const finalState = parseGameState(payload.final_state);
+			serverState = structuredClone(finalState);
+			optimisticState = structuredClone(finalState);
+			gameOver = {
+				winner_id: payload.winner_id,
+				finalState: structuredClone(finalState)
+			};
+			pendingAction = null;
+		} catch (e) {
+			const msg = e instanceof Error ? e.message : 'Failed to parse final game state';
+			toastStore.show(msg, 'error');
+		}
 	}
 };
