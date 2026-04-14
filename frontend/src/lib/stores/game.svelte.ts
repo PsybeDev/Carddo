@@ -1,5 +1,5 @@
 import type { Action, GameState } from '$lib/types/ditto.generated';
-import type { GameChannel } from '$lib/api/channel.svelte';
+import { type GameChannel, parseGameState } from '$lib/api/channel.svelte';
 import { toastStore } from '$lib/stores/toast.svelte';
 import type { ActionRejectedPayload, GameOverPayload } from '$lib/types/channel';
 
@@ -126,17 +126,16 @@ export const gameStore = {
 
 	/**
 	 * Handles the end-of-game signal from the server.
-	 * Deep-clones final_state to avoid shared mutable references.
 	 *
 	 * @param payload - Contains winner_id (optional for ties/aborts) and final_state
 	 */
 	receiveGameOver(payload: GameOverPayload): void {
-		const finalState = JSON.parse(payload.final_state) as GameState;
-		serverState = structuredClone(finalState);
-		optimisticState = structuredClone(finalState);
+		const finalState = parseGameState(payload.final_state);
+		serverState = finalState;
+		optimisticState = finalState;
 		gameOver = {
 			winner_id: payload.winner_id,
-			finalState: structuredClone(finalState)
+			finalState
 		};
 		pendingAction = null;
 	}
