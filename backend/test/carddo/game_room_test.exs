@@ -264,7 +264,8 @@ defmodule Carddo.GameRoomTest do
 
     test "GameOver action sets ended: true in GenServer state", %{game: game} do
       {room_id, pid} = start_room(game, %{initial_state_json: @win_condition_state})
-      GameRoom.make_move(room_id, "player_1", ~s("EndTurn"))
+      result = GameRoom.make_move(room_id, "player_1", ~s("EndTurn"))
+      assert result == :ok
       %{ended: ended} = :sys.get_state(pid)
       assert ended == true
     end

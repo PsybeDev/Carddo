@@ -90,14 +90,7 @@ export class GameChannel {
 		this.channel = this.socket.channel('room:' + roomId, params);
 
 		this.channel.on('state_resolved', (payload: StateResolvedPayload) => {
-			try {
-				this.gameState = parseGameState(payload.state);
-				this.lastRejection = null;
-			} catch (err) {
-				const msg = err instanceof Error ? err.message : 'Failed to parse game state';
-				this.errors = [{ message: msg, code: 'parse_error' }];
-				this.connectionStatus = 'error';
-			}
+			this.parseAndSetGameState(payload.state);
 		});
 
 		this.channel.on('action_rejected', (payload: ActionRejectedPayload) => {
@@ -106,14 +99,7 @@ export class GameChannel {
 
 		this.channel.on('game_over', (payload: GameOverPayload) => {
 			if (payload.final_state) {
-				try {
-					this.gameState = parseGameState(payload.final_state);
-				} catch (err) {
-					const msg = err instanceof Error ? err.message : 'Failed to parse final game state';
-					this.errors = [{ message: msg, code: 'parse_error' }];
-					this.connectionStatus = 'error';
-					return;
-				}
+				this.parseAndSetGameState(payload.final_state);
 			}
 			this.gameOver = payload;
 		});
@@ -156,6 +142,18 @@ export class GameChannel {
 					reject(new Error('Channel join timed out'));
 				});
 		});
+	}
+
+	private parseAndSetGameState(stateJson: string): void {
+		try {
+			this.gameState = parseGameState(stateJson);
+			this.lastRejection = null;
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : 'Failed to parse game state';
+			this.errors = [{ message: msg, code: 'parse_error' }];
+			this.connectionStatus = 'error';
+			console.error(msg, err);
+		}
 	}
 
 	submitAction(action: Action): number | null {

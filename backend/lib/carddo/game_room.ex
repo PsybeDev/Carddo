@@ -115,29 +115,7 @@ defmodule Carddo.GameRoom do
               # Turn semantics are irrelevant once the game is over.
               new_turn = state.turn_number + 1
 
-              Task.start(fn ->
-                try do
-                  case Carddo.Multiplayer.GameSessions.upsert(
-                         state.room_id,
-                         state.game_id,
-                         new_state_json,
-                         new_turn
-                       ) do
-                    {:ok, _} ->
-                      :ok
-
-                    {:error, reason} ->
-                      Logger.error(
-                        "GameSessions.upsert failed room=#{state.room_id}: #{inspect(reason)}"
-                      )
-                  end
-                rescue
-                  e ->
-                    Logger.error(
-                      "GameSessions.upsert exception room=#{state.room_id}: #{Exception.message(e)}"
-                    )
-                end
-              end)
+              async_checkpoint(state.room_id, state.game_id, new_state_json, new_turn)
 
               broadcast(state.room_id, "game_over", %{
                 winner_id: winner,
@@ -165,29 +143,7 @@ defmodule Carddo.GameRoom do
                 if turn_ended? do
                   new_turn = state.turn_number + 1
 
-                  Task.start(fn ->
-                    try do
-                      case Carddo.Multiplayer.GameSessions.upsert(
-                             state.room_id,
-                             state.game_id,
-                             new_state_json,
-                             new_turn
-                           ) do
-                        {:ok, _} ->
-                          :ok
-
-                        {:error, reason} ->
-                          Logger.error(
-                            "GameSessions.upsert failed room=#{state.room_id}: #{inspect(reason)}"
-                          )
-                      end
-                    rescue
-                      e ->
-                        Logger.error(
-                          "GameSessions.upsert exception room=#{state.room_id}: #{Exception.message(e)}"
-                        )
-                    end
-                  end)
+                  async_checkpoint(state.room_id, state.game_id, new_state_json, new_turn)
 
                   {"state_resolved",
                    %{state | rust_state_json: new_state_json, turn_number: new_turn}}
@@ -249,5 +205,27 @@ defmodule Carddo.GameRoom do
 
   defp broadcast(room_id, event, payload) do
     CarddoWeb.Endpoint.broadcast("room:#{room_id}", event, payload)
+  end
+
+  defp async_checkpoint(room_id, game_id, state_json, turn_number) do
+    Task.start(fn ->
+      try do
+        case Carddo.Multiplayer.GameSessions.upsert(
+               room_id,
+               game_id,
+               state_json,
+               turn_number
+             ) do
+          {:ok, _} ->
+            :ok
+
+          {:error, reason} ->
+            Logger.error("GameSessions.upsert failed room=#{room_id}: #{inspect(reason)}")
+        end
+      rescue
+        e ->
+          Logger.error("GameSessions.upsert exception room=#{room_id}: #{Exception.message(e)}")
+      end
+    end)
   end
 end

@@ -96,8 +96,7 @@
 	}
 
 	async function handleReturnToDashboard() {
-		channel?.disconnect();
-		channel = null;
+		disconnectChannel();
 		try {
 			await goto('/dashboard');
 		} catch {
