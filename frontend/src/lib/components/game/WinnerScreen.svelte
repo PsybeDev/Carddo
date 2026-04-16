@@ -1,5 +1,9 @@
 <script lang="ts">
-	let { visible, winnerId }: { visible: boolean; winnerId?: string } = $props();
+	let {
+		visible,
+		winnerId,
+		onReturnToDashboard
+	}: { visible: boolean; winnerId?: string; onReturnToDashboard?: () => void } = $props();
 </script>
 
 {#if visible}
@@ -14,6 +18,15 @@
 			<h2 id="winner-screen-title" class="text-3xl font-bold text-white">Game Over</h2>
 			{#if winnerId}
 				<p class="mt-2 text-lg text-slate-300">Winner: {winnerId}</p>
+			{/if}
+			{#if onReturnToDashboard}
+				<button
+					type="button"
+					onclick={onReturnToDashboard}
+					class="mt-6 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500"
+				>
+					Return to Dashboard
+				</button>
 			{/if}
 		</div>
 	</div>

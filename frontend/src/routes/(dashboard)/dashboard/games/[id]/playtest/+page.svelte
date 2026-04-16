@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { apiGet } from '$lib/api/client';
 	import { GameChannel, buildWsUrl } from '$lib/api/channel.svelte';
@@ -94,6 +95,15 @@
 		gameStore.reset();
 	}
 
+	async function handleReturnToDashboard() {
+		disconnectChannel();
+		try {
+			await goto('/dashboard');
+		} catch {
+			toastStore.show('Failed to return to dashboard. Please try again.', 'error');
+		}
+	}
+
 	async function handleDrop(entityId: string, toZone: string) {
 		if (!gameState || !channel) return;
 		if (gameStore.pendingAction !== null) {
@@ -150,8 +160,6 @@
 	$effect(() => {
 		const ch = channel;
 		if (!ch?.gameState) return;
-		// Skip if state hasn't changed (already handled by initGame)
-		if (gameStore.serverState !== null) return;
 		gameStore.receiveResolution(ch.gameState);
 	});
 
@@ -159,6 +167,12 @@
 		const rejection = channel?.lastRejection;
 		if (!rejection) return;
 		gameStore.receiveRejection(rejection);
+	});
+
+	$effect(() => {
+		const payload = channel?.gameOver;
+		if (!payload) return;
+		gameStore.receiveGameOver(payload);
 	});
 
 	let connectionStatus = $derived<ConnectionStatus>(channel?.connectionStatus ?? 'disconnected');
@@ -288,7 +302,14 @@
 		{/if}
 
 		{#if gameState}
-			<GameBoard {gameState} {currentPlayerId} {validDropTargets} {gameOver} onDrop={handleDrop} />
+			<GameBoard
+				{gameState}
+				{currentPlayerId}
+				{validDropTargets}
+				{gameOver}
+				onDrop={handleDrop}
+				onReturnToDashboard={handleReturnToDashboard}
+			/>
 
 			<div class="flex gap-2 pt-2">
 				<button

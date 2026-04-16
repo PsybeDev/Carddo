@@ -1,5 +1,5 @@
 import type { Action, GameState } from '$lib/types/ditto.generated';
-import type { GameChannel } from '$lib/api/channel.svelte';
+import { type GameChannel, parseGameState } from '$lib/api/channel.svelte';
 import { toastStore } from '$lib/stores/toast.svelte';
 import type { ActionRejectedPayload, GameOverPayload } from '$lib/types/channel';
 
@@ -75,7 +75,9 @@ export const gameStore = {
 		optimisticState = structuredClone(initialState);
 		currentPlayerId = playerId;
 		pendingAction = null;
-		gameOver = null;
+		gameOver = initialState.game_over
+			? { winner_id: initialState.game_over.winner, finalState: structuredClone(initialState) }
+			: null;
 	},
 
 	reset(): void {
@@ -129,13 +131,18 @@ export const gameStore = {
 	 * @param payload - Contains winner_id (optional for ties/aborts) and final_state
 	 */
 	receiveGameOver(payload: GameOverPayload): void {
-		const finalState = JSON.parse(payload.final_state) as GameState;
-		serverState = structuredClone(finalState);
-		optimisticState = structuredClone(finalState);
-		gameOver = {
-			winner_id: payload.winner_id,
-			finalState: structuredClone(finalState)
-		};
-		pendingAction = null;
+		try {
+			const finalState = parseGameState(payload.final_state);
+			serverState = structuredClone(finalState);
+			optimisticState = structuredClone(finalState);
+			gameOver = {
+				winner_id: payload.winner_id,
+				finalState: structuredClone(finalState)
+			};
+			pendingAction = null;
+		} catch (e) {
+			const msg = e instanceof Error ? e.message : 'Failed to parse final game state';
+			toastStore.show(msg, 'error');
+		}
 	}
 };

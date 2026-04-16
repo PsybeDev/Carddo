@@ -35,7 +35,9 @@ function makeBaseState(): GameState {
 		event_queue: [],
 		pending_animations: [],
 		stack_order: 'Fifo',
-		state_checks: []
+		state_checks: [],
+		turn_ended: false,
+		game_over: null
 	};
 }
 
@@ -417,7 +419,27 @@ describe('attemptMove', () => {
 		expect(mockChannel.submitAction).toHaveBeenCalledWith(action);
 	});
 
-	it.todo('no-ops when gameOver is set');
+	it('no-ops when gameOver is set', () => {
+		const state: GameState = {
+			...makeBaseState(),
+			entities: { e1: makeEntity('e1') },
+			zones: {
+				hand: makeZone('hand', ['e1'], 'p1'),
+				battlefield: makeZone('battlefield', [], null)
+			}
+		};
+
+		gameStore.initGame(state, 'p1');
+		gameStore.receiveGameOver({ winner_id: 'p1', final_state: JSON.stringify(makeBaseState()) });
+
+		const action: Action = {
+			MoveEntity: { entity_id: 'e1', from_zone: 'hand', to_zone: 'battlefield', index: null }
+		};
+
+		gameStore.attemptMove(action, mockChannel);
+
+		expect(mockChannel.submitAction).not.toHaveBeenCalled();
+	});
 
 	it('no-ops when optimisticState is null (not initialized)', () => {
 		const action: Action = {

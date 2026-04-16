@@ -8,7 +8,8 @@ import type {
 	ActionRejectedPayload,
 	StateResolvedPayload,
 	ChannelError,
-	ChannelErrorEnvelope
+	ChannelErrorEnvelope,
+	GameOverPayload
 } from '$lib/types/channel';
 
 /**
@@ -63,6 +64,7 @@ export class GameChannel {
 	gameState = $state<GameState | null>(null);
 	lastRejection = $state<ActionRejectedPayload | null>(null);
 	errors = $state<ChannelError[]>([]);
+	gameOver = $state<GameOverPayload | null>(null);
 
 	private socket: Socket | null = null;
 	private channel: Channel | null = null;
@@ -88,18 +90,18 @@ export class GameChannel {
 		this.channel = this.socket.channel('room:' + roomId, params);
 
 		this.channel.on('state_resolved', (payload: StateResolvedPayload) => {
-			try {
-				this.gameState = parseGameState(payload.state);
-				this.lastRejection = null;
-			} catch (err) {
-				const msg = err instanceof Error ? err.message : 'Failed to parse game state';
-				this.errors = [{ message: msg, code: 'parse_error' }];
-				this.connectionStatus = 'error';
-			}
+			this.parseAndSetGameState(payload.state);
 		});
 
 		this.channel.on('action_rejected', (payload: ActionRejectedPayload) => {
 			this.lastRejection = payload;
+		});
+
+		this.channel.on('game_over', (payload: GameOverPayload) => {
+			if (payload.final_state) {
+				this.parseAndSetGameState(payload.final_state);
+			}
+			this.gameOver = payload;
 		});
 
 		await new Promise<void>((resolve, reject) => {
@@ -142,6 +144,18 @@ export class GameChannel {
 		});
 	}
 
+	private parseAndSetGameState(stateJson: string): void {
+		try {
+			this.gameState = parseGameState(stateJson);
+			this.lastRejection = null;
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : 'Failed to parse game state';
+			this.errors = [{ message: msg, code: 'parse_error' }];
+			this.connectionStatus = 'error';
+			console.error(msg, err);
+		}
+	}
+
 	submitAction(action: Action): number | null {
 		if (!this.channel) return null;
 
@@ -165,6 +179,7 @@ export class GameChannel {
 		this.connectionStatus = 'disconnected';
 		this.gameState = null;
 		this.lastRejection = null;
+		this.gameOver = null;
 		this.errors = [];
 		this.channel = null;
 		this.socket = null;
