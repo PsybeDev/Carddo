@@ -172,11 +172,7 @@
 	$effect(() => {
 		const payload = channel?.gameOver;
 		if (!payload) return;
-		try {
-			gameStore.receiveGameOver(payload);
-		} catch {
-			toastStore.show('Failed to apply game over state. Please refresh.', 'error');
-		}
+		gameStore.receiveGameOver(payload);
 	});
 
 	let connectionStatus = $derived<ConnectionStatus>(channel?.connectionStatus ?? 'disconnected');
