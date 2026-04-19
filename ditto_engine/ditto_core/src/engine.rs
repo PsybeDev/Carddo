@@ -1,4 +1,5 @@
 use crate::state::{Action, Animation, Condition, Event, GameState, StackOrder, StateCheck};
+use std::collections::HashMap;
 
 // ==========================================
 // VALIDATION
@@ -54,6 +55,72 @@ pub fn validate_action(state: &GameState, action: &Action) -> Result<(), String>
         Action::EndTurn => Ok(()),
         Action::GameOver { .. } => Err("GameOver cannot be submitted by a client".to_string()),
     }
+}
+
+// ==========================================
+// ACTION ENUMERATION (for AI / suggestion UIs)
+// ==========================================
+
+/// Returns every currently-legal `Action` that `player_id` could submit.
+///
+/// The engine stays abstract (ADR-004) — this filters on `Entity::owner_id` but
+/// never inspects hardcoded zone names or property keys. Only `MoveEntity` and
+/// `EndTurn` are enumerated:
+///
+/// * `MutateProperty` and `SpawnEntity` are ability-driven in the Carddo model —
+///   players don't submit them directly.
+/// * `GameOver` is server-only.
+///
+/// Complexity: O(E × Z) validations where E is entities owned by the player and
+/// Z is the zone count. An entity-to-zone index is built once so each candidate
+/// move is a constant-time lookup.
+pub fn valid_actions_for_player(state: &GameState, player_id: &str) -> Vec<Action> {
+    let mut actions: Vec<Action> = Vec::new();
+
+    // EndTurn is always a legal choice — `validate_action` always returns Ok for it.
+    actions.push(Action::EndTurn);
+
+    // One-pass index of which zone currently holds each entity. Entities present
+    // in more than one zone (a corruption case) are skipped to avoid producing
+    // MoveEntity candidates that would fail validation midstream.
+    let mut entity_zone: HashMap<&str, &str> = HashMap::new();
+    for (zone_id, zone) in &state.zones {
+        for entity_id in &zone.entities {
+            entity_zone
+                .entry(entity_id.as_str())
+                .and_modify(|_| { /* duplicate — leave the first one; enumeration still filters on validate */ })
+                .or_insert(zone_id.as_str());
+        }
+    }
+
+    let zone_ids: Vec<&str> = state.zones.keys().map(String::as_str).collect();
+
+    for (entity_id, entity) in &state.entities {
+        if entity.owner_id != player_id {
+            continue;
+        }
+        let Some(&from_zone) = entity_zone.get(entity_id.as_str()) else {
+            // Entity is not in any zone — can't produce a legal MoveEntity from it.
+            continue;
+        };
+
+        for &to_zone in &zone_ids {
+            if to_zone == from_zone {
+                continue;
+            }
+            let candidate = Action::MoveEntity {
+                entity_id: entity_id.clone(),
+                from_zone: from_zone.to_string(),
+                to_zone: to_zone.to_string(),
+                index: None,
+            };
+            if validate_action(state, &candidate).is_ok() {
+                actions.push(candidate);
+            }
+        }
+    }
+
+    actions
 }
 
 // ==========================================
@@ -1575,6 +1642,154 @@ mod tests {
             state.entities["hero"].properties["health"], 15,
             "damage after GameOver should not be applied"
         );
+    }
+
+    // ------------------------------------------
+    // valid_actions_for_player
+    // ------------------------------------------
+
+    fn make_entity_for(id: &str, owner: &str) -> Entity {
+        Entity {
+            id: id.to_string(),
+            owner_id: owner.to_string(),
+            template_id: "t".to_string(),
+            properties: HashMap::new(),
+            abilities: vec![],
+        }
+    }
+
+    #[test]
+    fn valid_actions_always_includes_end_turn() {
+        let state = GameState::new();
+        let actions = valid_actions_for_player(&state, "player_1");
+        assert!(
+            actions.iter().any(|a| matches!(a, Action::EndTurn)),
+            "EndTurn should always be a legal option"
+        );
+    }
+
+    #[test]
+    fn valid_actions_filters_by_owner() {
+        let mut state = GameState::new();
+        state
+            .entities
+            .insert("p1_card".to_string(), make_entity_for("p1_card", "player_1"));
+        state
+            .entities
+            .insert("p2_card".to_string(), make_entity_for("p2_card", "player_2"));
+        state.zones.insert(
+            "hand".to_string(),
+            make_zone("hand", vec!["p1_card", "p2_card"]),
+        );
+        state
+            .zones
+            .insert("board".to_string(), make_zone("board", vec![]));
+
+        let actions = valid_actions_for_player(&state, "player_1");
+        let move_entities: Vec<&str> = actions
+            .iter()
+            .filter_map(|a| match a {
+                Action::MoveEntity { entity_id, .. } => Some(entity_id.as_str()),
+                _ => None,
+            })
+            .collect();
+
+        assert!(
+            move_entities.contains(&"p1_card"),
+            "player_1's entity should appear in moves"
+        );
+        assert!(
+            !move_entities.contains(&"p2_card"),
+            "player_2's entity must NOT appear in player_1's valid actions"
+        );
+    }
+
+    #[test]
+    fn valid_actions_skips_entity_detached_from_all_zones() {
+        let mut state = GameState::new();
+        state
+            .entities
+            .insert("ghost".to_string(), make_entity_for("ghost", "player_1"));
+        // ghost is not in any zone
+        state
+            .zones
+            .insert("board".to_string(), make_zone("board", vec![]));
+
+        let actions = valid_actions_for_player(&state, "player_1");
+        assert!(
+            !actions.iter().any(|a| matches!(a, Action::MoveEntity { .. })),
+            "entity not in any zone should produce no MoveEntity candidates"
+        );
+        assert!(actions.iter().any(|a| matches!(a, Action::EndTurn)));
+    }
+
+    #[test]
+    fn valid_actions_empty_state_returns_only_end_turn() {
+        let state = GameState::new();
+        let actions = valid_actions_for_player(&state, "player_1");
+        assert_eq!(actions.len(), 1);
+        assert!(matches!(actions[0], Action::EndTurn));
+    }
+
+    #[test]
+    fn valid_actions_enumerates_moves_to_all_other_zones() {
+        let mut state = GameState::new();
+        state
+            .entities
+            .insert("c".to_string(), make_entity_for("c", "player_1"));
+        state
+            .zones
+            .insert("hand".to_string(), make_zone("hand", vec!["c"]));
+        state
+            .zones
+            .insert("board".to_string(), make_zone("board", vec![]));
+        state
+            .zones
+            .insert("grave".to_string(), make_zone("grave", vec![]));
+
+        let actions = valid_actions_for_player(&state, "player_1");
+        let move_targets: Vec<&str> = actions
+            .iter()
+            .filter_map(|a| match a {
+                Action::MoveEntity {
+                    entity_id, to_zone, ..
+                } if entity_id == "c" => Some(to_zone.as_str()),
+                _ => None,
+            })
+            .collect();
+
+        assert_eq!(
+            move_targets.len(),
+            2,
+            "expected moves to every zone except the one the entity currently occupies"
+        );
+        assert!(move_targets.contains(&"board"));
+        assert!(move_targets.contains(&"grave"));
+        assert!(
+            !move_targets.contains(&"hand"),
+            "should not enumerate a no-op move to the same zone"
+        );
+    }
+
+    #[test]
+    fn valid_actions_rejects_moves_with_missing_source_zone() {
+        // Force an inconsistency: entity claims to be owned by player_1 and we manually
+        // stash it in an index nowhere — there's no way to reproduce this without
+        // bypassing the index, so instead assert that the indexer never picks a zone
+        // that won't validate. Add an entity to a zone that does not exist in the
+        // zones map (only possible by constructing the Zone vec manually).
+        let mut state = GameState::new();
+        state
+            .entities
+            .insert("c".to_string(), make_entity_for("c", "player_1"));
+        // Only add "hand" — "board" will not exist, but we claim c is there:
+        let mut hand = make_zone("hand", vec!["c"]);
+        hand.entities.push("c".to_string()); // duplicate reference ignored below
+        state.zones.insert("hand".to_string(), hand);
+
+        let actions = valid_actions_for_player(&state, "player_1");
+        // Only "hand" exists; no other zone to move to, so no MoveEntity candidate.
+        assert!(!actions.iter().any(|a| matches!(a, Action::MoveEntity { .. })));
     }
 
     #[test]

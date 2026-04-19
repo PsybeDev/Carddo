@@ -3,6 +3,10 @@ defmodule Carddo.GameRoom do
   require Logger
 
   @default_timeout 30_000
+  @default_ai_action_delay_ms 1500
+
+  defp ai_action_delay_ms,
+    do: Application.get_env(:carddo, :ai_action_delay_ms, @default_ai_action_delay_ms)
 
   # Public API
 
@@ -13,7 +17,9 @@ defmodule Carddo.GameRoom do
           room_id: _room_id,
           game_id: _game_id,
           initial_state_json: _initial_state_json,
-          solo_mode: _solo_mode
+          solo_mode: _solo_mode,
+          ai_player_id: _ai_player_id,
+          player_order: _player_order
         } = opts
       ) do
     GenServer.start_link(__MODULE__, opts, name: via_tuple(opts.room_id))
@@ -46,7 +52,9 @@ defmodule Carddo.GameRoom do
         room_id: room_id,
         game_id: game_id,
         initial_state_json: initial_state_json,
-        solo_mode: solo_mode
+        solo_mode: solo_mode,
+        ai_player_id: ai_player_id,
+        player_order: player_order
       }) do
     # Absolute 24-hour lifetime TTL — not an idle timer. Active rooms will also be
     # stopped after 24h. Converting this to an idle-TTL (reset on each move) is
@@ -54,12 +62,21 @@ defmodule Carddo.GameRoom do
     ttl_id = make_ref()
     ttl_ref = Process.send_after(self(), {:ttl_expired, ttl_id}, :timer.hours(24))
 
+    active_player_id =
+      case player_order do
+        [first | _] -> first
+        _ -> nil
+      end
+
     state = %{
       room_id: room_id,
       game_id: game_id,
       rust_state_json: initial_state_json,
       turn_number: 0,
       solo_mode: solo_mode,
+      ai_player_id: ai_player_id,
+      player_order: player_order,
+      active_player_id: active_player_id,
       ended: false,
       ttl_ref: ttl_ref,
       ttl_id: ttl_id
@@ -101,6 +118,100 @@ defmodule Carddo.GameRoom do
   end
 
   def handle_call({:make_move, player_id, action_json}, _from, state) do
+    case apply_move(state, player_id, action_json) do
+      {:ok, new_state} -> {:reply, :ok, new_state}
+      {:error, reason, new_state} -> {:reply, {:error, reason}, new_state}
+    end
+  end
+
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state.rust_state_json, state}
+  end
+
+  @impl true
+  def handle_call(:get_room_info, _from, state) do
+    {:reply,
+     %{
+       game_id: state.game_id,
+       state_json: state.rust_state_json,
+       solo_mode: state.solo_mode,
+       ai_player_id: state.ai_player_id,
+       player_order: state.player_order
+     }, state}
+  end
+
+  @impl true
+  def handle_info(:ai_take_action, %{ended: true} = state), do: {:noreply, state}
+
+  def handle_info(:ai_take_action, %{active_player_id: active, ai_player_id: ai} = state)
+      when active != ai or is_nil(ai) do
+    {:noreply, state}
+  end
+
+  def handle_info(:ai_take_action, state) do
+    case Carddo.Native.valid_actions_for_player(state.rust_state_json, state.ai_player_id) do
+      {:ok, json} ->
+        case Jason.decode(json) do
+          {:ok, []} ->
+            Logger.warning("AI has no valid actions, skipping room=#{state.room_id}")
+            {:noreply, state}
+
+          {:ok, actions} when is_list(actions) ->
+            action = Enum.random(actions)
+            action_json = Jason.encode!(action)
+
+            case apply_move(state, state.ai_player_id, action_json) do
+              {:ok, new_state} ->
+                {:noreply, new_state}
+
+              {:error, reason, new_state} ->
+                Logger.error("AI move failed room=#{state.room_id}: #{inspect(reason)}")
+                {:noreply, new_state}
+            end
+
+          {:error, decode_error} ->
+            Logger.error(
+              "Failed to decode AI actions JSON room=#{state.room_id}: #{inspect(decode_error)}"
+            )
+
+            {:noreply, state}
+        end
+
+      {:error, reason} ->
+        Logger.error(
+          "AI valid_actions_for_player failed room=#{state.room_id}: #{inspect(reason)}"
+        )
+
+        {:noreply, state}
+    end
+  end
+
+  def handle_info({:ttl_expired, id}, state) when id == state.ttl_id do
+    Logger.info("GameRoom TTL expired for room=#{state.room_id}, cleaning up abandoned session")
+
+    try do
+      Carddo.Multiplayer.GameSessions.delete(state.room_id)
+    rescue
+      e ->
+        Logger.error(
+          "GameSessions delete exception (ttl) room=#{state.room_id}: #{Exception.message(e)}"
+        )
+    end
+
+    {:stop, :normal, state}
+  end
+
+  def handle_info({:ttl_expired, _stale_id}, state) do
+    {:noreply, state}
+  end
+
+  defp apply_move(%{active_player_id: active} = state, player_id, _action_json)
+       when active != nil and player_id != active do
+    {:error, %{type: "not_active_player", message: "Not your turn"}, state}
+  end
+
+  defp apply_move(state, player_id, action_json) do
     case Carddo.Native.process_move(state.rust_state_json, action_json, player_id) do
       {:ok, new_state_json, _animations} ->
         case Jason.decode(new_state_json) do
@@ -137,22 +248,29 @@ defmodule Carddo.GameRoom do
                   turn_number: new_turn
               }
 
-              {:reply, :ok, new_state}
+              {:ok, new_state}
             else
-              {event, new_state} =
+              new_active =
+                if turn_ended?, do: rotate_active_player(state), else: state.active_player_id
+
+              new_state =
                 if turn_ended? do
                   new_turn = state.turn_number + 1
-
                   async_checkpoint(state.room_id, state.game_id, new_state_json, new_turn)
 
-                  {"state_resolved",
-                   %{state | rust_state_json: new_state_json, turn_number: new_turn}}
+                  %{
+                    state
+                    | rust_state_json: new_state_json,
+                      turn_number: new_turn,
+                      active_player_id: new_active
+                  }
                 else
-                  {"state_resolved", %{state | rust_state_json: new_state_json}}
+                  %{state | rust_state_json: new_state_json, active_player_id: new_active}
                 end
 
-              broadcast(state.room_id, event, %{state: new_state_json})
-              {:reply, :ok, new_state}
+              broadcast(state.room_id, "state_resolved", %{state: new_state_json})
+              maybe_schedule_ai(new_state)
+              {:ok, new_state}
             end
 
           {:error, decode_error} ->
@@ -160,48 +278,39 @@ defmodule Carddo.GameRoom do
               "Failed to decode game state JSON in Carddo.GameRoom: #{inspect(decode_error)}"
             )
 
-            {:reply, {:error, %{type: "invalid_state", message: "Failed to decode game state"}},
-             state}
+            {:error, %{type: "invalid_state", message: "Failed to decode game state"}, state}
         end
 
       {:error, reason, _animations} ->
         Logger.error("Native error in Carddo.Native.process_move: #{inspect(reason)}")
 
-        {:reply,
-         {:error, %{type: "native_error", message: "Failed to process move. Please try again."}},
+        {:error, %{type: "native_error", message: "Failed to process move. Please try again."},
          state}
     end
   end
 
-  @impl true
-  def handle_call(:get_state, _from, state) do
-    {:reply, state.rust_state_json, state}
-  end
-
-  @impl true
-  def handle_call(:get_room_info, _from, state) do
-    {:reply, %{game_id: state.game_id, state_json: state.rust_state_json}, state}
-  end
-
-  @impl true
-  def handle_info({:ttl_expired, id}, state) when id == state.ttl_id do
-    Logger.info("GameRoom TTL expired for room=#{state.room_id}, cleaning up abandoned session")
-
-    try do
-      Carddo.Multiplayer.GameSessions.delete(state.room_id)
-    rescue
-      e ->
-        Logger.error(
-          "GameSessions delete exception (ttl) room=#{state.room_id}: #{Exception.message(e)}"
-        )
+  defp rotate_active_player(%{player_order: order, active_player_id: current})
+       when is_list(order) and length(order) > 0 do
+    case Enum.find_index(order, &(&1 == current)) do
+      nil -> current
+      idx -> Enum.at(order, rem(idx + 1, length(order)))
     end
-
-    {:stop, :normal, state}
   end
 
-  def handle_info({:ttl_expired, _stale_id}, state) do
-    {:noreply, state}
+  defp rotate_active_player(%{active_player_id: current}), do: current
+
+  defp maybe_schedule_ai(%{
+         solo_mode: true,
+         ended: false,
+         ai_player_id: ai_id,
+         active_player_id: ai_id
+       })
+       when not is_nil(ai_id) do
+    Process.send_after(self(), :ai_take_action, ai_action_delay_ms())
+    :ok
   end
+
+  defp maybe_schedule_ai(_state), do: :ok
 
   defp broadcast(room_id, event, payload) do
     CarddoWeb.Endpoint.broadcast("room:#{room_id}", event, payload)

@@ -22,6 +22,17 @@ defmodule Carddo.MultiplayerTest do
 
   defp unique_room_id, do: "multiplayer_test_#{System.unique_integer([:positive])}"
 
+  defp room_opts(room_id, game_id, extra \\ %{}) do
+    Map.merge(
+      %{
+        room_id: room_id,
+        game_id: game_id,
+        initial_state_json: @empty_state
+      },
+      extra
+    )
+  end
+
   defp cleanup(pid) do
     DynamicSupervisor.terminate_child(Carddo.Multiplayer.RoomSupervisor, pid)
   end
@@ -32,11 +43,11 @@ defmodule Carddo.MultiplayerTest do
     !Multiplayer.room_exists?(room_id)
   end
 
-  describe "start_room/4" do
+  describe "start_room/1" do
     test "returns {:ok, pid} and registers the room", %{game_id: game_id} do
       room_id = unique_room_id()
 
-      assert {:ok, pid} = Multiplayer.start_room(room_id, game_id, @empty_state)
+      assert {:ok, pid} = Multiplayer.start_room(room_opts(room_id, game_id))
       on_exit(fn -> cleanup(pid) end)
 
       assert is_pid(pid)
@@ -46,17 +57,17 @@ defmodule Carddo.MultiplayerTest do
     test "returns error when room with same id already exists", %{game_id: game_id} do
       room_id = unique_room_id()
 
-      assert {:ok, pid} = Multiplayer.start_room(room_id, game_id, @empty_state)
+      assert {:ok, pid} = Multiplayer.start_room(room_opts(room_id, game_id))
       on_exit(fn -> cleanup(pid) end)
 
       assert {:error, {:already_started, _pid}} =
-               Multiplayer.start_room(room_id, game_id, @empty_state)
+               Multiplayer.start_room(room_opts(room_id, game_id))
     end
 
     test "solo_mode defaults to false", %{game_id: game_id} do
       room_id = unique_room_id()
 
-      assert {:ok, pid} = Multiplayer.start_room(room_id, game_id, @empty_state)
+      assert {:ok, pid} = Multiplayer.start_room(room_opts(room_id, game_id))
       on_exit(fn -> cleanup(pid) end)
 
       assert :sys.get_state(pid).solo_mode == false
@@ -70,7 +81,7 @@ defmodule Carddo.MultiplayerTest do
 
     test "returns false after the room process is killed", %{game_id: game_id} do
       room_id = unique_room_id()
-      {:ok, pid} = Multiplayer.start_room(room_id, game_id, @empty_state)
+      {:ok, pid} = Multiplayer.start_room(room_opts(room_id, game_id))
 
       ref = Process.monitor(pid)
       Process.exit(pid, :kill)
@@ -83,8 +94,8 @@ defmodule Carddo.MultiplayerTest do
       room_a = unique_room_id()
       room_b = unique_room_id()
 
-      {:ok, pid_a} = Multiplayer.start_room(room_a, game_id, @empty_state)
-      {:ok, pid_b} = Multiplayer.start_room(room_b, game_id, @empty_state)
+      {:ok, pid_a} = Multiplayer.start_room(room_opts(room_a, game_id))
+      {:ok, pid_b} = Multiplayer.start_room(room_opts(room_b, game_id))
       on_exit(fn -> cleanup(pid_b) end)
 
       ref = Process.monitor(pid_a)

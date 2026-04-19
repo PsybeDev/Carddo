@@ -330,8 +330,7 @@ defmodule CarddoWeb.GameChannelTest do
 
         def room_exists?(_room_id), do: false
 
-        def start_room(_room_id, _game_id, _state_json, _solo_mode \\ false),
-          do: {:error, :max_children}
+        def start_room(_opts), do: {:error, :max_children}
       end
 
       Application.put_env(:carddo, :multiplayer_module, FailStartRoom)
@@ -354,9 +353,9 @@ defmodule CarddoWeb.GameChannelTest do
 
         def room_exists?(_room_id), do: false
 
-        def start_room(room_id, game_id, initial_state_json, _solo_mode \\ false) do
+        def start_room(opts) do
           # Actually start the room so fetch_live_state can read from it
-          Carddo.Multiplayer.start_room(room_id, game_id, initial_state_json)
+          Carddo.Multiplayer.start_room(opts)
           |> case do
             {:ok, pid} -> {:error, {:already_started, pid}}
             other -> other
@@ -502,6 +501,46 @@ defmodule CarddoWeb.GameChannelTest do
 
     test "socket without token cannot connect" do
       assert :error = connect(CarddoWeb.UserSocket, %{})
+    end
+  end
+
+  describe "solo_mode" do
+    test "populates ai_player_id and player_order on the live room", ctx do
+      room_id = unique_room_id(ctx)
+
+      {:ok, _reply, _socket} =
+        subscribe_and_join(
+          ctx.socket,
+          CarddoWeb.GameChannel,
+          "room:#{room_id}",
+          %{
+            "game_id" => ctx.game.id,
+            "deck_id" => ctx.deck.id,
+            "solo_mode" => true
+          }
+        )
+
+      info = Carddo.GameRoom.get_room_info(room_id)
+      assert info.solo_mode == true
+      assert is_binary(info.ai_player_id)
+      assert length(info.player_order) == 2
+      assert List.last(info.player_order) == info.ai_player_id
+    end
+
+    test "omitting solo_mode defaults to a non-solo room", ctx do
+      room_id = unique_room_id(ctx)
+
+      {:ok, _reply, _socket} =
+        subscribe_and_join(
+          ctx.socket,
+          CarddoWeb.GameChannel,
+          "room:#{room_id}",
+          %{"game_id" => ctx.game.id, "deck_id" => ctx.deck.id}
+        )
+
+      info = Carddo.GameRoom.get_room_info(room_id)
+      assert info.solo_mode == false
+      assert info.ai_player_id == nil
     end
   end
 end

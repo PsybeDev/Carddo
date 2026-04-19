@@ -760,4 +760,76 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
       refute entity_id in result["zones"][board_zone_id]["entities"]
     end
   end
+
+  describe "build/3 solo_mode" do
+    test "non-solo (default) returns map with ai_player_id nil and single-entry player_order",
+         ctx do
+      players = [{"player_1", ctx.deck.id}]
+
+      assert {:ok, %{state_json: json, ai_player_id: nil, player_order: ["player_1"]}} =
+               GameInitializer.build(ctx.game.id, players, [])
+
+      assert is_binary(json)
+      assert {:ok, _} = Jason.decode(json)
+    end
+
+    test "solo_mode appends AI player using the injected ai_id_gen", ctx do
+      fixed_uuid = "11111111-2222-3333-4444-555555555555"
+      players = [{"human", ctx.deck.id}]
+
+      assert {:ok,
+              %{
+                state_json: json,
+                ai_player_id: ^fixed_uuid,
+                player_order: ["human", ^fixed_uuid]
+              }} =
+               GameInitializer.build(ctx.game.id, players,
+                 solo_mode: true,
+                 ai_id_gen: fn -> fixed_uuid end
+               )
+
+      state = Jason.decode!(json)
+
+      # Both players have their own zone set and shuffled deck contents.
+      assert Map.has_key?(state["zones"], "human_Deck")
+      assert Map.has_key?(state["zones"], "#{fixed_uuid}_Deck")
+
+      owners =
+        state["entities"]
+        |> Map.values()
+        |> Enum.map(& &1["owner_id"])
+        |> Enum.uniq()
+        |> Enum.sort()
+
+      assert owners == Enum.sort(["human", fixed_uuid])
+    end
+
+    test "solo_mode with zero players returns error", ctx do
+      assert {:error, "solo_mode requires exactly one human player"} =
+               GameInitializer.build(ctx.game.id, [], solo_mode: true)
+    end
+
+    test "solo_mode with two players returns error", ctx do
+      assert {:error, "solo_mode requires exactly one human player"} =
+               GameInitializer.build(
+                 ctx.game.id,
+                 [{"a", ctx.deck.id}, {"b", ctx.deck.id}],
+                 solo_mode: true
+               )
+    end
+
+    test "solo_mode state is accepted by the NIF (round-trip)", ctx do
+      {:ok, %{state_json: json, ai_player_id: ai_id}} =
+        GameInitializer.build(ctx.game.id, [{"human", ctx.deck.id}], solo_mode: true)
+
+      # Human ends their turn — engine must accept the state and the action.
+      assert {:ok, _new_state, _anims} =
+               Carddo.Native.process_move(json, ~s("EndTurn"), "human")
+
+      # AI enumerator should produce at least one valid action (EndTurn) for the AI player.
+      assert {:ok, actions_json} = Carddo.Native.valid_actions_for_player(json, ai_id)
+      assert is_list(Jason.decode!(actions_json))
+      assert "EndTurn" in Jason.decode!(actions_json)
+    end
+  end
 end
