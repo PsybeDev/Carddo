@@ -823,11 +823,12 @@ defmodule Carddo.Multiplayer.GameInitializerTest do
         GameInitializer.build(ctx.game.id, [{"human", ctx.deck.id}], solo_mode: true)
 
       # Human ends their turn — engine must accept the state and the action.
-      assert {:ok, _new_state, _anims} =
+      assert {:ok, new_state_json, _anims} =
                Carddo.Native.process_move(json, ~s("EndTurn"), "human")
 
-      # AI enumerator should produce at least one valid action (EndTurn) for the AI player.
-      assert {:ok, actions_json} = Carddo.Native.valid_actions_for_player(json, ai_id)
+      # AI enumerator should produce at least one valid action (EndTurn) for the AI player
+      # against the post-EndTurn state — i.e., after control has passed to the AI.
+      assert {:ok, actions_json} = Carddo.Native.valid_actions_for_player(new_state_json, ai_id)
       assert is_list(Jason.decode!(actions_json))
       assert "EndTurn" in Jason.decode!(actions_json)
     end

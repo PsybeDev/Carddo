@@ -454,7 +454,10 @@ defmodule Carddo.GameRoomTest do
 
     test "human move during AI turn is rejected with not_active_player", %{game: game} do
       # Stretch the delay so the AI scheduled action does not fire before the assertion.
+      # Save+restore so the 50ms the rest of this describe block relies on is preserved.
+      previous = Application.get_env(:carddo, :ai_action_delay_ms)
       Application.put_env(:carddo, :ai_action_delay_ms, 5_000)
+      on_exit(fn -> Application.put_env(:carddo, :ai_action_delay_ms, previous) end)
 
       human_id = "human_1"
       ai_id = "ai_1"

@@ -1,5 +1,5 @@
 use crate::state::{Action, Animation, Condition, Event, GameState, StackOrder, StateCheck};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 // ==========================================
 // VALIDATION
@@ -81,15 +81,21 @@ pub fn valid_actions_for_player(state: &GameState, player_id: &str) -> Vec<Actio
     actions.push(Action::EndTurn);
 
     // One-pass index of which zone currently holds each entity. Entities present
-    // in more than one zone (a corruption case) are skipped to avoid producing
-    // MoveEntity candidates that would fail validation midstream.
+    // in more than one zone (a corruption case) are excluded entirely — producing
+    // MoveEntity candidates for a corrupted entity could surface side effects from
+    // whichever zone we happened to index first.
     let mut entity_zone: HashMap<&str, &str> = HashMap::new();
+    let mut duplicated: HashSet<&str> = HashSet::new();
     for (zone_id, zone) in &state.zones {
         for entity_id in &zone.entities {
-            entity_zone
-                .entry(entity_id.as_str())
-                .and_modify(|_| { /* duplicate — leave the first one; enumeration still filters on validate */ })
-                .or_insert(zone_id.as_str());
+            let entity_id = entity_id.as_str();
+            if duplicated.contains(entity_id) {
+                continue;
+            }
+            if entity_zone.insert(entity_id, zone_id.as_str()).is_some() {
+                entity_zone.remove(entity_id);
+                duplicated.insert(entity_id);
+            }
         }
     }
 
