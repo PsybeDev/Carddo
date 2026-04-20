@@ -1778,23 +1778,25 @@ mod tests {
     }
 
     #[test]
-    fn valid_actions_rejects_moves_with_missing_source_zone() {
-        // Force an inconsistency: entity claims to be owned by player_1 and we manually
-        // stash it in an index nowhere — there's no way to reproduce this without
-        // bypassing the index, so instead assert that the indexer never picks a zone
-        // that won't validate. Add an entity to a zone that does not exist in the
-        // zones map (only possible by constructing the Zone vec manually).
+    fn valid_actions_excludes_entity_with_duplicate_zone_membership() {
+        // Corruption case: the same entity id appears more than once across zone
+        // membership lists. The enumerator must drop it from the entity→zone index
+        // entirely so no MoveEntity candidates are produced against ambiguous state.
         let mut state = GameState::new();
         state
             .entities
             .insert("c".to_string(), make_entity_for("c", "player_1"));
-        // Only add "hand" — "board" will not exist, but we claim c is there:
+
         let mut hand = make_zone("hand", vec!["c"]);
-        hand.entities.push("c".to_string()); // duplicate reference ignored below
+        hand.entities.push("c".to_string());
         state.zones.insert("hand".to_string(), hand);
+        // A second zone exists, so without duplicate-exclusion we would generate
+        // MoveEntity { c, hand -> board }. The assertion proves we don't.
+        state
+            .zones
+            .insert("board".to_string(), make_zone("board", vec![]));
 
         let actions = valid_actions_for_player(&state, "player_1");
-        // Only "hand" exists; no other zone to move to, so no MoveEntity candidate.
         assert!(!actions.iter().any(|a| matches!(a, Action::MoveEntity { .. })));
     }
 
