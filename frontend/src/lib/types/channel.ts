@@ -14,14 +14,19 @@ export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'er
 export type JoinParams = {
 	game_id: number;
 	deck_id: number;
+	solo_mode?: boolean;
 };
 
 /**
  * Server response on successful channel join.
  * `state` is a JSON **string** — call `JSON.parse()` to get a `GameState`.
+ * `ai_player_id` is set when the room is in solo mode; `active_player_id` is
+ * the player whose turn it currently is.
  */
 export type JoinResponse = {
 	state: string;
+	ai_player_id?: string | null;
+	active_player_id?: string | null;
 };
 
 /** Payload pushed to the server via `"submit_action"`. */
@@ -42,9 +47,11 @@ export type ActionRejectedPayload = {
 /**
  * Server broadcast received via `channel.on("state_resolved", ...)`.
  * `state` is a JSON **string** — call `JSON.parse()` to get a `GameState`.
+ * `active_player_id` is the player whose turn it is after this resolution.
  */
 export type StateResolvedPayload = {
 	state: string;
+	active_player_id?: string | null;
 };
 
 /** Individual error matching the CAR-60 error envelope shape. */

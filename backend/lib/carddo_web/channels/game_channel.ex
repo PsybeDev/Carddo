@@ -42,8 +42,14 @@ defmodule CarddoWeb.GameChannel do
     with {:ok, _game} <- authorize_game(game_id, current_user),
          {:ok, boot} <- resolve_room_boot(room_id, game_id, player_id, deck_id, solo_mode),
          :ok <- ensure_room_started(room_id, boot),
-         {:ok, live_state_json} <- fetch_live_state(room_id, boot.game_id) do
-      {:ok, %{state: live_state_json}, assign(socket, :room_id, room_id)}
+         {:ok, live_info} <- fetch_live_info(room_id, boot.game_id) do
+      reply = %{
+        state: live_info.state_json,
+        ai_player_id: live_info.ai_player_id,
+        active_player_id: live_info.active_player_id
+      }
+
+      {:ok, reply, assign(socket, :room_id, room_id)}
     else
       {:error, {code, message}} ->
         {:error, error_envelope(message, code)}
@@ -119,13 +125,23 @@ defmodule CarddoWeb.GameChannel do
   defp resolve_room_boot(room_id, requested_game_id, player_id, deck_id, solo_mode) do
     case fetch_live_room(room_id) do
       {:ok, info} ->
-        if to_string(info.game_id) == to_string(requested_game_id) do
-          {:ok, Map.merge(%{solo_mode: false, ai_player_id: nil, player_order: []}, info)}
-        else
-          {:error, {"room_game_mismatch", "Room/game mismatch"}}
+        merged = Map.merge(%{solo_mode: false, ai_player_id: nil, player_order: []}, info)
+
+        cond do
+          to_string(info.game_id) != to_string(requested_game_id) ->
+            {:error, {"room_game_mismatch", "Room/game mismatch"}}
+
+          merged.solo_mode != solo_mode ->
+            {:error, {"room_mode_mismatch", "Room mode mismatch"}}
+
+          true ->
+            {:ok, merged}
         end
 
       :not_running ->
+        # Solo rooms never resume from a stored session — GameRoom skips all
+        # checkpoint writes for solo_mode=true, so no row will exist, and even
+        # if one lingered we'd have no way to rehydrate ai_player_id.
         session = GameSessions.get(room_id)
 
         cond do
@@ -173,11 +189,11 @@ defmodule CarddoWeb.GameChannel do
     :exit, {:shutdown, _} -> :not_running
   end
 
-  defp fetch_live_state(room_id, expected_game_id) do
+  defp fetch_live_info(room_id, expected_game_id) do
     info = GameRoom.get_room_info(room_id)
 
     if to_string(info.game_id) == to_string(expected_game_id) do
-      {:ok, info.state_json}
+      {:ok, info}
     else
       {:error, {"room_game_mismatch", "Room/game mismatch"}}
     end

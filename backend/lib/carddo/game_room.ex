@@ -4,9 +4,13 @@ defmodule Carddo.GameRoom do
 
   @default_timeout 30_000
   @default_ai_action_delay_ms 1500
+  @default_ai_max_actions_per_turn 50
 
   defp ai_action_delay_ms,
     do: Application.get_env(:carddo, :ai_action_delay_ms, @default_ai_action_delay_ms)
+
+  defp ai_max_actions_per_turn,
+    do: Application.get_env(:carddo, :ai_max_actions_per_turn, @default_ai_max_actions_per_turn)
 
   # Public API
 
@@ -48,14 +52,16 @@ defmodule Carddo.GameRoom do
   # GenServer callbacks
 
   @impl true
-  def init(%{
-        room_id: room_id,
-        game_id: game_id,
-        initial_state_json: initial_state_json,
-        solo_mode: solo_mode,
-        ai_player_id: ai_player_id,
-        player_order: player_order
-      }) do
+  def init(
+        %{
+          room_id: room_id,
+          game_id: game_id,
+          initial_state_json: initial_state_json,
+          solo_mode: solo_mode,
+          ai_player_id: ai_player_id,
+          player_order: player_order
+        } = opts
+      ) do
     # Absolute 24-hour lifetime TTL — not an idle timer. Active rooms will also be
     # stopped after 24h. Converting this to an idle-TTL (reset on each move) is
     # tracked as a follow-up issue.
@@ -77,6 +83,9 @@ defmodule Carddo.GameRoom do
       ai_player_id: ai_player_id,
       player_order: player_order,
       active_player_id: active_player_id,
+      ai_actions_this_turn: 0,
+      ai_action_delay_ms: Map.get(opts, :ai_action_delay_ms, ai_action_delay_ms()),
+      ai_max_actions_per_turn: Map.get(opts, :ai_max_actions_per_turn, ai_max_actions_per_turn()),
       ended: false,
       ttl_ref: ttl_ref,
       ttl_id: ttl_id
@@ -86,6 +95,12 @@ defmodule Carddo.GameRoom do
   end
 
   @impl true
+  def handle_continue(:initial_checkpoint, %{solo_mode: true} = state) do
+    # Solo rooms are ephemeral by design — skip persistence so a crashed GenServer
+    # can never rehydrate to a half-state missing its ai_player_id / player_order.
+    {:noreply, state}
+  end
+
   def handle_continue(:initial_checkpoint, state) do
     try do
       case Carddo.Multiplayer.GameSessions.upsert(
@@ -137,6 +152,7 @@ defmodule Carddo.GameRoom do
        state_json: state.rust_state_json,
        solo_mode: state.solo_mode,
        ai_player_id: state.ai_player_id,
+       active_player_id: state.active_player_id,
        player_order: state.player_order
      }, state}
   end
@@ -150,12 +166,48 @@ defmodule Carddo.GameRoom do
   end
 
   def handle_info(:ai_take_action, state) do
+    if state.ai_actions_this_turn >= state.ai_max_actions_per_turn do
+      Logger.warning(
+        "AI action cap reached (#{state.ai_max_actions_per_turn}), forcing EndTurn room=#{state.room_id}"
+      )
+
+      force_end_turn(state)
+    else
+      pick_and_apply_ai_action(state)
+    end
+  end
+
+  def handle_info({:ttl_expired, id}, state) when id == state.ttl_id do
+    Logger.info("GameRoom TTL expired for room=#{state.room_id}, cleaning up abandoned session")
+
+    unless state.solo_mode do
+      try do
+        Carddo.Multiplayer.GameSessions.delete(state.room_id)
+      rescue
+        e ->
+          Logger.error(
+            "GameSessions delete exception (ttl) room=#{state.room_id}: #{Exception.message(e)}"
+          )
+      end
+    end
+
+    {:stop, :normal, state}
+  end
+
+  def handle_info({:ttl_expired, _stale_id}, state) do
+    {:noreply, state}
+  end
+
+  defp pick_and_apply_ai_action(state) do
     case Carddo.Native.valid_actions_for_player(state.rust_state_json, state.ai_player_id) do
       {:ok, json} ->
         case Jason.decode(json) do
           {:ok, []} ->
-            Logger.warning("AI has no valid actions, skipping room=#{state.room_id}")
-            {:noreply, state}
+            Logger.warning(
+              "AI has no valid actions, forcing EndTurn recovery room=#{state.room_id}"
+            )
+
+            force_end_turn(state)
 
           {:ok, actions} when is_list(actions) ->
             action = Enum.random(actions)
@@ -165,45 +217,43 @@ defmodule Carddo.GameRoom do
               {:ok, new_state} ->
                 {:noreply, new_state}
 
-              {:error, reason, new_state} ->
-                Logger.error("AI move failed room=#{state.room_id}: #{inspect(reason)}")
-                {:noreply, new_state}
+              {:error, reason, _bad_state} ->
+                Logger.error(
+                  "AI move failed room=#{state.room_id}: #{inspect(reason)}, forcing EndTurn recovery"
+                )
+
+                force_end_turn(state)
             end
 
           {:error, decode_error} ->
             Logger.error(
-              "Failed to decode AI actions JSON room=#{state.room_id}: #{inspect(decode_error)}"
+              "Failed to decode AI actions JSON room=#{state.room_id}: #{inspect(decode_error)}, forcing EndTurn recovery"
             )
 
-            {:noreply, state}
+            force_end_turn(state)
         end
 
       {:error, reason} ->
         Logger.error(
-          "AI valid_actions_for_player failed room=#{state.room_id}: #{inspect(reason)}"
+          "AI valid_actions_for_player failed room=#{state.room_id}: #{inspect(reason)}, forcing EndTurn recovery"
+        )
+
+        force_end_turn(state)
+    end
+  end
+
+  defp force_end_turn(state) do
+    case apply_move(state, state.ai_player_id, ~s("EndTurn")) do
+      {:ok, new_state} ->
+        {:noreply, new_state}
+
+      {:error, reason, _bad_state} ->
+        Logger.error(
+          "AI recovery EndTurn failed room=#{state.room_id}: #{inspect(reason)} — room will rely on TTL cleanup"
         )
 
         {:noreply, state}
     end
-  end
-
-  def handle_info({:ttl_expired, id}, state) when id == state.ttl_id do
-    Logger.info("GameRoom TTL expired for room=#{state.room_id}, cleaning up abandoned session")
-
-    try do
-      Carddo.Multiplayer.GameSessions.delete(state.room_id)
-    rescue
-      e ->
-        Logger.error(
-          "GameSessions delete exception (ttl) room=#{state.room_id}: #{Exception.message(e)}"
-        )
-    end
-
-    {:stop, :normal, state}
-  end
-
-  def handle_info({:ttl_expired, _stale_id}, state) do
-    {:noreply, state}
   end
 
   defp apply_move(%{active_player_id: active} = state, player_id, _action_json)
@@ -226,7 +276,7 @@ defmodule Carddo.GameRoom do
               # Turn semantics are irrelevant once the game is over.
               new_turn = state.turn_number + 1
 
-              async_checkpoint(state.room_id, state.game_id, new_state_json, new_turn)
+              maybe_async_checkpoint(state, new_state_json, new_turn)
 
               broadcast(state.room_id, "game_over", %{
                 winner_id: winner,
@@ -256,19 +306,29 @@ defmodule Carddo.GameRoom do
               new_state =
                 if turn_ended? do
                   new_turn = state.turn_number + 1
-                  async_checkpoint(state.room_id, state.game_id, new_state_json, new_turn)
+                  maybe_async_checkpoint(state, new_state_json, new_turn)
 
                   %{
                     state
                     | rust_state_json: new_state_json,
                       turn_number: new_turn,
-                      active_player_id: new_active
+                      active_player_id: new_active,
+                      ai_actions_this_turn: 0
                   }
                 else
-                  %{state | rust_state_json: new_state_json, active_player_id: new_active}
+                  %{
+                    state
+                    | rust_state_json: new_state_json,
+                      active_player_id: new_active,
+                      ai_actions_this_turn: bump_ai_counter(state, player_id, turn_ended?)
+                  }
                 end
 
-              broadcast(state.room_id, "state_resolved", %{state: new_state_json})
+              broadcast(state.room_id, "state_resolved", %{
+                state: new_state_json,
+                active_player_id: new_active
+              })
+
               maybe_schedule_ai(new_state)
               {:ok, new_state}
             end
@@ -289,6 +349,12 @@ defmodule Carddo.GameRoom do
     end
   end
 
+  defp bump_ai_counter(%{ai_player_id: ai} = state, player_id, false) when ai == player_id do
+    state.ai_actions_this_turn + 1
+  end
+
+  defp bump_ai_counter(state, _player_id, _turn_ended?), do: state.ai_actions_this_turn
+
   defp rotate_active_player(%{player_order: order, active_player_id: current})
        when is_list(order) and length(order) > 0 do
     case Enum.find_index(order, &(&1 == current)) do
@@ -299,14 +365,16 @@ defmodule Carddo.GameRoom do
 
   defp rotate_active_player(%{active_player_id: current}), do: current
 
-  defp maybe_schedule_ai(%{
-         solo_mode: true,
-         ended: false,
-         ai_player_id: ai_id,
-         active_player_id: ai_id
-       })
+  defp maybe_schedule_ai(
+         %{
+           solo_mode: true,
+           ended: false,
+           ai_player_id: ai_id,
+           active_player_id: ai_id
+         } = state
+       )
        when not is_nil(ai_id) do
-    Process.send_after(self(), :ai_take_action, ai_action_delay_ms())
+    Process.send_after(self(), :ai_take_action, state.ai_action_delay_ms)
     :ok
   end
 
@@ -314,6 +382,12 @@ defmodule Carddo.GameRoom do
 
   defp broadcast(room_id, event, payload) do
     CarddoWeb.Endpoint.broadcast("room:#{room_id}", event, payload)
+  end
+
+  defp maybe_async_checkpoint(%{solo_mode: true}, _state_json, _turn_number), do: :ok
+
+  defp maybe_async_checkpoint(state, state_json, turn_number) do
+    async_checkpoint(state.room_id, state.game_id, state_json, turn_number)
   end
 
   defp async_checkpoint(room_id, game_id, state_json, turn_number) do

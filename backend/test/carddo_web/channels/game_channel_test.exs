@@ -508,7 +508,7 @@ defmodule CarddoWeb.GameChannelTest do
     test "populates ai_player_id and player_order on the live room", ctx do
       room_id = unique_room_id(ctx)
 
-      {:ok, _reply, _socket} =
+      {:ok, reply, _socket} =
         subscribe_and_join(
           ctx.socket,
           CarddoWeb.GameChannel,
@@ -525,12 +525,17 @@ defmodule CarddoWeb.GameChannelTest do
       assert is_binary(info.ai_player_id)
       assert length(info.player_order) == 2
       assert List.last(info.player_order) == info.ai_player_id
+
+      # Join reply surfaces the AI and active-player ids for the frontend.
+      assert reply.ai_player_id == info.ai_player_id
+      assert reply.active_player_id == info.active_player_id
+      assert reply.active_player_id == hd(info.player_order)
     end
 
     test "omitting solo_mode defaults to a non-solo room", ctx do
       room_id = unique_room_id(ctx)
 
-      {:ok, _reply, _socket} =
+      {:ok, reply, _socket} =
         subscribe_and_join(
           ctx.socket,
           CarddoWeb.GameChannel,
@@ -541,6 +546,65 @@ defmodule CarddoWeb.GameChannelTest do
       info = Carddo.GameRoom.get_room_info(room_id)
       assert info.solo_mode == false
       assert info.ai_player_id == nil
+      assert reply.ai_player_id == nil
+    end
+
+    test "join with solo_mode: true ignores any stored session", ctx do
+      room_id = unique_room_id(ctx)
+
+      # Persist a checkpoint row under this room_id — solo joins must not rehydrate from it.
+      {:ok, _} =
+        Repo.insert(%GameSession{
+          room_id: room_id,
+          game_id: ctx.game.id,
+          state_json: %{"entities" => %{"old" => %{}}, "zones" => %{}},
+          turn_number: 42
+        })
+
+      {:ok, reply, _socket} =
+        subscribe_and_join(
+          ctx.socket,
+          CarddoWeb.GameChannel,
+          "room:#{room_id}",
+          %{
+            "game_id" => ctx.game.id,
+            "deck_id" => ctx.deck.id,
+            "solo_mode" => true
+          }
+        )
+
+      {:ok, state} = Jason.decode(reply.state)
+      # Freshly initialised state should have deck entities, not the stashed "old" id.
+      refute Map.has_key?(state["entities"], "old")
+      assert map_size(state["entities"]) > 0
+    end
+
+    test "rejoining a live solo room with solo_mode: false returns room_mode_mismatch", ctx do
+      room_id = unique_room_id(ctx)
+
+      {:ok, _reply, _socket} =
+        subscribe_and_join(
+          ctx.socket,
+          CarddoWeb.GameChannel,
+          "room:#{room_id}",
+          %{
+            "game_id" => ctx.game.id,
+            "deck_id" => ctx.deck.id,
+            "solo_mode" => true
+          }
+        )
+
+      # A second socket (same user, same token) can attempt to join — the room
+      # is already live as solo, so a non-solo join request must be rejected.
+      {:ok, socket2} = connect(CarddoWeb.UserSocket, %{"token" => ctx.token})
+
+      assert {:error, %{errors: [%{code: "room_mode_mismatch"} | _]}} =
+               subscribe_and_join(
+                 socket2,
+                 CarddoWeb.GameChannel,
+                 "room:#{room_id}",
+                 %{"game_id" => ctx.game.id, "deck_id" => ctx.deck.id}
+               )
     end
   end
 end

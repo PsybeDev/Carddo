@@ -125,6 +125,50 @@ describe('GameBoard', () => {
 		expect(onDropMock).toHaveBeenCalledWith('entity_a', 'zone_a_p1');
 	});
 
+	it('Shows AI label above opponent zones when aiPlayerId is set', async () => {
+		render(GameBoard, {
+			gameState: mockGameState,
+			currentPlayerId: PLAYER_1_ID,
+			validDropTargets: [],
+			gameOver: null,
+			aiPlayerId: 'p2',
+			activePlayerId: PLAYER_1_ID,
+			onDrop: vi.fn()
+		});
+
+		await expect.element(page.getByTestId('ai-label')).toBeInTheDocument();
+		await expect.element(page.getByTestId('ai-thinking')).not.toBeInTheDocument();
+	});
+
+	it('Shows AI thinking indicator when active_player is the AI', async () => {
+		render(GameBoard, {
+			gameState: mockGameState,
+			currentPlayerId: PLAYER_1_ID,
+			validDropTargets: [],
+			gameOver: null,
+			aiPlayerId: 'p2',
+			activePlayerId: 'p2',
+			onDrop: vi.fn()
+		});
+
+		await expect.element(page.getByTestId('ai-label')).toBeInTheDocument();
+		await expect.element(page.getByTestId('ai-thinking')).toBeInTheDocument();
+	});
+
+	it('Hides AI label when aiPlayerId is null', async () => {
+		render(GameBoard, {
+			gameState: mockGameState,
+			currentPlayerId: PLAYER_1_ID,
+			validDropTargets: [],
+			gameOver: null,
+			aiPlayerId: null,
+			activePlayerId: null,
+			onDrop: vi.fn()
+		});
+
+		await expect.element(page.getByTestId('ai-label')).not.toBeInTheDocument();
+	});
+
 	it('Renders dynamically added zones', async () => {
 		const newState = createMockGameState({
 			zones: {
