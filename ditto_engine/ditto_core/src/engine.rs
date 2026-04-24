@@ -129,6 +129,67 @@ pub fn valid_actions_for_player(state: &GameState, player_id: &str) -> Vec<Actio
     actions
 }
 
+/// Enumerates all valid actions, simulates each one, and returns the one that
+/// results in the highest score for the given player.
+///
+/// Scoring is calculated as:
+/// `sum(AI entity weighted properties) - sum(Opponent entity weighted properties)`
+///
+/// If multiple actions result in the same highest score, the first one encountered
+/// is returned.
+pub fn simulate_best_action(
+    state: &GameState,
+    player_id: &str,
+    weights: &HashMap<String, i32>,
+) -> Option<Action> {
+    let actions = valid_actions_for_player(state, player_id);
+    let mut best_action: Option<Action> = None;
+    let mut best_score = i32::MIN;
+
+    for action in actions {
+        let mut sim_state = state.clone();
+        sim_state.event_queue.push_back(Event {
+            source_id: player_id.to_string(),
+            action: action.clone(),
+        });
+
+        // Resolve the queue with a 1,000 step limit to guard against infinite loops.
+        // We ignore the error because we still want to score the state as it exists
+        // after the limit is reached.
+        let _ = sim_state.resolve_queue_bounded(1000);
+
+        let score = score_state(&sim_state, player_id, weights);
+
+        if best_action.is_none() || score > best_score {
+            best_score = score;
+            best_action = Some(action);
+        }
+    }
+
+    best_action
+}
+
+fn score_state(state: &GameState, player_id: &str, weights: &HashMap<String, i32>) -> i32 {
+    let mut total_score = 0;
+
+    for entity in state.entities.values() {
+        let mut entity_score = 0;
+        for (prop, weight) in weights {
+            if let Some(val) = entity.properties.get(prop) {
+                entity_score += val * weight;
+            }
+        }
+
+        if entity.owner_id == player_id {
+            total_score += entity_score;
+        } else {
+            total_score -= entity_score;
+        }
+    }
+
+    total_score
+}
+
 // ==========================================
 // HOOK PHASE
 // ==========================================
@@ -1817,5 +1878,62 @@ mod tests {
             state.game_over.is_some(),
             "game_over must not reset between resolution passes"
         );
+    }
+
+    #[test]
+    fn simulate_best_action_picks_highest_scoring_move() {
+        let mut state = GameState::new();
+        state.entities.insert(
+            "hero".to_string(),
+            make_entity("hero", vec![("health", 10)], vec![]),
+        );
+        state.zones.insert(
+            "hand".to_string(),
+            make_zone("hand", vec!["hero"]),
+        );
+        state.zones.insert(
+            "board".to_string(),
+            make_zone("board", vec![]),
+        );
+        state.zones.insert(
+            "grave".to_string(),
+            make_zone("grave", vec![]),
+        );
+
+        let mut weights = HashMap::new();
+        weights.insert("health".to_string(), 1);
+
+        // Add an ability that heals the hero when they move to the board.
+        let heal_on_enter = Ability {
+            id: "heal_01".to_string(),
+            name: "Heal on Enter".to_string(),
+            trigger: "on_after_move_entity:self".to_string(),
+            conditions: vec![],
+            actions: vec![Action::MutateProperty {
+                target_id: "$target".to_string(),
+                property: "health".to_string(),
+                delta: 5,
+            }],
+            cancels: false,
+        };
+
+        state
+            .entities
+            .get_mut("hero")
+            .unwrap()
+            .abilities
+            .push(heal_on_enter);
+
+        // simulate_best_action should see that moving to "board" results in 15 health,
+        // while EndTurn or moving to "grave" results in 10 health.
+        let best = simulate_best_action(&state, "player_1", &weights);
+
+        assert!(best.is_some());
+        match best.unwrap() {
+            Action::MoveEntity { to_zone, .. } => {
+                assert_eq!(to_zone, "board");
+            }
+            _ => panic!("expected MoveEntity to board"),
+        }
     }
 }
