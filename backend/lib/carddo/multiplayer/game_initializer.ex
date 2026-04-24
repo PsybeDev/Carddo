@@ -19,22 +19,85 @@ defmodule Carddo.Multiplayer.GameInitializer do
 
   `players` is a list of `{player_id, deck_id}` tuples.
   Returns `{:ok, json_string}` or `{:error, reason}`.
+
+  This convenience arity is preserved for non-solo callers that only care about
+  the serialised state. Callers that need `ai_player_id` / `player_order`
+  (notably `GameChannel` on solo boot — CAR-46) should use `build/3`.
   """
   @spec build(game_id :: integer(), players :: [{String.t(), integer()}]) ::
           {:ok, String.t()} | {:error, String.t()}
   def build(game_id, players) when is_list(players) do
-    with :ok <- validate_players(players),
-         {:ok, game} <- fetch_game(game_id),
-         {:ok, config} <- validate_config(game.config),
-         {:ok, starting_zone} <- validate_starting_zone(config),
-         :ok <- validate_zone_id_uniqueness(players, config),
-         {:ok, decks} <- load_and_validate_decks(game_id, players) do
-      game_state = assemble_state(config, starting_zone, players, decks)
-      {:ok, Jason.encode!(game_state)}
+    case build(game_id, players, []) do
+      {:ok, %{state_json: json}} -> {:ok, json}
+      {:error, _} = err -> err
     end
   end
 
   def build(_game_id, _players), do: {:error, "players must be a list"}
+
+  @doc """
+  Builds initial `GameState` JSON with explicit solo-mode support.
+
+  Options:
+
+    * `:solo_mode` (boolean, default `false`) — when `true`, an AI opponent is
+      appended to `players` using the human's `deck_id`. Exactly one human player
+      must be supplied; otherwise an error is returned.
+    * `:ai_id_gen` (0-arity fun, default `&Ecto.UUID.generate/0`) — injection
+      point for deterministic AI UUID generation in tests.
+
+  Returns `{:ok, %{state_json, ai_player_id, player_order}}` on success.
+  `ai_player_id` is `nil` when `:solo_mode` is `false`. `player_order` mirrors
+  the input list (AI appended for solo).
+  """
+  @spec build(
+          game_id :: integer(),
+          players :: [{String.t(), integer()}],
+          opts :: keyword()
+        ) ::
+          {:ok,
+           %{
+             state_json: String.t(),
+             ai_player_id: String.t() | nil,
+             player_order: [String.t()]
+           }}
+          | {:error, String.t()}
+  def build(game_id, players, opts) when is_list(players) and is_list(opts) do
+    solo_mode = Keyword.get(opts, :solo_mode, false)
+    ai_id_gen = Keyword.get(opts, :ai_id_gen, &Ecto.UUID.generate/0)
+
+    with {:ok, expanded_players, ai_player_id} <-
+           expand_solo_players(players, solo_mode, ai_id_gen),
+         :ok <- validate_players(expanded_players),
+         {:ok, game} <- fetch_game(game_id),
+         {:ok, config} <- validate_config(game.config),
+         {:ok, starting_zone} <- validate_starting_zone(config),
+         :ok <- validate_zone_id_uniqueness(expanded_players, config),
+         {:ok, decks} <- load_and_validate_decks(game_id, expanded_players) do
+      game_state = assemble_state(config, starting_zone, expanded_players, decks)
+      player_order = Enum.map(expanded_players, fn {id, _} -> id end)
+
+      {:ok,
+       %{
+         state_json: Jason.encode!(game_state),
+         ai_player_id: ai_player_id,
+         player_order: player_order
+       }}
+    end
+  end
+
+  def build(_game_id, _players, _opts), do: {:error, "players must be a list"}
+
+  defp expand_solo_players(players, false, _ai_id_gen), do: {:ok, players, nil}
+
+  defp expand_solo_players([{human_id, deck_id}] = players, true, ai_id_gen)
+       when is_binary(human_id) do
+    ai_player_id = ai_id_gen.()
+    {:ok, players ++ [{ai_player_id, deck_id}], ai_player_id}
+  end
+
+  defp expand_solo_players(_players, true, _ai_id_gen),
+    do: {:error, "solo_mode requires exactly one human player"}
 
   # ── Fetching & Validation ───────────────────────────────────────────────
 

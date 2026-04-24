@@ -34,16 +34,22 @@ defmodule CarddoWeb.GameChannel do
   end
 
   @impl true
-  def join("room:" <> room_id, %{"game_id" => game_id, "deck_id" => deck_id}, socket) do
+  def join("room:" <> room_id, %{"game_id" => game_id, "deck_id" => deck_id} = params, socket) do
     current_user = socket.assigns.current_user
     player_id = to_string(current_user.id)
+    solo_mode = Map.get(params, "solo_mode", false) == true
 
     with {:ok, _game} <- authorize_game(game_id, current_user),
-         {:ok, %{game_id: room_game_id, state_json: state_json}} <-
-           resolve_room_boot(room_id, game_id, player_id, deck_id),
-         :ok <- ensure_room_started(room_id, room_game_id, state_json),
-         {:ok, live_state_json} <- fetch_live_state(room_id, room_game_id) do
-      {:ok, %{state: live_state_json}, assign(socket, :room_id, room_id)}
+         {:ok, boot} <- resolve_room_boot(room_id, game_id, player_id, deck_id, solo_mode),
+         :ok <- ensure_room_started(room_id, boot),
+         {:ok, live_info} <- fetch_live_info(room_id, boot.game_id) do
+      reply = %{
+        state: live_info.state_json,
+        ai_player_id: live_info.ai_player_id,
+        active_player_id: live_info.active_player_id
+      }
+
+      {:ok, reply, assign(socket, :room_id, room_id)}
     else
       {:error, {code, message}} ->
         {:error, error_envelope(message, code)}
@@ -116,33 +122,62 @@ defmodule CarddoWeb.GameChannel do
   defp authorize_game(_game_id, _current_user),
     do: {:error, {"invalid_game_id", "Invalid game_id"}}
 
-  defp resolve_room_boot(room_id, requested_game_id, player_id, deck_id) do
+  defp resolve_room_boot(room_id, requested_game_id, player_id, deck_id, solo_mode) do
     case fetch_live_room(room_id) do
       {:ok, info} ->
-        if to_string(info.game_id) == to_string(requested_game_id) do
-          {:ok, info}
-        else
-          {:error, {"room_game_mismatch", "Room/game mismatch"}}
+        merged = Map.merge(%{solo_mode: false, ai_player_id: nil, player_order: []}, info)
+
+        cond do
+          to_string(info.game_id) != to_string(requested_game_id) ->
+            {:error, {"room_game_mismatch", "Room/game mismatch"}}
+
+          merged.solo_mode != solo_mode ->
+            {:error, {"room_mode_mismatch", "Room mode mismatch"}}
+
+          true ->
+            {:ok, merged}
         end
 
       :not_running ->
-        case GameSessions.get(room_id) do
-          nil ->
-            case GameInitializer.build(requested_game_id, [{player_id, deck_id}]) do
-              {:ok, state_json} ->
-                {:ok, %{game_id: requested_game_id, state_json: state_json}}
+        # Solo rooms never resume from a stored session — GameRoom skips all
+        # checkpoint writes for solo_mode=true, so no row will exist, and even
+        # if one lingered we'd have no way to rehydrate ai_player_id.
+        session = GameSessions.get(room_id)
 
-              {:error, reason} ->
-                {:error, {"init_failed", reason}}
-            end
+        cond do
+          session == nil or solo_mode ->
+            build_fresh_room(requested_game_id, player_id, deck_id, solo_mode)
 
-          session ->
-            if to_string(session.game_id) == to_string(requested_game_id) do
-              {:ok, %{game_id: session.game_id, state_json: Jason.encode!(session.state_json)}}
-            else
-              {:error, {"room_game_mismatch", "Room/game mismatch"}}
-            end
+          to_string(session.game_id) != to_string(requested_game_id) ->
+            {:error, {"room_game_mismatch", "Room/game mismatch"}}
+
+          true ->
+            {:ok,
+             %{
+               game_id: session.game_id,
+               state_json: Jason.encode!(session.state_json),
+               solo_mode: false,
+               ai_player_id: nil,
+               player_order: [player_id]
+             }}
         end
+    end
+  end
+
+  defp build_fresh_room(requested_game_id, player_id, deck_id, solo_mode) do
+    case GameInitializer.build(requested_game_id, [{player_id, deck_id}], solo_mode: solo_mode) do
+      {:ok, %{state_json: state_json, ai_player_id: ai_player_id, player_order: player_order}} ->
+        {:ok,
+         %{
+           game_id: requested_game_id,
+           state_json: state_json,
+           solo_mode: solo_mode,
+           ai_player_id: ai_player_id,
+           player_order: player_order
+         }}
+
+      {:error, reason} ->
+        {:error, {"init_failed", reason}}
     end
   end
 
@@ -154,11 +189,11 @@ defmodule CarddoWeb.GameChannel do
     :exit, {:shutdown, _} -> :not_running
   end
 
-  defp fetch_live_state(room_id, expected_game_id) do
+  defp fetch_live_info(room_id, expected_game_id) do
     info = GameRoom.get_room_info(room_id)
 
     if to_string(info.game_id) == to_string(expected_game_id) do
-      {:ok, info.state_json}
+      {:ok, info}
     else
       {:error, {"room_game_mismatch", "Room/game mismatch"}}
     end
@@ -168,13 +203,22 @@ defmodule CarddoWeb.GameChannel do
       {:error, {"room_unavailable", "Game room is unavailable"}}
   end
 
-  defp ensure_room_started(room_id, game_id, state_json) do
+  defp ensure_room_started(room_id, boot) do
     mod = multiplayer()
 
     if mod.room_exists?(room_id) do
       :ok
     else
-      case mod.start_room(room_id, game_id, state_json, false) do
+      opts = %{
+        room_id: room_id,
+        game_id: boot.game_id,
+        initial_state_json: boot.state_json,
+        solo_mode: Map.get(boot, :solo_mode, false),
+        ai_player_id: Map.get(boot, :ai_player_id),
+        player_order: Map.get(boot, :player_order, [])
+      }
+
+      case mod.start_room(opts) do
         {:ok, _pid} ->
           :ok
 

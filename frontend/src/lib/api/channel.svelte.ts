@@ -65,6 +65,8 @@ export class GameChannel {
 	lastRejection = $state<ActionRejectedPayload | null>(null);
 	errors = $state<ChannelError[]>([]);
 	gameOver = $state<GameOverPayload | null>(null);
+	aiPlayerId = $state<string | null>(null);
+	activePlayerId = $state<string | null>(null);
 
 	private socket: Socket | null = null;
 	private channel: Channel | null = null;
@@ -91,6 +93,9 @@ export class GameChannel {
 
 		this.channel.on('state_resolved', (payload: StateResolvedPayload) => {
 			this.parseAndSetGameState(payload.state);
+			if (payload.active_player_id !== undefined) {
+				this.activePlayerId = payload.active_player_id ?? null;
+			}
 		});
 
 		this.channel.on('action_rejected', (payload: ActionRejectedPayload) => {
@@ -109,6 +114,8 @@ export class GameChannel {
 				.receive('ok', (response: JoinResponse) => {
 					try {
 						this.gameState = parseGameState(response.state);
+						this.aiPlayerId = response.ai_player_id ?? null;
+						this.activePlayerId = response.active_player_id ?? null;
 						this.connectionStatus = 'connected';
 						resolve();
 					} catch (error) {
@@ -181,6 +188,8 @@ export class GameChannel {
 		this.lastRejection = null;
 		this.gameOver = null;
 		this.errors = [];
+		this.aiPlayerId = null;
+		this.activePlayerId = null;
 		this.channel = null;
 		this.socket = null;
 	}

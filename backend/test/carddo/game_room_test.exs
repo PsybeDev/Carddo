@@ -47,6 +47,20 @@ defmodule Carddo.GameRoomTest do
     end
   end
 
+  @short_delay 50
+
+  defp solo_opts(ai_id, human_id, extra \\ %{}) do
+    Map.merge(
+      %{
+        solo_mode: true,
+        ai_player_id: ai_id,
+        player_order: [human_id, ai_id],
+        ai_action_delay_ms: @short_delay
+      },
+      extra
+    )
+  end
+
   defp start_room(game, opts \\ %{}) do
     room_id = "test_room_#{System.unique_integer([:positive])}"
 
@@ -54,7 +68,9 @@ defmodule Carddo.GameRoomTest do
       room_id: room_id,
       game_id: game.id,
       initial_state_json: @empty_state,
-      solo_mode: false
+      solo_mode: false,
+      ai_player_id: nil,
+      player_order: []
     }
 
     opts = Map.merge(base_opts, Enum.into(opts, %{}))
@@ -354,7 +370,9 @@ defmodule Carddo.GameRoomTest do
                room_id: new_room_id,
                game_id: game.id,
                initial_state_json: resumed_state_json,
-               solo_mode: false
+               solo_mode: false,
+               ai_player_id: nil,
+               player_order: []
              }},
             restart: :temporary
           ),
@@ -391,6 +409,218 @@ defmodule Carddo.GameRoomTest do
       post_crash_session = Carddo.Multiplayer.GameSessions.get(room_id)
       assert post_crash_session.turn_number == 2
       assert post_crash_session.state_json == checkpoint_state
+    end
+  end
+
+  describe "solo mode AI" do
+    test "AI responds with a state_resolved broadcast after human EndTurn", %{game: game} do
+      human_id = "human_1"
+      ai_id = "ai_1"
+
+      # ai_max_actions_per_turn: 0 forces the cap-hit branch on the AI's first
+      # scheduler fire, which guarantees it issues exactly one EndTurn and
+      # rotates the turn back to the human — independent of whatever
+      # valid_actions_for_player/2 may surface for @empty_state in the future.
+      {room_id, _pid} =
+        start_room(game, solo_opts(ai_id, human_id, %{ai_max_actions_per_turn: 0}))
+
+      topic = "room:#{room_id}"
+      PubSub.subscribe(Carddo.PubSub, topic)
+
+      assert GameRoom.make_move(room_id, human_id, ~s("EndTurn")) == :ok
+
+      # First broadcast: human EndTurn
+      assert_receive %Phoenix.Socket.Broadcast{topic: ^topic, event: "state_resolved"}, 500
+      # Second broadcast: AI-originated EndTurn scheduled via :ai_take_action
+      assert_receive %Phoenix.Socket.Broadcast{topic: ^topic, event: "state_resolved"}, 500
+
+      info = GameRoom.get_room_info(room_id)
+      assert info.solo_mode == true
+      assert info.ai_player_id == ai_id
+      assert info.player_order == [human_id, ai_id]
+    end
+
+    test "state_resolved broadcast carries active_player_id", %{game: game} do
+      human_id = "human_1"
+      ai_id = "ai_1"
+
+      # cap=0 forces the AI's single scheduler fire to produce an EndTurn,
+      # guaranteeing the two broadcasts this test asserts on.
+      {room_id, _pid} =
+        start_room(game, solo_opts(ai_id, human_id, %{ai_max_actions_per_turn: 0}))
+
+      topic = "room:#{room_id}"
+      PubSub.subscribe(Carddo.PubSub, topic)
+
+      assert GameRoom.make_move(room_id, human_id, ~s("EndTurn")) == :ok
+
+      assert_receive %Phoenix.Socket.Broadcast{
+                       topic: ^topic,
+                       event: "state_resolved",
+                       payload: %{active_player_id: ^ai_id}
+                     },
+                     500
+
+      assert_receive %Phoenix.Socket.Broadcast{
+                       topic: ^topic,
+                       event: "state_resolved",
+                       payload: %{active_player_id: ^human_id}
+                     },
+                     500
+    end
+
+    test "get_room_info exposes active_player_id", %{game: game} do
+      human_id = "human_1"
+      ai_id = "ai_1"
+
+      # Use a long delay so the AI doesn't fire before we read.
+      {room_id, _pid} =
+        start_room(game, solo_opts(ai_id, human_id, %{ai_action_delay_ms: 5_000}))
+
+      info = GameRoom.get_room_info(room_id)
+      assert info.active_player_id == human_id
+    end
+
+    test "non-solo mode never schedules an AI broadcast", %{game: game} do
+      # Short delay so a regression that mistakenly scheduled the AI would fire
+      # well within the refute_receive window below — the default 1500ms delay
+      # would otherwise mask the bug.
+      {room_id, _pid} = start_room(game, %{ai_action_delay_ms: @short_delay})
+
+      topic = "room:#{room_id}"
+      PubSub.subscribe(Carddo.PubSub, topic)
+
+      assert GameRoom.make_move(room_id, "player_1", ~s("EndTurn")) == :ok
+      assert_receive %Phoenix.Socket.Broadcast{topic: ^topic, event: "state_resolved"}, 500
+      refute_receive %Phoenix.Socket.Broadcast{topic: ^topic, event: "state_resolved"}, 200
+    end
+
+    test "human move during AI turn is rejected with not_active_player", %{game: game} do
+      human_id = "human_1"
+      ai_id = "ai_1"
+
+      {room_id, _pid} =
+        start_room(game, solo_opts(ai_id, human_id, %{ai_action_delay_ms: 5_000}))
+
+      assert GameRoom.make_move(room_id, human_id, ~s("EndTurn")) == :ok
+
+      assert {:error, %{type: "not_active_player"}} =
+               GameRoom.make_move(room_id, human_id, ~s("EndTurn"))
+    end
+
+    test ":ai_take_action is a no-op when active player is human", %{game: game} do
+      human_id = "human_1"
+      ai_id = "ai_1"
+
+      {room_id, pid} = start_room(game, solo_opts(ai_id, human_id))
+
+      topic = "room:#{room_id}"
+      PubSub.subscribe(Carddo.PubSub, topic)
+
+      send(pid, :ai_take_action)
+
+      refute_receive %Phoenix.Socket.Broadcast{topic: ^topic, event: "state_resolved"}, 200
+    end
+
+    test "AI action cap forces EndTurn when cap is hit", %{game: game} do
+      human_id = "human_1"
+      ai_id = "ai_1"
+
+      {room_id, pid} =
+        start_room(game, solo_opts(ai_id, human_id, %{ai_max_actions_per_turn: 3}))
+
+      # Simulate the AI already having taken max actions this turn.
+      :sys.replace_state(pid, fn s ->
+        %{s | active_player_id: ai_id, ai_actions_this_turn: 3}
+      end)
+
+      topic = "room:#{room_id}"
+      PubSub.subscribe(Carddo.PubSub, topic)
+
+      send(pid, :ai_take_action)
+
+      assert_receive %Phoenix.Socket.Broadcast{
+                       topic: ^topic,
+                       event: "state_resolved",
+                       payload: %{active_player_id: ^human_id}
+                     },
+                     500
+
+      %{ai_actions_this_turn: counter, active_player_id: active} = :sys.get_state(pid)
+      assert active == human_id
+      assert counter == 0
+    end
+
+    test "AI valid_actions error triggers fallback recovery path", %{game: game} do
+      import ExUnit.CaptureLog
+
+      human_id = "human_1"
+      ai_id = "ai_1"
+
+      {room_id, pid} = start_room(game, solo_opts(ai_id, human_id))
+
+      # Corrupt the engine state so simulate_best_action returns {:error, _},
+      # driving the fallback recovery path in pick_and_apply_ai_action. The
+      # recovery's own EndTurn attempt will also fail against the bad state —
+      # which is what we want to verify is logged cleanly rather than crashing
+      # the room.
+      :sys.replace_state(pid, fn s ->
+        %{s | active_player_id: ai_id, rust_state_json: "not-valid-json"}
+      end)
+
+      topic = "room:#{room_id}"
+      PubSub.subscribe(Carddo.PubSub, topic)
+
+      log =
+        capture_log(fn ->
+          send(pid, :ai_take_action)
+          # Give the GenServer time to handle the info message and log.
+          Process.sleep(100)
+        end)
+
+      assert log =~ "AI simulator failed"
+      assert log =~ "forcing EndTurn recovery"
+      assert log =~ "AI recovery EndTurn failed"
+      refute_received %Phoenix.Socket.Broadcast{topic: ^topic, event: "state_resolved"}
+      assert Process.alive?(pid)
+    end
+  end
+
+  describe "solo mode persistence" do
+    test "solo_mode skips initial checkpoint", %{game: game} do
+      {room_id, _pid} = start_room(game, solo_opts("ai_1", "human_1"))
+
+      # Give a brief window for any mistaken background write to show up.
+      Process.sleep(100)
+
+      assert Carddo.Multiplayer.GameSessions.get(room_id) == nil
+    end
+
+    test "solo_mode skips turn-boundary checkpoint", %{game: game} do
+      {room_id, _pid} =
+        start_room(game, solo_opts("ai_1", "human_1", %{ai_action_delay_ms: 5_000}))
+
+      assert GameRoom.make_move(room_id, "human_1", ~s("EndTurn")) == :ok
+
+      # Wait long enough for a potential async checkpoint to land.
+      Process.sleep(150)
+      assert Carddo.Multiplayer.GameSessions.get(room_id) == nil
+    end
+
+    test "solo_mode skips game_over checkpoint", %{game: game} do
+      {room_id, _pid} =
+        start_room(
+          game,
+          solo_opts("ai_1", "human_1", %{
+            ai_action_delay_ms: 5_000,
+            initial_state_json: @win_condition_state
+          })
+        )
+
+      assert GameRoom.make_move(room_id, "human_1", ~s("EndTurn")) == :ok
+
+      Process.sleep(150)
+      assert Carddo.Multiplayer.GameSessions.get(room_id) == nil
     end
   end
 end
