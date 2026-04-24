@@ -58,7 +58,11 @@
 		const localUser = authStore.currentUser;
 		const localGame = game;
 		const localDeckId = selectedDeckId;
-		const roomId = `solo_${localUser.id}_${localGame.id}`;
+		// A fresh session id per Start Playtest click so a disconnect+reconnect
+		// can't silently reopen the previous live room with its stale deck —
+		// backend rooms are keyed on roomId and live until their TTL expires.
+		const sessionId = crypto.randomUUID();
+		const roomId = `solo_${localUser.id}_${localGame.id}_${sessionId}`;
 		let ch: GameChannel | null = null;
 
 		try {
@@ -107,6 +111,7 @@
 
 	async function handleDrop(entityId: string, toZone: string) {
 		if (!gameState || !channel) return;
+		if (!isPlayerTurn) return;
 		if (gameStore.pendingAction !== null) {
 			toastStore.show('Action pending - please wait', 'info');
 			return;
@@ -193,7 +198,7 @@
 	});
 
 	$effect(() => {
-		if (gameState) {
+		if (gameState && isPlayerTurn) {
 			validDropTargets = Object.keys(gameState.zones);
 		} else {
 			validDropTargets = [];

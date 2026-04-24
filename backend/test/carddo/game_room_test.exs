@@ -474,7 +474,10 @@ defmodule Carddo.GameRoomTest do
     end
 
     test "non-solo mode never schedules an AI broadcast", %{game: game} do
-      {room_id, _pid} = start_room(game)
+      # Short delay so a regression that mistakenly scheduled the AI would fire
+      # well within the refute_receive window below — the default 1500ms delay
+      # would otherwise mask the bug.
+      {room_id, _pid} = start_room(game, %{ai_action_delay_ms: @short_delay})
 
       topic = "room:#{room_id}"
       PubSub.subscribe(Carddo.PubSub, topic)
@@ -540,29 +543,38 @@ defmodule Carddo.GameRoomTest do
       assert counter == 0
     end
 
-    test "AI empty valid_actions triggers fallback EndTurn", %{game: game} do
+    test "AI valid_actions error triggers fallback recovery path", %{game: game} do
+      import ExUnit.CaptureLog
+
       human_id = "human_1"
       ai_id = "ai_1"
 
-      # Use an empty game state (no entities, no zones) so valid_actions_for_player
-      # returns only EndTurn. Force the state to AI's turn and trigger the scheduler
-      # manually; the fallback path is exercised when force_end_turn applies
-      # EndTurn even though the legitimate random pick would also pick EndTurn.
       {room_id, pid} = start_room(game, solo_opts(ai_id, human_id))
 
-      :sys.replace_state(pid, fn s -> %{s | active_player_id: ai_id} end)
+      # Corrupt the engine state so valid_actions_for_player returns {:error, _},
+      # driving the fallback recovery path in pick_and_apply_ai_action. The
+      # recovery's own EndTurn attempt will also fail against the bad state —
+      # which is what we want to verify is logged cleanly rather than crashing
+      # the room.
+      :sys.replace_state(pid, fn s ->
+        %{s | active_player_id: ai_id, rust_state_json: "not-valid-json"}
+      end)
 
       topic = "room:#{room_id}"
       PubSub.subscribe(Carddo.PubSub, topic)
 
-      send(pid, :ai_take_action)
+      log =
+        capture_log(fn ->
+          send(pid, :ai_take_action)
+          # Give the GenServer time to handle the info message and log.
+          Process.sleep(100)
+        end)
 
-      assert_receive %Phoenix.Socket.Broadcast{
-                       topic: ^topic,
-                       event: "state_resolved",
-                       payload: %{active_player_id: ^human_id}
-                     },
-                     500
+      assert log =~ "AI valid_actions_for_player failed"
+      assert log =~ "forcing EndTurn recovery"
+      assert log =~ "AI recovery EndTurn failed"
+      refute_received %Phoenix.Socket.Broadcast{topic: ^topic, event: "state_resolved"}
+      assert Process.alive?(pid)
     end
   end
 
