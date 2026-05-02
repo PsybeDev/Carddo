@@ -584,6 +584,47 @@ defmodule Carddo.GameRoomTest do
       refute_received %Phoenix.Socket.Broadcast{topic: ^topic, event: "state_resolved"}
       assert Process.alive?(pid)
     end
+
+    test "AI simulator returning null triggers fallback recovery path", %{game: game} do
+      import ExUnit.CaptureLog
+
+      defmodule MockNativeNull do
+        def simulate_best_action(_state, _id, _weights), do: {:ok, "null"}
+        def process_move(state, action, id), do: Carddo.Native.process_move(state, action, id)
+      end
+
+      Application.put_env(:carddo, :native_module, MockNativeNull)
+      on_exit(fn -> Application.delete_env(:carddo, :native_module) end)
+
+      human_id = "human_1"
+      ai_id = "ai_1"
+
+      {room_id, pid} = start_room(game, solo_opts(ai_id, human_id))
+
+      # Simulate it's the AI's turn
+      :sys.replace_state(pid, fn s -> %{s | active_player_id: ai_id} end)
+
+      topic = "room:#{room_id}"
+      PubSub.subscribe(Carddo.PubSub, topic)
+
+      log =
+        capture_log(fn ->
+          send(pid, :ai_take_action)
+          # First broadcast: AI recovery EndTurn
+          assert_receive %Phoenix.Socket.Broadcast{
+                           topic: ^topic,
+                           event: "state_resolved",
+                           payload: %{active_player_id: ^human_id}
+                         },
+                         500
+        end)
+
+      assert log =~ "AI simulator returned no action"
+      assert log =~ "forcing EndTurn recovery"
+
+      %{active_player_id: active} = :sys.get_state(pid)
+      assert active == human_id
+    end
   end
 
   describe "solo mode persistence" do

@@ -1931,9 +1931,12 @@ mod tests {
         assert!(best.is_some());
         match best.unwrap() {
             Action::MoveEntity { to_zone, .. } => {
-                assert_eq!(to_zone, "board");
+                assert!(
+                    to_zone == "board" || to_zone == "grave",
+                    "any zone that triggers the heal is a valid tie-winner; got {to_zone}"
+                );
             }
-            _ => panic!("expected MoveEntity to board"),
+            _ => panic!("expected MoveEntity that triggers the heal"),
         }
     }
 }

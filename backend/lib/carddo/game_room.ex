@@ -13,6 +13,9 @@ defmodule Carddo.GameRoom do
   defp ai_max_actions_per_turn,
     do: Application.get_env(:carddo, :ai_max_actions_per_turn, @default_ai_max_actions_per_turn)
 
+  defp native_module,
+    do: Application.get_env(:carddo, :native_module, Carddo.Native)
+
   # Public API
 
   def via_tuple(room_id), do: Carddo.Multiplayer.GameRegistry.via_tuple(room_id)
@@ -200,7 +203,7 @@ defmodule Carddo.GameRoom do
   end
 
   defp pick_and_apply_ai_action(state) do
-    case Carddo.Native.simulate_best_action(
+    case native_module().simulate_best_action(
            state.rust_state_json,
            state.ai_player_id,
            @mvp_ai_weights
@@ -254,7 +257,7 @@ defmodule Carddo.GameRoom do
   end
 
   defp apply_move(state, player_id, action_json) do
-    case Carddo.Native.process_move(state.rust_state_json, action_json, player_id) do
+    case native_module().process_move(state.rust_state_json, action_json, player_id) do
       {:ok, new_state_json, _animations} ->
         case Jason.decode(new_state_json) do
           {:ok, decoded} ->
