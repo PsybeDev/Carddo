@@ -142,3 +142,9 @@ When a PR review comes in (human or bot), assess each comment before acting:
 4. **Check for deeper root causes** — a comment about symptom X may reveal that the real fix is Y. Example: "add stale-response guards" might be better solved by eliminating the async fetch entirely
 5. **Fix valid concerns**, reply explaining what was done and why. For false positives, reply with the reasoning. Never dismiss without explanation
 6. **Batch related comments** — if multiple comments point to the same underlying issue (e.g., "counts fetched wrong" + "full list fetched for counts"), solve them with a single cohesive fix rather than piecemeal patches
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan:
+[specs/001-ai-rules-lawyer-playtester/plan.md](specs/001-ai-rules-lawyer-playtester/plan.md)
+<!-- SPECKIT END -->

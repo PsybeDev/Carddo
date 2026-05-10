@@ -23,55 +23,56 @@ defmodule Carddo.AiSimulatorTest do
     test "AI chooses an action that increases its own health" do
       # AI hero starts with 10 health.
       # AI has a card in hand that heals the hero by 5 when moved to the board.
-      state = make_state(%{
-        "entities" => %{
-          "ai_hero" => %{
-            "id" => "ai_hero",
-            "owner_id" => "ai_player",
-            "template_id" => "hero",
-            "properties" => %{"health" => 10},
-            "abilities" => []
-          },
-          "ai_card" => %{
-            "id" => "ai_card",
-            "owner_id" => "ai_player",
-            "template_id" => "spell",
-            "properties" => %{},
-            "abilities" => [
-              %{
-                "id" => "heal_ability",
-                "name" => "Heal Hero",
-                "trigger" => "on_after_move_entity:self",
-                "conditions" => [],
-                "actions" => [
-                  %{
-                    "MutateProperty" => %{
-                      "target_id" => "ai_hero",
-                      "property" => "health",
-                      "delta" => 5
+      state =
+        make_state(%{
+          "entities" => %{
+            "ai_hero" => %{
+              "id" => "ai_hero",
+              "owner_id" => "ai_player",
+              "template_id" => "hero",
+              "properties" => %{"health" => 10},
+              "abilities" => []
+            },
+            "ai_card" => %{
+              "id" => "ai_card",
+              "owner_id" => "ai_player",
+              "template_id" => "spell",
+              "properties" => %{},
+              "abilities" => [
+                %{
+                  "id" => "heal_ability",
+                  "name" => "Heal Hero",
+                  "trigger" => "on_after_move_entity:self",
+                  "conditions" => [],
+                  "actions" => [
+                    %{
+                      "MutateProperty" => %{
+                        "target_id" => "ai_hero",
+                        "property" => "health",
+                        "delta" => 5
+                      }
                     }
-                  }
-                ],
-                "cancels" => false
-              }
-            ]
-          }
-        },
-        "zones" => %{
-          "hand" => %{
-            "id" => "hand",
-            "owner_id" => "ai_player",
-            "visibility" => "Public",
-            "entities" => ["ai_card"]
+                  ],
+                  "cancels" => false
+                }
+              ]
+            }
           },
-          "board" => %{
-            "id" => "board",
-            "owner_id" => nil,
-            "visibility" => "Public",
-            "entities" => []
+          "zones" => %{
+            "hand" => %{
+              "id" => "hand",
+              "owner_id" => "ai_player",
+              "visibility" => "Public",
+              "entities" => ["ai_card"]
+            },
+            "board" => %{
+              "id" => "board",
+              "owner_id" => nil,
+              "visibility" => "Public",
+              "entities" => []
+            }
           }
-        }
-      })
+        })
 
       {:ok, action_json} = Native.simulate_best_action(state, "ai_player", @weights)
       action = Jason.decode!(action_json)
@@ -90,62 +91,63 @@ defmodule Carddo.AiSimulatorTest do
     test "AI chooses an action that decreases the opponent's health" do
       # Opponent hero starts with 10 health.
       # AI has a card in hand that damages the opponent hero by 5 when moved to the board.
-      state = make_state(%{
-        "entities" => %{
-          "ai_hero" => %{
-            "id" => "ai_hero",
-            "owner_id" => "ai_player",
-            "template_id" => "hero",
-            "properties" => %{"health" => 10},
-            "abilities" => []
-          },
-          "opponent_hero" => %{
-            "id" => "opponent_hero",
-            "owner_id" => "opponent_player",
-            "template_id" => "hero",
-            "properties" => %{"health" => 10},
-            "abilities" => []
-          },
-          "ai_card" => %{
-            "id" => "ai_card",
-            "owner_id" => "ai_player",
-            "template_id" => "spell",
-            "properties" => %{},
-            "abilities" => [
-              %{
-                "id" => "damage_ability",
-                "name" => "Damage Opponent",
-                "trigger" => "on_after_move_entity:self",
-                "conditions" => [],
-                "actions" => [
-                  %{
-                    "MutateProperty" => %{
-                      "target_id" => "opponent_hero",
-                      "property" => "health",
-                      "delta" => -5
+      state =
+        make_state(%{
+          "entities" => %{
+            "ai_hero" => %{
+              "id" => "ai_hero",
+              "owner_id" => "ai_player",
+              "template_id" => "hero",
+              "properties" => %{"health" => 10},
+              "abilities" => []
+            },
+            "opponent_hero" => %{
+              "id" => "opponent_hero",
+              "owner_id" => "opponent_player",
+              "template_id" => "hero",
+              "properties" => %{"health" => 10},
+              "abilities" => []
+            },
+            "ai_card" => %{
+              "id" => "ai_card",
+              "owner_id" => "ai_player",
+              "template_id" => "spell",
+              "properties" => %{},
+              "abilities" => [
+                %{
+                  "id" => "damage_ability",
+                  "name" => "Damage Opponent",
+                  "trigger" => "on_after_move_entity:self",
+                  "conditions" => [],
+                  "actions" => [
+                    %{
+                      "MutateProperty" => %{
+                        "target_id" => "opponent_hero",
+                        "property" => "health",
+                        "delta" => -5
+                      }
                     }
-                  }
-                ],
-                "cancels" => false
-              }
-            ]
-          }
-        },
-        "zones" => %{
-          "hand" => %{
-            "id" => "hand",
-            "owner_id" => "ai_player",
-            "visibility" => "Public",
-            "entities" => ["ai_card"]
+                  ],
+                  "cancels" => false
+                }
+              ]
+            }
           },
-          "board" => %{
-            "id" => "board",
-            "owner_id" => nil,
-            "visibility" => "Public",
-            "entities" => []
+          "zones" => %{
+            "hand" => %{
+              "id" => "hand",
+              "owner_id" => "ai_player",
+              "visibility" => "Public",
+              "entities" => ["ai_card"]
+            },
+            "board" => %{
+              "id" => "board",
+              "owner_id" => nil,
+              "visibility" => "Public",
+              "entities" => []
+            }
           }
-        }
-      })
+        })
 
       {:ok, action_json} = Native.simulate_best_action(state, "ai_player", @weights)
       action = Jason.decode!(action_json)
@@ -163,25 +165,26 @@ defmodule Carddo.AiSimulatorTest do
 
     test "AI falls back to EndTurn when no better moves exist" do
       # AI has no cards to move, only EndTurn is available.
-      state = make_state(%{
-        "entities" => %{
-          "ai_hero" => %{
-            "id" => "ai_hero",
-            "owner_id" => "ai_player",
-            "template_id" => "hero",
-            "properties" => %{"health" => 10},
-            "abilities" => []
+      state =
+        make_state(%{
+          "entities" => %{
+            "ai_hero" => %{
+              "id" => "ai_hero",
+              "owner_id" => "ai_player",
+              "template_id" => "hero",
+              "properties" => %{"health" => 10},
+              "abilities" => []
+            }
+          },
+          "zones" => %{
+            "board" => %{
+              "id" => "board",
+              "owner_id" => nil,
+              "visibility" => "Public",
+              "entities" => []
+            }
           }
-        },
-        "zones" => %{
-          "board" => %{
-            "id" => "board",
-            "owner_id" => nil,
-            "visibility" => "Public",
-            "entities" => []
-          }
-        }
-      })
+        })
 
       {:ok, action_json} = Native.simulate_best_action(state, "ai_player", @weights)
       assert action_json == ~s("EndTurn")
@@ -189,60 +192,62 @@ defmodule Carddo.AiSimulatorTest do
 
     test "AI behavior is deterministic" do
       # Same setup as the first test.
-      state = make_state(%{
-        "entities" => %{
-          "ai_hero" => %{
-            "id" => "ai_hero",
-            "owner_id" => "ai_player",
-            "template_id" => "hero",
-            "properties" => %{"health" => 10},
-            "abilities" => []
-          },
-          "ai_card" => %{
-            "id" => "ai_card",
-            "owner_id" => "ai_player",
-            "template_id" => "spell",
-            "properties" => %{},
-            "abilities" => [
-              %{
-                "id" => "heal_ability",
-                "name" => "Heal Hero",
-                "trigger" => "on_after_move_entity:self",
-                "conditions" => [],
-                "actions" => [
-                  %{
-                    "MutateProperty" => %{
-                      "target_id" => "ai_hero",
-                      "property" => "health",
-                      "delta" => 5
+      state =
+        make_state(%{
+          "entities" => %{
+            "ai_hero" => %{
+              "id" => "ai_hero",
+              "owner_id" => "ai_player",
+              "template_id" => "hero",
+              "properties" => %{"health" => 10},
+              "abilities" => []
+            },
+            "ai_card" => %{
+              "id" => "ai_card",
+              "owner_id" => "ai_player",
+              "template_id" => "spell",
+              "properties" => %{},
+              "abilities" => [
+                %{
+                  "id" => "heal_ability",
+                  "name" => "Heal Hero",
+                  "trigger" => "on_after_move_entity:self",
+                  "conditions" => [],
+                  "actions" => [
+                    %{
+                      "MutateProperty" => %{
+                        "target_id" => "ai_hero",
+                        "property" => "health",
+                        "delta" => 5
+                      }
                     }
-                  }
-                ],
-                "cancels" => false
-              }
-            ]
-          }
-        },
-        "zones" => %{
-          "hand" => %{
-            "id" => "hand",
-            "owner_id" => "ai_player",
-            "visibility" => "Public",
-            "entities" => ["ai_card"]
+                  ],
+                  "cancels" => false
+                }
+              ]
+            }
           },
-          "board" => %{
-            "id" => "board",
-            "owner_id" => nil,
-            "visibility" => "Public",
-            "entities" => []
+          "zones" => %{
+            "hand" => %{
+              "id" => "hand",
+              "owner_id" => "ai_player",
+              "visibility" => "Public",
+              "entities" => ["ai_card"]
+            },
+            "board" => %{
+              "id" => "board",
+              "owner_id" => nil,
+              "visibility" => "Public",
+              "entities" => []
+            }
           }
-        }
-      })
+        })
 
-      results = for _ <- 1..10 do
-        {:ok, action_json} = Native.simulate_best_action(state, "ai_player", @weights)
-        action_json
-      end
+      results =
+        for _ <- 1..10 do
+          {:ok, action_json} = Native.simulate_best_action(state, "ai_player", @weights)
+          action_json
+        end
 
       # All results should be identical.
       first_result = List.first(results)
@@ -251,62 +256,63 @@ defmodule Carddo.AiSimulatorTest do
 
     test "AI prefers a move that increases power over one that does nothing" do
       # AI has two cards. One increases power, one does nothing.
-      state = make_state(%{
-        "entities" => %{
-          "ai_hero" => %{
-            "id" => "ai_hero",
-            "owner_id" => "ai_player",
-            "template_id" => "hero",
-            "properties" => %{"power" => 0},
-            "abilities" => []
-          },
-          "power_card" => %{
-            "id" => "power_card",
-            "owner_id" => "ai_player",
-            "template_id" => "spell",
-            "properties" => %{},
-            "abilities" => [
-              %{
-                "id" => "power_ability",
-                "name" => "Gain Power",
-                "trigger" => "on_after_move_entity:self",
-                "conditions" => [],
-                "actions" => [
-                  %{
-                    "MutateProperty" => %{
-                      "target_id" => "ai_hero",
-                      "property" => "power",
-                      "delta" => 2
+      state =
+        make_state(%{
+          "entities" => %{
+            "ai_hero" => %{
+              "id" => "ai_hero",
+              "owner_id" => "ai_player",
+              "template_id" => "hero",
+              "properties" => %{"power" => 0},
+              "abilities" => []
+            },
+            "power_card" => %{
+              "id" => "power_card",
+              "owner_id" => "ai_player",
+              "template_id" => "spell",
+              "properties" => %{},
+              "abilities" => [
+                %{
+                  "id" => "power_ability",
+                  "name" => "Gain Power",
+                  "trigger" => "on_after_move_entity:self",
+                  "conditions" => [],
+                  "actions" => [
+                    %{
+                      "MutateProperty" => %{
+                        "target_id" => "ai_hero",
+                        "property" => "power",
+                        "delta" => 2
+                      }
                     }
-                  }
-                ],
-                "cancels" => false
-              }
-            ]
+                  ],
+                  "cancels" => false
+                }
+              ]
+            },
+            "useless_card" => %{
+              "id" => "useless_card",
+              "owner_id" => "ai_player",
+              "template_id" => "spell",
+              "properties" => %{},
+              "abilities" => []
+            }
           },
-          "useless_card" => %{
-            "id" => "useless_card",
-            "owner_id" => "ai_player",
-            "template_id" => "spell",
-            "properties" => %{},
-            "abilities" => []
+          "zones" => %{
+            "hand" => %{
+              "id" => "hand",
+              "owner_id" => "ai_player",
+              "visibility" => "Public",
+              "entities" => ["power_card", "useless_card"]
+            },
+            "board" => %{
+              "id" => "board",
+              "owner_id" => nil,
+              "visibility" => "Public",
+              "entities" => []
+            }
           }
-        },
-        "zones" => %{
-          "hand" => %{
-            "id" => "hand",
-            "owner_id" => "ai_player",
-            "visibility" => "Public",
-            "entities" => ["power_card", "useless_card"]
-          },
-          "board" => %{
-            "id" => "board",
-            "owner_id" => nil,
-            "visibility" => "Public",
-            "entities" => []
-          }
-        }
-      })
+        })
 
       {:ok, action_json} = Native.simulate_best_action(state, "ai_player", @weights)
       action = Jason.decode!(action_json)
@@ -337,57 +343,59 @@ defmodule Carddo.AiSimulatorTest do
       ai_id = "ai_player"
       human_id = "human_player"
 
-      state = make_state(%{
-        "entities" => %{
-          "ai_hero" => %{
-            "id" => "ai_hero",
-            "owner_id" => ai_id,
-            "template_id" => "hero",
-            "properties" => %{"health" => 10},
-            "abilities" => []
-          },
-          "ai_card" => %{
-            "id" => "ai_card",
-            "owner_id" => ai_id,
-            "template_id" => "spell",
-            "properties" => %{},
-            "abilities" => [
-              %{
-                "id" => "heal_ability",
-                "name" => "Heal Hero",
-                "trigger" => "on_after_move_entity:self",
-                "conditions" => [],
-                "actions" => [
-                  %{
-                    "MutateProperty" => %{
-                      "target_id" => "ai_hero",
-                      "property" => "health",
-                      "delta" => 5
+      state =
+        make_state(%{
+          "entities" => %{
+            "ai_hero" => %{
+              "id" => "ai_hero",
+              "owner_id" => ai_id,
+              "template_id" => "hero",
+              "properties" => %{"health" => 10},
+              "abilities" => []
+            },
+            "ai_card" => %{
+              "id" => "ai_card",
+              "owner_id" => ai_id,
+              "template_id" => "spell",
+              "properties" => %{},
+              "abilities" => [
+                %{
+                  "id" => "heal_ability",
+                  "name" => "Heal Hero",
+                  "trigger" => "on_after_move_entity:self",
+                  "conditions" => [],
+                  "actions" => [
+                    %{
+                      "MutateProperty" => %{
+                        "target_id" => "ai_hero",
+                        "property" => "health",
+                        "delta" => 5
+                      }
                     }
-                  }
-                ],
-                "cancels" => false
-              }
-            ]
-          }
-        },
-        "zones" => %{
-          "hand" => %{
-            "id" => "hand",
-            "owner_id" => ai_id,
-            "visibility" => "Public",
-            "entities" => ["ai_card"]
+                  ],
+                  "cancels" => false
+                }
+              ]
+            }
           },
-          "board" => %{
-            "id" => "board",
-            "owner_id" => nil,
-            "visibility" => "Public",
-            "entities" => []
+          "zones" => %{
+            "hand" => %{
+              "id" => "hand",
+              "owner_id" => ai_id,
+              "visibility" => "Public",
+              "entities" => ["ai_card"]
+            },
+            "board" => %{
+              "id" => "board",
+              "owner_id" => nil,
+              "visibility" => "Public",
+              "entities" => []
+            }
           }
-        }
-      })
+        })
 
       room_id = "ai_integration_#{System.unique_integer([:positive])}"
+
       opts = %{
         room_id: room_id,
         game_id: game.id,
@@ -423,7 +431,7 @@ defmodule Carddo.AiSimulatorTest do
                      1000
 
       new_state = Jason.decode!(new_state_json)
-      
+
       # Verify the AI moved the card to the board.
       assert "ai_card" in new_state["zones"]["board"]["entities"]
       # Verify the heal triggered.

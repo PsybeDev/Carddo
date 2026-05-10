@@ -20,7 +20,8 @@ defmodule Carddo.Native do
 
   @doc """
   Returns the best `Action` for `player_id` based on the provided weights.
-  Used by `Carddo.GameRoom` to drive the solo-mode AI (CAR-46).
+  Currently unused by `Carddo.GameRoom` (which uses `valid_actions_for_player/2`
+  for random-pick "Dumb AI"), but available for weighted simulations.
 
   Shapes:
     `{:ok, action_json}` on success (action_json may be "null")
@@ -30,5 +31,6 @@ defmodule Carddo.Native do
     simulate_best_action_nif(state_json, player_id, Jason.encode!(weights_map))
   end
 
-  defp simulate_best_action_nif(_state_json, _player_id, _weights_json), do: :erlang.nif_error(:nif_not_loaded)
+  defp simulate_best_action_nif(_state_json, _player_id, _weights_json),
+    do: :erlang.nif_error(:nif_not_loaded)
 end

@@ -1,0 +1,21 @@
+{
+  "win_rates": {
+    "player_1": 0.45,
+    "player_2": 0.55
+  },
+  "anomalies": [
+    {
+      "type": "infinite_loop",
+      "turn": 42,
+      "cards": ["Infinite Mana Battery", "Looping Spark"]
+    },
+    {
+      "type": "resource_spike",
+      "turn": 12,
+      "player": 1,
+      "amount": 10000
+    }
+  ],
+  "problematic_cards": ["Infinite Mana Battery"],
+  "simulation_logs_url": "https://storage.carddo.com/logs/sim-123.json"
+}

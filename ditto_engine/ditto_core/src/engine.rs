@@ -99,9 +99,14 @@ pub fn valid_actions_for_player(state: &GameState, player_id: &str) -> Vec<Actio
         }
     }
 
-    let zone_ids: Vec<&str> = state.zones.keys().map(String::as_str).collect();
+    let mut zone_ids: Vec<&str> = state.zones.keys().map(String::as_str).collect();
+    zone_ids.sort_unstable();
 
-    for (entity_id, entity) in &state.entities {
+    let mut entity_ids: Vec<&String> = state.entities.keys().collect();
+    entity_ids.sort_unstable();
+
+    for entity_id in entity_ids {
+        let entity = state.entities.get(entity_id).unwrap();
         if entity.owner_id != player_id {
             continue;
         }
@@ -170,13 +175,13 @@ pub fn simulate_best_action(
 }
 
 fn score_state(state: &GameState, player_id: &str, weights: &HashMap<String, i32>) -> i32 {
-    let mut total_score = 0;
+    let mut total_score: i64 = 0;
 
     for entity in state.entities.values() {
-        let mut entity_score = 0;
+        let mut entity_score: i64 = 0;
         for (prop, weight) in weights {
             if let Some(val) = entity.properties.get(prop) {
-                entity_score += val * weight;
+                entity_score += (*val as i64) * (*weight as i64);
             }
         }
 
@@ -187,7 +192,7 @@ fn score_state(state: &GameState, player_id: &str, weights: &HashMap<String, i32
         }
     }
 
-    total_score
+    total_score.clamp(i32::MIN as i64, i32::MAX as i64) as i32
 }
 
 // ==========================================

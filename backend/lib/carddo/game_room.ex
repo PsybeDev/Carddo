@@ -5,7 +5,6 @@ defmodule Carddo.GameRoom do
   @default_timeout 30_000
   @default_ai_action_delay_ms 1500
   @default_ai_max_actions_per_turn 50
-  @mvp_ai_weights %{"health" => 1, "power" => 1}
 
   defp ai_action_delay_ms,
     do: Application.get_env(:carddo, :ai_action_delay_ms, @default_ai_action_delay_ms)
@@ -203,26 +202,35 @@ defmodule Carddo.GameRoom do
   end
 
   defp pick_and_apply_ai_action(state) do
-    case native_module().simulate_best_action(
-           state.rust_state_json,
-           state.ai_player_id,
-           @mvp_ai_weights
-         ) do
-      {:ok, "null"} ->
-        Logger.warning(
-          "AI simulator returned no action, forcing EndTurn recovery room=#{state.room_id}"
-        )
+    case native_module().valid_actions_for_player(state.rust_state_json, state.ai_player_id) do
+      {:ok, actions_json} ->
+        case Jason.decode(actions_json) do
+          {:ok, []} ->
+            Logger.warning(
+              "AI simulator returned no actions, forcing EndTurn recovery room=#{state.room_id}"
+            )
 
-        force_end_turn(state)
+            force_end_turn(state)
 
-      {:ok, action_json} ->
-        case apply_move(state, state.ai_player_id, action_json) do
-          {:ok, new_state} ->
-            {:noreply, new_state}
+          {:ok, actions} ->
+            action = Enum.random(actions)
+            action_json = Jason.encode!(action)
 
-          {:error, reason, _bad_state} ->
+            case apply_move(state, state.ai_player_id, action_json) do
+              {:ok, new_state} ->
+                {:noreply, new_state}
+
+              {:error, reason, _bad_state} ->
+                Logger.error(
+                  "AI move failed room=#{state.room_id}: #{inspect(reason)}, forcing EndTurn recovery"
+                )
+
+                force_end_turn(state)
+            end
+
+          {:error, decode_error} ->
             Logger.error(
-              "AI move failed room=#{state.room_id}: #{inspect(reason)}, forcing EndTurn recovery"
+              "Failed to decode AI actions JSON room=#{state.room_id}: #{inspect(decode_error)}, forcing EndTurn recovery"
             )
 
             force_end_turn(state)

@@ -1,3 +1,8 @@
+defmodule MockNativeEmpty do
+  def valid_actions_for_player(_state, _id), do: {:ok, "[]"}
+  def process_move(state, action, id), do: Carddo.Native.process_move(state, action, id)
+end
+
 defmodule Carddo.GameRoomTest do
   # async: false so the SQL sandbox runs in shared mode, allowing background
   # Task.start processes (spawned by GameRoom.make_move/3 for turn checkpointing)
@@ -585,15 +590,10 @@ defmodule Carddo.GameRoomTest do
       assert Process.alive?(pid)
     end
 
-    test "AI simulator returning null triggers fallback recovery path", %{game: game} do
+    test "AI simulator returning empty actions triggers fallback recovery path", %{game: game} do
       import ExUnit.CaptureLog
 
-      defmodule MockNativeNull do
-        def simulate_best_action(_state, _id, _weights), do: {:ok, "null"}
-        def process_move(state, action, id), do: Carddo.Native.process_move(state, action, id)
-      end
-
-      Application.put_env(:carddo, :native_module, MockNativeNull)
+      Application.put_env(:carddo, :native_module, MockNativeEmpty)
       on_exit(fn -> Application.delete_env(:carddo, :native_module) end)
 
       human_id = "human_1"
@@ -619,7 +619,7 @@ defmodule Carddo.GameRoomTest do
                          500
         end)
 
-      assert log =~ "AI simulator returned no action"
+      assert log =~ "AI simulator returned no actions"
       assert log =~ "forcing EndTurn recovery"
 
       %{active_player_id: active} = :sys.get_state(pid)
