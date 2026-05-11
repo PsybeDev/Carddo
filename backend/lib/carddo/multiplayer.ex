@@ -1,24 +1,20 @@
 defmodule Carddo.Multiplayer do
-  @callback start_room(String.t(), integer(), String.t(), boolean()) ::
-              {:ok, pid()} | {:error, term()}
+  @callback start_room(map()) :: {:ok, pid()} | {:error, term()}
   @callback room_exists?(String.t()) :: boolean()
 
   alias Carddo.GameRoom
   alias Carddo.Multiplayer.{GameRegistry, RoomSupervisor}
 
-  def start_room(room_id, game_id, initial_state_json, solo_mode \\ false) do
+  def start_room(%{room_id: _, game_id: _, initial_state_json: _} = opts) do
+    opts =
+      opts
+      |> Map.put_new(:solo_mode, false)
+      |> Map.put_new(:ai_player_id, nil)
+      |> Map.put_new(:player_order, [])
+
     DynamicSupervisor.start_child(
       RoomSupervisor,
-      Supervisor.child_spec(
-        {GameRoom,
-         %{
-           room_id: room_id,
-           game_id: game_id,
-           initial_state_json: initial_state_json,
-           solo_mode: solo_mode
-         }},
-        restart: :temporary
-      )
+      Supervisor.child_spec({GameRoom, opts}, restart: :temporary)
     )
   end
 

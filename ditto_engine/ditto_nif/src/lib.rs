@@ -65,4 +65,61 @@ fn process_move(
     Ok((atoms::ok(), new_state_json, animations_json))
 }
 
+#[inline]
+fn enum_err(reason: String) -> NifResult<(Atom, String)> {
+    Ok((atoms::error(), reason))
+}
+
+/// Returns every currently-legal `Action` that `player_id` could submit, as a
+/// JSON-encoded array. Used by the server-side AI in `GameRoom` (CAR-46).
+///
+/// Success shape: `{:ok, "[\"EndTurn\", {\"MoveEntity\": {...}}]"}`.
+/// Error shape:   `{:error, reason_string}`.
+#[rustler::nif(schedule = "DirtyCpu")]
+fn valid_actions_for_player(
+    state_json: String,
+    player_id: String,
+) -> NifResult<(Atom, String)> {
+    let state: GameState = match serde_json::from_str(&state_json) {
+        Ok(s) => s,
+        Err(e) => return enum_err(format!("invalid state: {e}")),
+    };
+
+    let actions = ditto_core::valid_actions_for_player(&state, &player_id);
+
+    match serde_json::to_string(&actions) {
+        Ok(json) => Ok((atoms::ok(), json)),
+        Err(e) => enum_err(format!("actions serialization failed: {e}")),
+    }
+}
+
+/// Returns the best `Action` for `player_id` based on the provided weights.
+/// Used by the server-side AI in `GameRoom` (CAR-46).
+///
+/// Success shape: `{:ok, "{\"MoveEntity\": {...}}"}` or `{:ok, "null"}`.
+/// Error shape:   `{:error, reason_string}`.
+#[rustler::nif(name = "simulate_best_action_nif", schedule = "DirtyCpu")]
+fn simulate_best_action(
+    state_json: String,
+    player_id: String,
+    weights_json: String,
+) -> NifResult<(Atom, String)> {
+    let state: GameState = match serde_json::from_str(&state_json) {
+        Ok(s) => s,
+        Err(e) => return enum_err(format!("invalid state: {e}")),
+    };
+
+    let weights: std::collections::HashMap<String, i32> = match serde_json::from_str(&weights_json) {
+        Ok(w) => w,
+        Err(e) => return enum_err(format!("invalid weights: {e}")),
+    };
+
+    let best_action = ditto_core::simulate_best_action(&state, &player_id, &weights);
+
+    match serde_json::to_string(&best_action) {
+        Ok(json) => Ok((atoms::ok(), json)),
+        Err(e) => enum_err(format!("action serialization failed: {e}")),
+    }
+}
+
 rustler::init!("Elixir.Carddo.Native");

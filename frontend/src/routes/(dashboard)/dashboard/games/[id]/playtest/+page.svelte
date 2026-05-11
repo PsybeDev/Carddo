@@ -58,7 +58,11 @@
 		const localUser = authStore.currentUser;
 		const localGame = game;
 		const localDeckId = selectedDeckId;
-		const roomId = `solo_${localUser.id}_${localGame.id}`;
+		// A fresh session id per Start Playtest click so a disconnect+reconnect
+		// can't silently reopen the previous live room with its stale deck —
+		// backend rooms are keyed on roomId and live until their TTL expires.
+		const sessionId = crypto.randomUUID();
+		const roomId = `solo_${localUser.id}_${localGame.id}_${sessionId}`;
 		let ch: GameChannel | null = null;
 
 		try {
@@ -68,7 +72,8 @@
 
 			await ch.connect(roomId, {
 				game_id: localGame.id,
-				deck_id: localDeckId
+				deck_id: localDeckId,
+				solo_mode: true
 			});
 
 			if (channel !== ch || !ch.gameState || !authStore.currentUser) {
@@ -106,6 +111,7 @@
 
 	async function handleDrop(entityId: string, toZone: string) {
 		if (!gameState || !channel) return;
+		if (!isPlayerTurn) return;
 		if (gameStore.pendingAction !== null) {
 			toastStore.show('Action pending - please wait', 'info');
 			return;
@@ -179,8 +185,11 @@
 	let gameState = $derived(gameStore.optimisticState);
 	let lastRejection = $derived(channel?.lastRejection ?? null);
 	let errors = $derived(channel?.errors ?? []);
+	let aiPlayerId = $derived(channel?.aiPlayerId ?? null);
+	let activePlayerId = $derived(channel?.activePlayerId ?? null);
 
 	const currentPlayerId = $derived(authStore.currentUser?.id ?? '');
+	let isPlayerTurn = $derived(activePlayerId === null || activePlayerId === currentPlayerId);
 
 	onMount(() => {
 		void initWasm().catch(() => {
@@ -189,7 +198,7 @@
 	});
 
 	$effect(() => {
-		if (gameState) {
+		if (gameState && isPlayerTurn) {
 			validDropTargets = Object.keys(gameState.zones);
 		} else {
 			validDropTargets = [];
@@ -307,18 +316,24 @@
 				{currentPlayerId}
 				{validDropTargets}
 				{gameOver}
+				{aiPlayerId}
+				{activePlayerId}
 				onDrop={handleDrop}
 				onReturnToDashboard={handleReturnToDashboard}
 			/>
 
-			<div class="flex gap-2 pt-2">
+			<div class="flex items-center gap-2 pt-2">
 				<button
 					type="button"
 					onclick={endTurn}
-					class="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-indigo-500"
+					disabled={!isPlayerTurn}
+					class="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					End Turn
 				</button>
+				{#if !isPlayerTurn && aiPlayerId && activePlayerId === aiPlayerId}
+					<span class="text-xs text-slate-400 italic">AI thinking…</span>
+				{/if}
 			</div>
 		{:else}
 			<div class="py-16 text-center">
